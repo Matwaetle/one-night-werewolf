@@ -54,8 +54,8 @@
     },
     hunter: {
       name: '사냥꾼', team: 'village', max: 1, ord: '—', sigil: 'sg-hunter',
-      line: '죽으면 자신이 투표한 사람도 함께 죽습니다.',
-      desc: '사냥꾼이 죽으면 그가 투표한 사람도 함께 죽습니다.',
+      line: '처형되면 자신이 투표한 사람도 함께 처형됩니다.',
+      desc: '사냥꾼이 처형되면 사냥꾼이 투표한 사람도 함께 처형됩니다.',
     },
     tanner: {
       name: '무두장이', team: 'tanner', max: 1, ord: '—', sigil: 'sg-tanner',

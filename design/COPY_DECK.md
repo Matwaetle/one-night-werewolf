@@ -834,3 +834,26 @@
 | T.body.waking | 서버를 깨우는 중입니다. |
 | T.body.bgmVol | 배경음악 크기 |
 | T.replay.self.noneButMoved | 밤새 카드가 오갔지만 모두 처음 카드로 돌아왔습니다. |
+
+## 개정 (v3 보안·문구 패스)
+
+| 키 | 최종 문구 |
+|---|---|
+| T.body.deckCount | 카드 ${total}장 / 필요 ${need}장 (호출부: app.js, result.js 가 {total, need} 전달. 이전 ${n}/${m} 표기는 오류였음) |
+| T.body.holdHint | 카드를 길게 눌러 역할을 확인하세요. |
+| T.body.readyMark | 준비 완료 |
+| T.body.dayTalk | 토론 중입니다. 준비되면 투표 준비하기를 누르세요. (낮 시작 약 8초 뒤) |
+| T.body.youWin / youLose | 당신의 승리입니다. / 당신은 패배했습니다. |
+| T.body.teamMoved | ${from}에서 ${team} 팀으로 바뀌었습니다. |
+| T.body.pickTarget | 대상을 선택하세요 (예언자 빈 선택) |
+| T.body.altarPick | 가운데 카드 보기 (${n}/2) |
+| T.body.roomCodeLbl | 방 코드 |
+| T.btn.result | 결과 보기 (폰트 서브셋 포함용. 리플레이는 T.replay.uiR.result 사용) |
+| T.replay.uiR.nowCard | 지금 카드 ${r} |
+| T.replay.uiR.result | 결과 보기 |
+| T.replay.uiR.acts.dawn | 최종 카드 (타임라인 라벨. T.phase.dawn 은 HUD용으로 낮 유지) |
+| T.replay.dawn.seat | top: ${a}: ${from} → ${to} / bot: 팀이 ${team:으로/로} 바뀌었습니다. / botSame: 팀은 그대로입니다. |
+| T.replay.cause.robbed / swapped | 당신의 카드를 (서술문에서는 당신, 라벨·태그에서만 내 카드) |
+| 사냥꾼 line / desc | 처형되면 자신이 투표한 사람도 함께 처형됩니다. / 사냥꾼이 처형되면 사냥꾼이 투표한 사람도 함께 처형됩니다. |
+| 서버 id | players[].id, me, 채팅 id 는 불투명한 공개 sid(playerId 의 sha256 앞 12자). 원본 playerId 는 create/join 페이로드에서만 전송 |
+| 소켓 핸드셰이크 | auth.v 가 배포 ver 와 다르면 서버가 outdated 를 1회 emit (v 없으면 무시) |

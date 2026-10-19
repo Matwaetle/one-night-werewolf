@@ -2,7 +2,7 @@
    등록은 앱이 load 후 requestIdleCallback 에서 한다. 게임 중에는 절대 새로고침하지 않는다:
    새 SW 는 설치만 하고 기다린다(skipWaiting 자동 호출 없음). 앱이 홈에서 postMessage('skip') 하면 활성화한다. */
 const VER = '__VER__';
-const PRE = __PRECACHE__;
+const PRE = __PRECACHE__;   // CORE 만 (스크립트·CSS·폰트). 이미지(IMG)는 /a/ 런타임 캐시가 채운다
 const SHELL = 'hb-' + VER;   // 버전별 셸 캐시
 const RT = 'hb-rt';          // /a/ 런타임 캐시 (해시 파일명이라 버전이 달라도 공유한다)
 const RT_MAX = 60;
@@ -43,13 +43,19 @@ self.addEventListener('fetch', (e) => {
   if (u.origin !== self.location.origin || u.pathname.startsWith('/socket.io/') || u.pathname === '/healthz') return;
 
   if (r.mode === 'navigate') {
-    // stale-while-revalidate: 캐시된 셸을 즉시, 새 HTML 은 백그라운드로
+    // network-first (2.5초 타임아웃): 느리거나 실패하면 캐시된 셸, 성공하면 캐시를 갱신
     e.respondWith((async () => {
       const c = await caches.open(SHELL);
-      const hit = await c.match('/');
       const net = fetch('/', { cache: 'no-cache' }).then((res) => { if (res.ok) c.put('/', res.clone()); return res; });
-      if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
-      return net;
+      const hit = () => c.match('/');
+      try {
+        const res = await Promise.race([net, new Promise((_, rej) => setTimeout(rej, 2500))]);
+        return res;
+      } catch (_) {
+        const h = await hit();
+        if (h) { e.waitUntil(net.catch(() => {})); return h; }
+        return net;
+      }
     })());
     return;
   }

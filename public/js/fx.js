@@ -72,13 +72,13 @@
     },
     probe: function (k) {   // 로비 · 첫 밤 4초 동안 긴 작업과 프레임을 재서 느린 기기는 lite 로 내린다
       var n = 0, l = 0, mx = 0, po, fr = [], t0 = performance.now(), key = 'p' + k;
-      if (de.dataset[key] || de.dataset.perf === 'lite') return; de.dataset[key] = 1;
+      if (de.dataset[key] || de.dataset.perf === 'lite' && !de.dataset.pf) return; de.dataset[key] = 1;
       try { po = new PerformanceObserver(function (o) { o.getEntries().forEach(function (e) { n += e.duration; if (e.duration > mx) mx = e.duration; }); }); po.observe({ type: 'longtask' }); } catch (e) { /* 무시 */ }
       requestAnimationFrame(function lap(t) {
         if (d.hidden) l = 0; else { if (l) fr.push(t - l); l = t; }
         if (t - t0 < 4000) return requestAnimationFrame(lap);
         fr.sort(function (x, y) { return x - y; }); if (po) po.disconnect();
-        if (n > 180 || mx > 150 || fr[fr.length * 0.9 | 0] > 34) { de.dataset.perf = 'lite'; try { localStorage.setItem('ww_perf', JSON.stringify({ v: 'lite', t: Date.now() })); } catch (e) { /* 무시 */ } }
+        if (n > 180 || mx > 150 || fr[fr.length * 0.9 | 0] > 34) { de.dataset.perf = 'lite'; if (!de.dataset.pf) { de.dataset.pf = 1; return; } try { localStorage.setItem('ww_perf', JSON.stringify({ v: 'lite', t: Date.now() })); } catch (e) { /* 무시 */ } }
       });
     },
     /* ---------- 눈꺼풀 ---------- */
@@ -267,12 +267,12 @@
       if (key) played[key] = 1;
       if (!fan || d.hidden || !canAnim) return Promise.resolve();
       var soft = lite() || calm(), ms = lite() ? 180 : calm() ? 160 : 240;
-      fan.classList.add('fx-fold');
-      if (soft || !fl) return wait(ms);
+      if (soft || !fl) { fan.classList.add('fx-fold'); return wait(ms); }   // 모든 rect 를 읽은 뒤에 접는다
       var seats = [].slice.call(d.querySelectorAll('#stage .seat')), N = seats.length, me = Math.max(0, seats.findIndex(function (e) { return e.classList.contains('is-me'); })), tg = [], i;
       for (i = 1; i <= N; i++) { var st = seats[(me + i) % N], tk = st.querySelector('.seat-token'), c = st.querySelector(':scope>.card'), r = tk.getBoundingClientRect(), side = st.dataset.side || (r.left + r.width / 2 < d.documentElement.clientWidth / 2 ? 'l' : 'r'), w = c ? c.getBoundingClientRect().width : (innerWidth < 600 ? 26 : 40); tg.push({ x: r.left + r.width / 2 + (side === 'r' ? -1 : 1) * (r.width / 2 + 6 + w / 2), y: r.top + r.height / 2, w: w }); }
       [].slice.call(d.querySelectorAll('.altar .card')).forEach(function (c) { tg.push(rect(c)); });
       var f0 = rect(fan), ghosts = [], t0 = TT.deal - 120;
+      fan.classList.add('fx-fold');
       var tpl = d.createElement('div'); tpl.innerHTML = typeof ART !== 'undefined' ? ART.card(null, { size: 'xs', face: 0, cls: 'fx-ghost' }) : ''; tpl = tpl.firstChild; if (tpl) tpl.insertAdjacentHTML('beforeend', '<i class="fx-ink"></i>');
       dealEnd = function () { ghosts.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); }); ghosts = []; dealEnd = null; };
       var flights = tg.map(function (t, k) {

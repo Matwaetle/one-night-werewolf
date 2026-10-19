@@ -19,7 +19,7 @@
     const { R, LS, ui, fx, sched } = X;
     if (!ui.wait) return;
     ui.wait = 0; if (R) LS.set('result:' + R.gameId, '1');
-    ensure(); $('.board').hidden = false; fx('lidsOpen', 400); sched();
+    X.rclose(); ensure(); $('.board').hidden = false; fx('lidsOpen', 400); sched();
   }
   function end() {
     const { S, ui, fx, sched, geo, relayout } = X;
@@ -27,7 +27,7 @@
     X.rclose(); body.removeAttribute('data-replay');
     if (S && S.phase === 'result') { ensure(); $('.board').hidden = false; if (mq('(max-width:599px)')) $('#stage').classList.add('is-fold'); }   // 닫기와 보드 공개는 한 프레임에
     fx('lidsOpen', 200); sched();
-    requestAnimationFrame(() => { geo.h = 0; relayout(); enh(); });   // 좌석 다시 놓기와 기록 보강은 그 다음으로 미룬다
+    requestAnimationFrame(() => setTimeout(() => { geo.h = 0; relayout(); X.idle(enhance, 300); }, 0));   // 좌석 다시 놓기는 다음 작업으로, 기록 보강은 한가할 때로 미룬다 (한 작업에 몰면 멈춘다)
   }
   function play(auto, start) {   // 세 작업으로 나눈다: 눈꺼풀 -> 좌석 자리 -> 리플레이 열기 (한 작업에 몰면 1초 넘게 멈춘다)
     const { R, LS, ui, fx, sched, geo, placeSeats } = X;
@@ -39,7 +39,8 @@
       if (!ok()) return;
       const st = $('#stage'); st.classList.remove('is-fold'); st.style.height = ''; geo.h = 0;
       body.dataset.replay = '1'; sched(); $('.board').hidden = true; $('.band').hidden = true;
-      $$('.seat').forEach((e) => { e.classList.remove('is-dead'); const m = $('.seat-mark', e); if (m.dataset.k === 'votes') { delete m.dataset.k; m.textContent = ''; } });
+      $$('.msg[data-kind=end]').forEach((e) => { e.hidden = true; });   // 결말 줄은 리플레이가 끝날 때까지 채팅에서도 가린다
+      $$('.seat').forEach((e) => { e.classList.remove('is-dead', 'is-target'); const m = $('.seat-mark', e); if (m.dataset.k === 'votes') { delete m.dataset.k; m.textContent = ''; } });
       $('.ln').classList.remove('is-on');
       if (ui.ids.length) placeSeats();   // 자막 띠를 비운 채 좌석을 한 번만 다시 놓은 뒤 리플레이가 토큰 위치를 읽는다
       yieldTask(() => {
@@ -53,12 +54,15 @@
   }
   function start(first) {
     const { S, R, LS, ui, fx, snd, later } = X;
-    ART.want(R.players.filter((p) => p.dead).map((p) => p.final));
+    const wn = R.winners, tm = ['village', 'wolf', 'tanner'].find((x) => wn.indexOf(x) >= 0), c = R.center, rl = [];   // 결말 뒷배경과, 리플레이가 보여 줄 역할 그림만 받는다 (덱 전체가 아니다)
+    if (tm) ART.warm(['verdict-' + tm]);
+    R.players.forEach((p) => rl.push(p.final, p.original));
+    if (D.documentElement.dataset.net !== 'slow') ART.want(Array.from(new Set(rl.concat(c.final, c.original, R.doppelCopy || []))).filter((x) => x && !ART.has(x)), { low: 1 });
     $('#stage').classList.remove('is-fold');
     const seen = LS.get('result:' + R.gameId), auto = R.night && !seen && !first, me = R.players.find((p) => p.id === S.me);
     X.scene('result', { win: me ? !!me.win : null, dead: R.players.filter((p) => p.dead).length, replay: !!auto }); snd('scene', 'result', X.scO());
     $('.board')._d = 0;
-    if (!auto) { if (S.phase !== 'result') return; RESULT.draw(); $('.board').hidden = false; if (R.night) LS.set('result:' + R.gameId, '1'); if (ui.ids.length) X.placeSeats(); return; }
+    if (!auto) { if (S.phase !== 'result') return; X.rclose(); RESULT.draw(); $('.board').hidden = false; if (R.night) LS.set('result:' + R.gameId, '1'); if (ui.ids.length) X.placeSeats(); return; }
     ui.rpr = 1;   // 자동 재생: 첫 장면이 그려진 뒤(rp-ready)에 보드를 따로 그린다 (같은 작업에서 만들지 않는다)
     if (X.rs === 2) return play(true);
     ui.wait = 1; $('.board').hidden = true; fx('lidsClose', 200); X.loadReplay();   // 늦으면 암전으로 최대 2초
@@ -101,6 +105,23 @@
       D.addEventListener('rp-ready', () => { if (X.ui.rpr) { X.ui.rpr = 0; X.idle(() => { if (X.S && X.S.phase === 'result') ensure(); }, 1500); } }, true);
     },
     start, play, timeUp, law, deck,
+    conn(k) {   // 연결 띠: 재접속 초 세기 · 다른 창(1) · 새 버전(2)
+      const { ui } = X, c = $('#conn'), b = (a, l) => ' <button class="btn-sub" type="button" data-act="' + a + '"><span class="lbl">' + esc(l) + '</span></button>';
+      clearTimeout(ui.connT); delete c.dataset.state;
+      if (k) { c.innerHTML = esc(k < 2 ? TB.otherTab : TB.newVersion) + (k < 2 ? b('here', TBT.continueHere) : b('reload', TBT.reload)); c.hidden = false; return; }
+      if (!ui.off) return;
+      const n = Math.max(1, Math.floor((Date.now() - ui.off) / 1000)), j = n >= 120 ? 2 : n >= 20 ? 1 : 0;   // 20초 · 2분이 지나면 새로고침 · 처음으로 버튼을 한 번만 덧붙인다
+      c.hidden = false;
+      if (c._k !== j || !$('.conn-t', c)) { c._k = j; c.innerHTML = '<span class="conn-t"></span>' + (j ? ' ' + esc(TB.reconnectSlow) + b('reload', TBT.reload) : '') + (j > 1 ? b('goHome', TB.goHome) : ''); }
+      $('.conn-t', c).textContent = fmt(TB.reconnecting, { n });
+      ui.connT = setTimeout(RESULT.conn, 1000);
+    },
+  log() {   // 기록 탭 (낮 · 투표 · 결말)
+    const p = $('.pane[data-p=log]'), items = X.S.myLog || [];
+    X.patch(p, items.length ? '<ul class="log-list" style="list-style:none;margin:0;padding:0">' + items.map((it) => '<li class="log-item"><div class="secret" data-peek="log"><div class="secret-in">' +
+      (it.reveal || []).map((r) => '<span class="log-c">' + ART.card(r.role, { size: 'xs', face: 1 }) + '</span>').join('') + '<span class="log-t">' + esc(it.text) + '</span></div><span class="secret-lbl">' + esc(TB.blurHint) + '</span></div></li>').join('') + '</ul>'
+      : '<p class="log-none">' + esc(TB.seenNothing) + '</p>');
+    },
     rep() {   // 리플레이 모듈이 도착했다
       X.sched();
       if (!X.S || X.S.phase !== 'result' || !X.R) return;
@@ -142,6 +163,7 @@
       }
 
       const bd = $('.board'), vk = verdictKey();
+      const mp = me ? R.players[mi] : null, fr = mp && (mp.final === 'doppelganger' && R.doppelCopy ? R.doppelCopy : mp.final), moved = mp && ROLES[mp.original].team !== ROLES[fr].team;
       if (ART.warm && vk[1] !== 'none') ART.warm(['verdict-' + vk[1]]);
       const vdeaths = R.deaths.filter((d) => d.by === 'vote'), vote = vdeaths.map((d) => R.players[d.s].name);
       const execSet = {}, execCards = vdeaths.map((d) => { const q = R.players[d.s]; execSet[d.s] = 1; return fmt(TB.execCard, { n: NM(q.name), r: ROLES[q.final === 'doppelganger' && R.doppelCopy ? R.doppelCopy : q.effective].name }); });
@@ -157,11 +179,11 @@
       });
       const hunts = R.deaths.filter((d) => d.by === 'hunter');
       const chip = (id, cp) => { const r = ROLES[id]; return '<svg aria-hidden="true"><use href="#' + r.sigil + '"/></svg>' + esc(id === 'doppelganger' && cp ? fmt(TB.doppelArrow, { r: ROLES[cp].name }) : r.name); };
-      const row = (p, i, alt) => '<li class="rec-row' + (p.id === S.me ? ' is-me' : '') + (p.dead ? ' is-dead' : '') + (p.win ? ' is-win' : '') + (alt ? ' is-altar' : '') + (!alt && !S.players.some((x) => x.id === p.id) ? ' is-gone' : '') + '" data-slot="' + i + '">' +
-        '<div class="rec-top"><b class="rec-n nm">' + esc(alt || p.name) + '</b>' + (p.dead && !alt ? '<i class="rec-x">' + esc(T.stamp.exec || T.stamp.dead) + '</i>' : '') +
+      const row = (p, i, alt, full) => '<li' + (full ? ' title="' + esc(full) + '" aria-label="' + esc(full) + '"' : '') + ' class="rec-row' + (p.id === S.me ? ' is-me' : '') + (p.dead ? ' is-dead' : '') + (p.win ? ' is-win' : '') + (alt ? ' is-altar' : '') + (!alt && !S.players.some((x) => x.id === p.id) ? ' is-gone' : '') + '" data-slot="' + i + '">' +
+        '<div class="rec-top"><b class="rec-n nm">' + esc(alt || p.name) + (p.dead && !alt ? '<i class="rec-x">' + esc(T.stamp.exec || T.stamp.dead) + '</i>' : '') + '</b>' +
         (alt ? '' : '<span class="rec-stamp' + (p.win ? ' is-win' : '') + '">' + esc(p.win ? T.stamp.win : T.stamp.lose) + '</span>') +
         '<span class="rec-chg">' + (p.original === p.final ? '' : '<span class="rec-from">' + chip(p.original) + '</span><span class="rec-arrow">→</span>') + '<span class="rec-to">' + chip(p.final, R.doppelCopy) + '</span></span>' +
-        (alt ? '' : '<span class="rec-meta"><span class="rec-vote">' + esc(TB.cols.vote) + ' ' + (p.vote ? nmh(pname(p.vote)) : '—') + '</span> · <span class="rec-got">' + esc(TB.cols.votes) + ' ' + p.votes + '</span></span>' +
+        (alt ? '' : '<span class="rec-meta"><span class="rec-vote">' + (p.vote ? '→ ' + nmh(pname(p.vote)) : '—') + '</span>' + (p.votes > 0 ? ' · <span class="rec-got">' + p.votes + '표</span>' : '') + '</span>' +
           (hunts.some((d) => d.s === i) ? '<svg class="rec-hunt" aria-hidden="true"><use href="#sg-hunter"/></svg>' : '')) + '</div></li>';
       const rank = (p) => (p.id === S.me ? 0 : p.dead ? 1 : 2);
       const rows = R.players.map((p, i) => [p, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]);
@@ -172,7 +194,8 @@
       if (keyW && heroes.length < 2) { const i = keyW[1].find((x) => !execSet[x]), q = R.players[i]; heroes.push([effOf(q), '', q.id === S.me ? TB.whoMine : TB.heroKey, q.name]); }
       if (ART.want && heroes.length) ART.want(heroes.map((h) => h[0]));
       const heroH = heroes.length ? '<div class="verdict-cards">' + heroes.map((h) => '<figure>' + ART.card(h[0], { size: 'md', face: 1, cls: h[1] }) + '<figcaption>' + fmt(h[2] || '', { n: NM(h[3]) }) + '</figcaption></figure>').join('') + '</div>' : '';
-      bd.innerHTML = '<div class="verdict" data-team="' + vk[1] + '"><p class="verdict-line">' + esc(T.verdict[vk[0]]) + '</p>' + heroH +
+      bd.innerHTML = '<div class="verdict" data-team="' + vk[1] + '"><p class="verdict-line">' + esc(T.verdict[vk[0]]) + '</p>' +
+        (mp ? '<p class="verdict-me"><span class="rec-stamp' + (mp.win ? ' is-win' : '') + '">' + esc(mp.win ? TB.youWin : TB.youLose) + '</span>' + (moved ? esc(fmt(TB.teamMoved, { from: ROLES[mp.original].name, team: TEAM_NAME[ROLES[fr].team] })) : '') + '</p>' : '') + heroH +
         (vote.length || !R.why.some((w) => w[0] === 'no_death') ? '<p class="verdict-why">' + (vote.length ? fmt(TB.execLine, { names: names(vote) }) : TB.noBlood) + '</p>' : '') +
         execCards.map((l) => '<p class="verdict-why">' + l + '</p>').join('') +
         whyL.map((l) => '<p class="verdict-why">' + l + '</p>').join('') +
@@ -181,7 +204,7 @@
         (R.night ? '<button class="btn-sub rp-again" data-act="replay" type="button" hidden>' + esc(TBT.replay) + '</button>' : '') +
         (R.night ? '<details class="tl-sec" open hidden><summary class="tl-head">' + esc(TH.happened) + '</summary><ol class="tl-list"></ol></details>' : '') +
         '<details class="rec-sec" open><summary class="rec-head">' + esc(TH.records) + '</summary><ul class="rec-list">' + rows.map((x) => row(x[0], x[1])).join('') +
-        [0, 1, 2].map((i) => row({ original: R.center.original[i], final: R.center.final[i] }, n + i, T.altar[i])).join('') + '</ul></details>';
+        [0, 1, 2].map((i) => row({ original: R.center.original[i], final: R.center.final[i] }, n + i, RP.ui.altarShort[i], T.altar[i])).join('') + '</ul></details>';
       ART.mark(bd); bd._d = 1;
       if (mob && !body.dataset.replay) $('#stage').classList.add('is-fold');
       enh();

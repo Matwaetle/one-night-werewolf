@@ -49,6 +49,7 @@ function staticChecks() {
 function bot(name, pid) {
   const s = io(URL, { forceNew: true, transports: ['websocket'] });
   const b = { name, s, pid: pid || `bot-${name}-${Math.random()}`, state: null, chats: [], script: null, handled: new Set(), gameIds: new Set(), seen: [], stepSeen: {}, insoPrompt: null };
+  b.sid = require('crypto').createHash('sha256').update(b.pid).digest('base64url').slice(0, 12);
   s.on('state', (st) => {
     b.state = st;
     if (st.phase === 'night' && st.stepIdx >= 0 && b.stepSeen[st.stepIdx] === undefined) b.stepSeen[st.stepIdx] = Date.now();
@@ -297,7 +298,7 @@ function sc(name, deal, acts, votes, extra = {}) { SC.push({ name, deal, acts, v
 // F2: 불면증환자 프롬프트 reveal, 강도 reveal.from, 카드를 본 뒤 VIEW_HOLD(10초 x TIME_SCALE) 동안 단계가 끝나지 않음
 sc('f2-reveal', [SE, RO, IN, WF, VI, VI], { 0: { seer: { player: 1 } }, 1: { robber: { player: 2 } } }, [1, 0, 0], {
   expect: (r, bots) => {
-    const ids = bots.map((b) => b.pid);
+    const ids = bots.map((b) => b.sid);
     const rb = bots[1].acks.find((a) => a[0] === 'robber');
     assert(rb && rb[1].reveal[0].from === ids[2] && rb[1].reveal[0].id === ids[1] && rb[1].reveal[0].role === IN, 'robber reveal.from');
     const ip = bots[2].insoPrompt;
@@ -482,7 +483,7 @@ async function runScenario(s) {
     s.longIds ? `${'abcdefghijklmnopqrstuvwxyz0123456789'.slice(0, 30)}-${String(i).padStart(5, '0')}` : undefined));
   try {
     await sleep(100);
-    const ids = bots.map((b) => b.pid);
+    const ids = bots.map((b) => b.sid);
     bots.forEach((b, i) => { b.acks = []; b.script = { name: s.name, seat: i, acts: s.acts[i] || {}, vote: s.votes[i], ids }; });
     const host = bots[0];
     const c = await host.emit('create', { name: host.name, playerId: host.pid });
@@ -494,7 +495,7 @@ async function runScenario(s) {
     const deck = {};
     for (const r of WW.ROLE_ORDER) deck[r] = s.deal.filter((x) => x === r).length;
     for (const r of WW.ROLE_ORDER) host.s.emit('setDeck', { role: r, count: deck[r] });
-    _test.deals.set(host.pid, s.deal);
+    _test.deals.set(host.sid, s.deal);
     const st = await host.emit('start');
     if (!st.ok) throw new Error(`start: ${st.error}`);
     const again = await host.emit('start');          // 멱등
@@ -521,7 +522,7 @@ async function runScenario(s) {
       if (hs.players.length !== n - 1) throw new Error('leave 후 state.players 감소 안 함');
       if (hs.result.players.length !== n) throw new Error('leave 후 result.players 가 줄었다');
       if (!isDeepStrictEqual(hs.result, r)) throw new Error('leave 후 result 가 바뀌었다');
-      extra.leave = { id: leaver.pid, seat: s.leave, statePlayers: hs.players.map((p) => p.id) };
+      extra.leave = { id: leaver.sid, seat: s.leave, statePlayers: hs.players.map((p) => p.id) };
     }
     if (s.longIds) {
       const sizes = bots.map((b) => Buffer.byteLength(JSON.stringify(b.state)));
@@ -535,7 +536,7 @@ async function runScenario(s) {
     if (extra.sizes && (extra.sizes.max > 6144 || extra.sizes.night > 1536)) throw new Error(`max-bytes 초과 ${JSON.stringify(extra.sizes)}`);
     return { name: s.name, bytes: extra.sizes };
   } finally {
-    _test.deals.delete(bots[0].pid);
+    _test.deals.delete(bots[0].sid);
     bots.forEach((b) => b.s.close());
   }
 }

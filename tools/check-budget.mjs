@@ -134,11 +134,21 @@ if (bonfire) row('모닥불 추가 (아틀라스+뒷면+지평선+그레인)', b
   try {
     const mp = path.join(ROOT, 'review/metrics.json');
     if (fs.existsSync(mp)) {
-      const real = JSON.parse(fs.readFileSync(mp, 'utf8'))?.network?.game?.total?.bytes;
+      const g = JSON.parse(fs.readFileSync(mp, 'utf8'))?.network?.game?.total;
+      const real = typeof g?.httpBytes === 'number' ? g.httpBytes : g?.bytes;
       if (typeof real === 'number') {
         const lim = 900 * KB, ok = real <= lim;
         if (!ok) bad = true;
-        rows.push(`${ok ? 'OK  ' : 'FAIL'} ${'실측 한 판 (캐시 없음)'.padEnd(40)} ${(real / KB).toFixed(1)}KB / ${(lim / KB).toFixed(1)}KB [추정 ${(fullEst / KB).toFixed(1)}KB]`);
+        rows.push(`${ok ? 'OK  ' : 'FAIL'} ${'실측 한 판 HTTP (캐시 없음)'.padEnd(40)} ${(real / KB).toFixed(1)}KB / ${(lim / KB).toFixed(1)}KB [추정 ${(fullEst / KB).toFixed(1)}KB]`);
+        // 추정 대비 1.15배 초과는 art.js 수정 재측정 전까지 경고만 한다
+        const rl = fullEst * 1.15;
+        rows.push(`${real <= rl ? 'OK  ' : 'WARN'} ${'실측/추정 비율 (<=1.15)'.padEnd(40)} ${(real / KB).toFixed(1)}KB / ${(rl / KB).toFixed(1)}KB`);
+        const ws = g?.wsBytes;
+        if (typeof ws === 'number') {
+          const wl = 64 * KB, wok = ws <= wl;
+          if (!wok) bad = true;
+          rows.push(`${wok ? 'OK  ' : 'FAIL'} ${'실측 WebSocket'.padEnd(40)} ${(ws / KB).toFixed(1)}KB / ${(wl / KB).toFixed(1)}KB`);
+        }
       }
     }
   } catch { /* metrics 없음/깨짐: 건너뜀 */ }

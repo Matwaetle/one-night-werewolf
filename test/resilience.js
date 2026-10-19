@@ -29,6 +29,7 @@ async function waitServer() {
   throw new Error('서버가 뜨지 않음');
 }
 
+const sleepState = async (s) => { for (let i = 0; i < 20 && !s.last; i++) await sleep(50); return s.last; };
 async function main() {
   const a = await waitServer();
   const r = await emit(a, 'create', { name: '방장', playerId: 'pa' });
@@ -74,6 +75,19 @@ async function main() {
   const rj = await emit(b2, 'join', { code, playerId: 'pb', rejoin: true });
   ok(rj.ok, 'rejoin');
 
+  // 재접속 비밀 유출 방지: 공개 id(sid)로는 자리를 가로챌 수 없다
+  {
+    const peer = (b2.last || (await sleepState(b2))).players.find((p) => p.id !== b2.last.me);
+    const thief = await conn();
+    const tj = await emit(thief, 'join', { code, playerId: peer.id, rejoin: true });
+    ok(tj && tj.ok === false, 'sid 로 rejoin 불가');
+    const me0 = b2.last.me;
+    await sleep(150);
+    ok(b2.last.me === me0 && b2.last.players.find((p) => p.id === me0).connected, '원래 좌석 유지');
+    ok(!JSON.stringify(b2.last).includes('"pa"') && me0 !== 'pb', 'raw playerId 노출 없음');
+    thief.close();
+  }
+
   // ready 연타: 상태 프레임이 크게 줄어야 한다 (낮 단계가 아니면 무시되어도 통과)
   const burstS = await conn();
   const br = await emit(burstS, 'create', { name: '연타', playerId: 'pz' });
@@ -107,14 +121,14 @@ async function main() {
   ok(g2.frames - f0 < 25, 'ready 연타 프레임 폭주: ' + (g2.frames - f0));
   g1.emit('forceVote');
   ok(await until(() => g2.last && g2.last.phase === 'vote', 5000), '투표 단계 도달 못함');
-  const vr = await emit(g2, 'vote', { target: 'g3' });
+  const vr = await emit(g2, 'vote', { target: g3.last.me });
   ok(vr.ok, 'vote');
   g2.close();
   await sleep(200);
   const g2b = await conn();
   const rr = await emit(g2b, 'join', { code: gr.code, playerId: 'g2', rejoin: true });
   ok(rr.ok, 'vote rejoin');
-  ok(await until(() => g2b.last && ((g2b.last.phase === 'vote' && g2b.last.myVote === 'g3') || g2b.last.phase === 'result'), 3000), '재접속 뒤 투표 유지');
+  ok(await until(() => g2b.last && ((g2b.last.phase === 'vote' && g2b.last.myVote === g3.last.me) || g2b.last.phase === 'result'), 3000), '재접속 뒤 투표 유지');
   // 같은 playerId 로 두 번째 창이 접속하면 첫 소켓이 'replaced' 를 받고 끊긴다
   const d1 = await conn();
   const dr = await emit(d1, 'create', { name: '창1', playerId: 'dup1' });

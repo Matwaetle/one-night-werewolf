@@ -40,7 +40,7 @@
   const timers = [];
   const later = (ms, fn) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
   const clearLater = () => timers.splice(0).forEach(clearTimeout);
-  const nowS = () => Date.now() + skew;
+  const nowS = () => Date.now() + skew, dayEl = () => S.settings.dayTime * 1000 - (S.dayEndsAt - nowS());
   const isHost = () => !!S && S.hostId === S.me;
   const others = () => S.players.filter((p) => p.id !== S.me);
   const short = (n) => { const a = Array.from(n); return a.length > 6 ? a.slice(0, 6).join('') + '…' : n; };
@@ -127,7 +127,7 @@
     const r = D.createElement('button'); r.type = 'button'; r.className = 'btn-sub'; r.innerHTML = '<span class="lbl">' + esc(TBT.reload) + '</span>'; r.onclick = () => location.reload(); b.appendChild(r);
     return;
   }
-  const sock = W.io(W.SOCKET_URL || '', { transports: ['websocket', 'polling'], tryAllTransports: true });
+  const sock = W.io(W.SOCKET_URL || '', { transports: ['websocket', 'polling'], tryAllTransports: true, auth: { v: A.ver } });
   const online = () => sock.connected && !ui.off;
   function send(ev, data, cb) {
     let tries = 0;
@@ -155,40 +155,28 @@
     };
     if (code) {
       sock.timeout(5000).emit('join', { code, playerId: playerId(), rejoin: true }, (err, r) => {
-        if (err) { sock.disconnect().connect(); return; }
+        if (err) { ui.rjN = (ui.rjN || 0) + 1; sock.disconnect(); setTimeout(() => { if (!ui.replaced) sock.connect(); }, Math.min(30000, 1000 * 2 ** ui.rjN)); return; }
+        ui.rjN = 0;
         if (r && r.ok) { back(); run(); } else { back(); LS.del('ww_room'); toHome(); toast(TB.roomLost, 'danger'); run(); }
       });
     } else { back(); run(); }
   });
   sock.on('disconnect', (reason) => {
-    if (S) { ui.off = Date.now(); body.dataset.conn = 'off'; if (reason !== 'io server disconnect') { const c = $('#conn'); delete c.dataset.state; c.hidden = false; connTick(); } } else setBoot(true);
+    if (S) { ui.off = Date.now(); body.dataset.conn = 'off'; if (reason !== 'io server disconnect') rr('conn'); } else setBoot(true);
     sched();
   });
-  sock.on('replaced', () => {   // 같은 자리에 다른 창이 접속했다: 자동 재접속을 멈추고 이 창에서 계속할지 묻는다
-    ui.replaced = 1; const c = $('#conn'); delete c.dataset.state;
-    c.innerHTML = esc(TB.otherTab) + ' <button class="btn-sub" type="button" data-act="here"><span class="lbl">' + esc(TBT.continueHere) + '</span></button>'; c.hidden = false;
+  sock.on('outdated', () => {   // 서버가 더 새 버전이다: 홈이면 바로 새로 고치고(한 번만), 판 중이면 띠에 버튼을 둔다
+    const t = +LS.get('ww_out') || 0;
+    if (!S && Date.now() - t > 60000) { LS.set('ww_out', Date.now()); Promise.resolve(swReg && swReg.update()).catch(() => {}).then(() => location.reload()); return; }
+    rr('conn', 2);
   });
-  function connTick() {
-    clearTimeout(ui.connT);
-    if (!ui.off) return;
-    const c = $('#conn'), n = Math.max(1, Math.floor((Date.now() - ui.off) / 1000));
-    const k = n >= 120 ? 2 : n >= 20 ? 1 : 0, b = (a, l) => ' <button class="btn-sub" type="button" data-act="' + a + '"><span class="lbl">' + esc(l) + '</span></button>';   // 20초 · 2분이 지나면 새로고침 · 처음으로 버튼을 한 번만 덧붙인다
-    if (c._k !== k || !$('.conn-t', c)) { c._k = k; c.innerHTML = '<span class="conn-t"></span>' + (k ? ' ' + esc(TB.reconnectSlow) + b('reload', TBT.reload) : '') + (k > 1 ? b('goHome', TB.goHome) : ''); }
-    $('.conn-t', c).textContent = fmt(TB.reconnecting, { n });
-    ui.connT = setTimeout(connTick, 1000);
-  }
+  sock.on('replaced', () => { ui.replaced = 1; rr('conn', 1); });   // 같은 자리에 다른 창이 접속했다: 자동 재접속을 멈추고 이 창에서 계속할지 묻는다
   sock.on('state', (s) => {
     if (!s || typeof s !== 'object' || !s.phase) return;
     try {
       const p = S; S = s; if (typeof s.now === 'number') skew = s.now - Date.now();
       LS.set('ww_room', s.code);
-      if (s.result) {
-        if (ui.vw !== s.result.gameId) {   // 결말 카드 뒷배경을 미리 받는다 (result.js 는 같은 요청을 한 번 더 한다)
-          const w = s.result.winners || [], t = w.indexOf('village') >= 0 ? 'village' : w.indexOf('wolf') >= 0 ? 'wolf' : w.indexOf('tanner') >= 0 ? 'tanner' : '';
-          ui.vw = s.result.gameId; if (t && ART.warm) ART.warm(['verdict-' + t]);
-        }
-        R = s.result;
-      }
+      if (s.result) R = s.result;
       ensureShell();
       if (!p || p.gameId !== s.gameId) newGame();
       if (!p || p.phase !== s.phase) onPhase(p && p.phase, s.phase, !p);
@@ -229,29 +217,29 @@
       if (LS.get('hb.awakeTip') !== '1') { LS.set('hb.awakeTip', '1'); later(600, () => toast(TB.keepAwake)); }
       wake(false); ART.want([S.myCard]); ART.warm(); fx('probe', 'pl'); fx('heartbeat', 0); fx('lidsOpen', 200);
     } else if (to === 'night') {
-      wake(true); ART.want([S.myCard]); closeSheet(); closeModal(); fx('probe', 'pn');
-      if (/^(seer|robber|drunk|insomniac|doppelganger)$/.test(S.myCard)) ART.prefetchDeck(S.gameDeck);
+      wake(true); ART.want([S.myCard]); closeSheet(); closeModal();
+      if (/^(seer|robber|drunk|insomniac|doppelganger)$/.test(S.myCard)) idle(() => ART.prefetchDeck(S.gameDeck), 4000);
       if (first) fx('lidsOpen', 0);
-      let dl = 0;
+      let dl = 0; const n = S.players.length;
       if (!first && from === 'lobby') {   // 카드 배분 뒤 좌석 불빛이 하나씩 꺼지고 0.8초 암전
-        const n = S.players.length; ui.intro = 1; ui.out = 0;
+        ui.intro = 1; ui.out = 0;
         dl = D.hidden ? 0 : root.dataset.perf === 'lite' ? 200 : mq('(prefers-reduced-motion:reduce)') ? 160 : 600 + 90 * (n + 3);
         if (dl) fx('deal', { n });
         for (let i = 0; i < n; i++) later(dl + 80 * i, () => { ui.out = i + 1; sched(); });
         later(dl + 80 * n, () => fx('lidsClose', 400));
         later(dl + 80 * n + 800, () => { ui.intro = 0; fx('lidsOpen', 500); sched(); });
       }
+      later(dl ? dl + 80 * n + 1300 : 1500, () => fx('probe', 'pn'));   // 배분 연출이 끝난 뒤에 불빛 측정
       later(first ? 0 : 1200 + dl, () => speak(NIGHT_TEXT._check));
     } else if (to === 'day') {
       ui.swapHint = LS.get('hb.swap') !== '1'; LS.set('hb.swap', '1');
-      fx('heartbeat', 0); speak(T.narr.dawn); idle(() => ART.prefetchDeck(S.gameDeck), 4000);
+      fx('heartbeat', 0); speak(T.narr.dawn); idle(() => ART.prefetchDeck(S.gameDeck), 4000); later(Math.max(0, 8000 - dayEl()), sched);
       if (desk()) { ui.tab = 'chat'; ui.stick = 1; }
       if (TB.dockCoach && !isPeeked() && !ui.dn['coach' + S.gameId]) { ui.dn['coach' + S.gameId] = 1; later(first ? 600 : 3400, () => toast(TB.dockCoach)); }
       if (!first) { fx('lidsClose', 0); later(600, () => { fx('lidsOpen', 700); banner('day', T.phase.dayBreaks, '', 3200); }); }
     } else if (to === 'vote') {
       fx('heartbeat', 0); loadReplay(); loadResult();
       if (!first) { fx('flash', 'blood', 80); banner('vote', TH.judge, '', 2000); }
-      if (root.dataset.net !== 'slow') ART.want(Object.keys(S.gameDeck || {}).filter((r) => S.gameDeck[r] > 0 && !ART.has(r)), { low: 1 });
     } else if (to === 'result') {
       fx('heartbeat', 0); wake(false); startResult(first);
     }
@@ -352,7 +340,7 @@
 
   // ---------- 뷰 모델 ----------
   function view(mode) {
-    const V = { mode, band: '', sel: null, selC: false, marks: {}, target: [], targetC: [], btn: {}, alt: null, card: -1, badge: '', rule: 0 };
+    const V = { mode, band: '', sel: null, selC: false, marks: {}, target: [], targetC: [], btn: {}, alt: null, card: -1, rule: 0 };
     const ph = S.phase;
     V.hudPhase = ph === 'lobby' ? T.phase.lobby : mode === 'check' ? T.phase.check : T.phase[ph];
     if (mode === 'lobby') {
@@ -363,12 +351,12 @@
     } else if (mode === 'check') {
       V.band = TB.checkBand; V.btn = { hide: 1 };
     } else if (mode === 'sleep') {
-      V.btn = { hide: 1 }; V.card = 0; V.badge = T.phase.night;
+      V.btn = { hide: 1 }; V.card = 0;
     } else if (mode === 'awake') {
       nightView(V);
     } else if (mode === 'day') {
       const conn = S.players.filter((p) => p.connected), mine = S.players.find((p) => p.id === S.me);
-      V.band = TB.dayAsk + '\n' + fmt(TB.raised, { r: conn.filter((p) => p.ready).length, n: conn.length }); V.card = 0;
+      V.band = (dayEl() < 8000 ? TB.dayAsk : TB.dayTalk) + '\n' + fmt(TB.raised, { r: conn.filter((p) => p.ready).length, n: conn.length }); V.card = 0;
       V.btn = { lbl: mine && mine.ready ? TBT.unready : TBT.ready, act: 'ready' };
     } else if (mode === 'vote') {
       V.rule = 1; V.card = 0; V.band = TB.pickExec; V.sel = others().map((p) => p.id);
@@ -383,7 +371,7 @@
   function nightView(V) {
     const p = S.prompt, t = p.type, st = S.stepRole, sel = ui.sel, selC = ui.selC, nm = sel.map(pname).join(', ');
     const pre = p.fromDoppel ? TB.asDoppel + ' ' : '', pickP = () => { V.sel = others().map((x) => x.id); };
-    V.card = 0; V.badge = T.phase.night; V.btn = { hide: 1 }; V.status = '';
+    V.card = 0; V.btn = { hide: 1 }; V.status = '';
     if (ui.reveals.length) {   // 카드를 보는 동안 출처 좌석 · 가운데 카드에 테두리
       V.band = TB.coverHint;
       V.target = ui.reveals.filter((r) => r.k === 'p').map((r) => (r.id === S.me ? r.from : r.id)).filter(Boolean);
@@ -406,7 +394,7 @@
       V.band = pre + TB.seer + ' ' + TB.seerSub; V.alt = { t: TBT.noLook, act: 'skip' };
       if (!selC.length) pickP();
       if (!sel.length) V.selC = true;
-      V.btn = sel.length ? { lbl: TBT.look, nm, hold: 600, act: 'go' } : { lbl: TBT.lookAltar, nm: selC.length ? fmt(TB.lookCount, { n: selC.length }) : '', hold: 600, act: 'go', dis: selC.length !== 2 };
+      V.btn = sel.length ? { lbl: TBT.look, nm, hold: 600, act: 'go' } : selC.length === 2 ? { lbl: TBT.lookAltar, nm: fmt(TB.lookCount, { n: 2 }), hold: 600, act: 'go' } : { lbl: selC.length ? fmt(TB.altarPick, { n: selC.length }) : TB.pickTarget, hold: 600, act: 'go', dis: 1 };
     } else if (t === 'robber') {
       V.band = pre + TB.robber + ' ' + TB.robberSub; pickP(); V.alt = { t: TBT.noSteal, act: 'skip' };
       V.btn = { lbl: TBT.steal, nm, hold: 600, act: 'go', dis: !sel.length };
@@ -431,7 +419,8 @@
   // ---------- HUD · 타이머 ----------
   function paintHud(V) {
     const sg = $('.hud-sign');
-    if (sg._c !== S.code) { sg._c = S.code; sg.textContent = S.code; sg.setAttribute('aria-label', TH.sign + ' ' + S.code); }
+    const rs = S.phase === 'result', k = S.code + rs;
+    if (sg._c !== k) { sg._c = k; sg.innerHTML = (rs ? '<small>' + esc(TB.roomCodeLbl) + '</small>' : '') + esc(S.code); sg.setAttribute('aria-label', TH.sign + ' ' + S.code); }
     set($('.hud-phase'), 'textContent', body.dataset.replay ? T.replay.ui.hudCenter : V.hudPhase);
   }
   function deadline(mode) {
@@ -485,16 +474,19 @@
     geo.q = requestAnimationFrame(() => { geo.q = 0; const o = gk(); measure(); if (o !== gk()) relayout(); });
   }
   function placeSeats() {
-    const st = $('#stage'), N = ui.ids.length, rp = body.dataset.replay ? 96 : 0;   // 리플레이 자막 띠만큼 탁자를 위로 올린다
+    const st = $('#stage'), N = ui.ids.length, rp = body.dataset.replay ? (desk() ? 72 : 96) : 0;   // 리플레이 자막 띠만큼 탁자를 위로 올린다
     if (!geo.h) measure();
     const ds = $('.day-seen'), bot = ds && !ds.hidden ? ds.offsetHeight + 4 : 0;   // 낮 한 줄이 아래 좌석 이름을 덮지 않게 그만큼 탁자를 올린다
     const H = geo.h - rp - bot, tk = geo.tk, sh = geo.sh, al = $('.altar'), on = !!al && !al.hidden;
     const rx = Math.max(60, geo.w / 2 - Math.max(40, tk / 2 + 24)), ry = Math.max(60, Math.min(H / 2 - 64, H / 2 - (sh - tk / 2) - 12, H / 2 - tk / 2 - 28));   // 토큰 중심이 기준점. 위 28px 는 .night-track 자리
-    const seatIn = rx - tk / 2 - 6 - geo.cw - 8, tight = on && !!geo.ah && (ry < geo.ah / 2 + sh / 2 + 8 || geo.aw / 2 > seatIn);   // 세로 · 가로로 탁자 가운데 카드가 좌석 카드를 덮으면 촘촘 모드
+    const ang = (i) => Math.PI / 2 + 2 * Math.PI * ((i - ui.me + N) % N) / N, aw = geo.aw / 2, ah = geo.ah / 2;
+    let hit = 0;
+    if (on && geo.ah) for (let i = 0; i < N && !hit; i++) { const x = rx * Math.cos(ang(i)), y = ry * Math.sin(ang(i)); hit = x - 42 < aw && x + 42 > -aw && y + sh > -ah && y - tk / 2 < ah; }   // 좌석 칸이 탁자 가운데 카드와 실제로 겹치면 촘촘 모드
+    const seatIn = rx - tk / 2 - 6 - geo.cw - 8, tight = on && !!geo.ah && (hit || ry < geo.ah / 2 + sh / 2 + 8 || geo.aw / 2 > seatIn);   // 세로 · 가로로 탁자 가운데 카드가 좌석 카드를 덮으면 촘촘 모드
     st.style.setProperty('--cy', (-(rp + bot) / 2) + 'px');
     if (tight !== (st.dataset.tight === '1')) { if (tight) st.dataset.tight = '1'; else delete st.dataset.tight; }
     ui.pts = ui.ids.map((id, i) => {
-      const th = Math.PI / 2 + 2 * Math.PI * ((i - ui.me + N) % N) / N;
+      const th = ang(i);
       return { x: Math.round(rx * Math.cos(th)), y: Math.round(ry * Math.sin(th)) - (rp + bot) / 2 };
     });
     ui.ids.forEach((id, i) => { const s = ui.seats[id]; if (s) { s.style.setProperty('--x', ui.pts[i].x + 'px'); s.style.setProperty('--y', ui.pts[i].y + 'px'); s.dataset.side = ui.pts[i].x > 8 ? 'r' : 'l'; } });
@@ -538,7 +530,7 @@
       const m = $('.seat-mark', el);
       if (mk) { m.dataset.k = mk[0]; set(m, 'textContent', mk[1]); }
       else if (res && p.votes > 0) { m.dataset.k = 'votes'; set(m, 'textContent', TB.cols.votes + ' ' + p.votes); }
-      else if (f['is-ready']) { m.dataset.k = 'ready'; set(m, 'textContent', TB.readyMark || '준비 완료'); }
+      else if (f['is-ready']) { m.dataset.k = 'ready'; set(m, 'textContent', TB.readyMark); }
       else { delete m.dataset.k; set(m, 'textContent', ''); }
       const ck = seatCard(p, mode);
       if (el._ck !== ck) {
@@ -666,9 +658,10 @@
       if (!ROLES[r.role] || (r.at === 'p' && r.id === S.me)) return;
       oth.push(fmt(TB.seenOther, { w: whoOf({ k: r.at, id: r.id, idx: r.idx }), r: ROLES[r.role].name }));
     }));
-    const tx = [l && fmt(TB.seenLine, { t: ROLES[l.role].name })].concat(oth.slice(0, 2), oth.length > 2 ? fmt(TB.seenMore, { n: oth.length - 2 }) : [], V.mode === 'day' && ui.swapHint && TB.daySwapHint).filter(Boolean).join(' · ');
-    const was = sn.hidden; set(sn, 'textContent', tx); sn.hidden = !tx;
-    if (was !== sn.hidden) requestAnimationFrame(() => { measure(); relayout(); });
+    const tx = [l && fmt(TB.seenLine, { t: ROLES[l.role].name })].concat(oth.slice(0, 2), oth.length > 2 ? fmt(TB.seenMore, { n: oth.length - 2 }) : []).filter(Boolean).join(' · ');
+    const hint = V.mode === 'day' && ui.swapHint && TB.daySwapHint, h = esc(tx) + (hint ? '<span class="ds-h">' + esc(hint) + '</span>' : '');   // 밤에 본 것은 그대로, 안내문은 따로 한 줄 (잘리면 안내문이 잘린다)
+    const was = sn.hidden, ch = (sn._h || '') !== h; if (ch) { sn._h = h; sn.innerHTML = h; } sn.hidden = !h;
+    if (ch || was !== sn.hidden) requestAnimationFrame(() => { measure(); relayout(); });
   }
   const unknown = () => !!(ui.unk || (S.myCard === 'drunk' && (S.myLog || []).length));
   const isPeeked = () => LS.get('hb.peeked') === '1';
@@ -705,9 +698,9 @@
     if (b.hold) { btn.dataset.hold = b.hold; if (V.mode !== 'vote') btn.dataset.cap = $('#hold-hint').textContent; else delete btn.dataset.cap; btn.setAttribute('aria-describedby', 'hold-hint'); } else { delete btn.dataset.hold; delete btn.dataset.cap; btn.removeAttribute('aria-describedby'); }
     btn.setAttribute('aria-disabled', b.dis || off ? 'true' : 'false');
     if (!press || press.el !== btn) btn.classList.remove('is-holding');
-    set($('.bd', bdg), 'textContent', V.badge || (ui.unread > 0 ? String(ui.unread) : ''));
+    set($('.bd', bdg), 'textContent', ui.unread > 0 ? String(ui.unread) : '');
     bdg.classList.toggle('is-new', !ui.unread && !!ui.logNew);
-    bdg.setAttribute('aria-label', chatOff ? T.chat.log : T.chat.log + ' / ' + T.chat.title); bdg.setAttribute('aria-disabled', S.phase === 'night' ? 'true' : 'false');
+    bdg.setAttribute('aria-label', S.phase === 'night' ? T.chat.locked : chatOff ? T.chat.log : T.chat.log + ' / ' + T.chat.title); bdg.setAttribute('aria-disabled', S.phase === 'night' ? 'true' : 'false');
   }
 
   // ---------- 시트 (속삭임 · 기록 · 이번 밤의 패) ----------
@@ -775,9 +768,10 @@
     const sb = $('.sheet-body'), go = () => { if (sb && chatShown() && ui.stick) sb.scrollTop = sb.scrollHeight; };
     go(); requestAnimationFrame(go); clearTimeout(toEnd.t); toEnd.t = setTimeout(go, 380);
   }
+  const cq = (c) => '.msg[data-cid="' + CSS.escape(c) + '"]';
   function chatSend(t, re, cid) {   // 보낸 즉시 흐린 줄로 보이고, 서버가 되돌려 준 같은 글이 오면 바뀐다. 실패하면 다시 보내기 버튼 (입력창은 건드리지 않는다)
     const log = $('#chatLog'); if (!log || !S) return;
-    let p = $('.msg[data-cid="' + cid + '"]', log);
+    let p = $(cq(cid), log);
     if (!p) {
       p = D.createElement('p'); Object.assign(p.dataset, { cid, t, sys: '0' }); if (re) p.dataset.re = re;
       p.innerHTML = '<b class="msg-n nm">' + esc(pname(S.me)) + '</b><span class="msg-t">' + esc(t) + '</span>'; log.appendChild(p); ui.stick = 1; toEnd();
@@ -796,11 +790,9 @@
     const q = m.re ? '<span class="msg-q" data-re="' + (+m.re.mid || 0) + '" role="button" tabindex="0" aria-label="' + esc(fmt(T.chat.jump, { n: m.re.name })) + '"><b class="nm">' + esc(m.re.name) + '</b> ' + esc(m.re.t) + '</span>' : '';
     p.innerHTML = m.system ? '<span class="msg-t">' + esc(m.text) + '</span>' : '<b class="msg-n nm">' + esc(m.name) + '</b>' + q + '<span class="msg-t">' + esc(m.text) + '</span>';
     const mine = S && m.id === S.me;
-    if (m.kind === 'end') { p.dataset.kind = 'end'; if (body.dataset.replay) p.hidden = true; }   // 결말 줄은 리플레이가 끝날 때까지 가린다 (스포일러)
+    if (m.kind === 'end') { p.dataset.kind = 'end'; if (body.dataset.replay || (S && S.phase === 'result' && R && R.night && !LS.get('result:' + R.gameId))) p.hidden = true; }   // 결말 줄은 리플레이가 끝날 때까지 가린다 (스포일러). 아직 보지 않은 자동 재생 직전도 포함
     if (mine && !m.system) {
-      let q = m.cid && $('.msg[data-cid="' + m.cid + '"]', log);
-      if (!q) q = $$('.msg[data-cid]', log).find((x) => x.dataset.t === m.text);
-      if (q) q.remove();
+      const q = m.cid && $(cq(m.cid), log); if (q) q.remove();
     }   // 내가 보낸 글이 돌아왔다: 임시 줄을 걷는다
     if (!chatShown() || mine) ui.stick = 1;   // 닫혀 있는 동안 온 메시지 · 내가 쓴 메시지는 항상 맨 아래로
     log.appendChild(p);
@@ -832,13 +824,7 @@
     if (ck !== ui.ck) { ui.ck = ck; if (ck) { if (ui.stick) toEnd(); else $('.sheet-body').scrollTop = ui.chatTop; } }
     if (night && ui.h && !desk()) setSheet(0);
     sh.setAttribute('aria-hidden', ui.h || desk() ? 'false' : 'true');
-    if (ui.h || desk()) { if (ui.tab === 'log') paintLog(); else if (ui.tab === 'deck') { if (resState === 2) W.RESULT.deck(); else loadResult(); } }
-  }
-  function paintLog() {
-    const p = $('.pane[data-p=log]'), items = S.myLog || [];
-    patch(p, items.length ? '<ul class="log-list" style="list-style:none;margin:0;padding:0">' + items.map((it) => '<li class="log-item"><div class="secret" data-peek="log"><div class="secret-in">' +
-      (it.reveal || []).map((r) => '<span class="log-c">' + ART.card(r.role, { size: 'xs', face: 1 }) + '</span>').join('') + '<span class="log-t">' + esc(it.text) + '</span></div><span class="secret-lbl">' + esc(TB.blurHint) + '</span></div></li>').join('') + '</ul>'
-      : '<p class="log-none">' + esc(TB.seenNothing) + '</p>');
+    if (ui.h || desk()) { if (ui.tab === 'log') rr('log'); else if (ui.tab === 'deck') { if (resState === 2) W.RESULT.deck(); else loadResult(); } }
   }
   // ---------- 모달 · 메뉴 · 법도 ----------
   function openModal(inner, cls, label) {
@@ -885,7 +871,7 @@
   function bootTick() {
     if (sock.connected) { ui.bootOn = 0; return; }
     const s = Math.floor((Date.now() - ui.bootT0) / 1000);
-    $('#homeBoot').textContent = fmt(TB.coldWake, { s }); $('#homeBootSub').hidden = s < 15;
+    $('#homeBoot').textContent = fmt(TB.coldWake, { s }); $('#homeBootSub').hidden = s < 3;
     setTimeout(bootTick, 1000);
   }
   function poll(i) {
@@ -918,7 +904,8 @@
     try { p.el.releasePointerCapture(p.id); } catch (e) { /* 무시 */ }
   }
   function holdStart(el, id) {
-    if (el.getAttribute('aria-disabled') === 'true' || !online()) return;
+    if (!online()) return toast(TB.ackFail, 'danger');
+    if (el.getAttribute('aria-disabled') === 'true') return;
     el.classList.add('is-holding');
     press = { kind: 'hold', el, id, t: setTimeout(() => {
       press = null; el.classList.remove('is-holding'); el.classList.add('is-full');
@@ -982,7 +969,7 @@
   }
   D.addEventListener('visibilitychange', () => {
     body.classList.toggle('paused', D.hidden);
-    if (D.hidden) pressEnd(); else { if (!sock.connected) { if (!ui.replaced) sock.connect(); } else stale(); if (wlWant) wake(true); vp(); if (chatShown() && ui.stick) toEnd(); sched(); }
+    if (D.hidden) { pressEnd(); fx('heartbeat', 0); } else { ui.hb = -1; if (!sock.connected) { if (!ui.replaced) sock.connect(); } else stale(); if (wlWant) wake(true); vp(); if (chatShown() && ui.stick) toEnd(); sched(); }
   });
   W.addEventListener('online', () => { if (!sock.connected) { if (!ui.replaced) sock.connect(); } else stale(); });
 
@@ -1129,7 +1116,7 @@
   let swReg = null;
   function applyUpdate() { if (ui.upd && !S && swReg && swReg.waiting) swReg.waiting.postMessage('skip'); }
   function initSW() {
-    if (!('serviceWorker' in navigator)) return;
+    if (!('serviceWorker' in navigator) || root.dataset.net === 'slow' || (navigator.connection || {}).saveData) return;   // 느린 망 · 데이터 절약에서는 서비스 워커를 깔지 않는다
     const had = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('message', (e) => {
       if (e.data && e.data.t === 'hb-update') { ui.upd = 1; if (!S || S.phase === 'lobby' || S.phase === 'result') toast(TB.newVersion); applyUpdate(); }

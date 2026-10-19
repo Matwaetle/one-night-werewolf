@@ -3,7 +3,7 @@
 'use strict';
 let T = root.T, RL = root.ROLES, TEAM = root.WW && root.WW.TEAM_NAME;
 if (typeof window === 'undefined') { T = require('../strings.js'); const r = require('../roles.js'); RL = r.ROLES; TEAM = r.TEAM_NAME; }
-const RP = T.replay, UI = Object.assign({ result: '결과 보기' }, RP.ui, RP.uiR), AL = T.altar, CSS = '__REPLAY_CSS__', fm = T.fmt, esc = T.esc;
+const RP = T.replay, UI = Object.assign({}, RP.ui, RP.uiR), AL = T.altar, CSS = '__REPLAY_CSS__', fm = T.fmt, esc = T.esc;
 const WAKE = { werewolf: 1, minion: 1, mason: 1, insomniac: 1 }, SLEEP = { villager: 1, hunter: 1, tanner: 1 };
 const DAY = { dawn: 1, seat: 1, vote: 1, exec: 1, nodeath: 1, hunt: 1, verdict: 1 }, JUDGE = { vote: 1, exec: 1, nodeath: 1, hunt: 1, verdict: 1 };
 const GA = { seat: 'dawn', exec: 'vote', nodeath: 'vote', hunt: 'vote' }, rn = (r) => RL[r].name;
@@ -99,7 +99,7 @@ function build(R, meId) {
 
   const sw = []; for (let i = 0; i < n + 3; i++) if (E[i] !== i) sw.push(i);
   add('dawn', { pre: E, sw, l1: RP.dawn.top, l2: sw.length ? fm(RP.dawn.bot, { n: sw.length, list: join(sw.map((x) => x < n ? nm(x) : { t: AL[x - n], h: esc(AL[x - n]) })) }) : ev.some((e) => (e.mv || []).length) ? RP.self.noneButMoved || RP.dawn.botNone : RP.dawn.botNone, floor: 2000 });
-  P.forEach((p, i) => { if (E[i] !== i || p.original !== p.effective) add('seat', { pre: E, s: i, rel: [i], l1: fm(RP.dawn.seat.top, { a: i === me ? RP.you : nm(i), to: cc(E[i]) }), l2: fm(RL[eff(i)].team === p.team ? RP.dawn.seat.botSame : RP.dawn.seat.bot, { from: cc(i), team: TEAM[p.team] }) }); });
+  P.forEach((p, i) => { if (E[i] !== i || p.original !== p.effective) add('seat', { pre: E, s: i, rel: [i], l1: fm(RP.dawn.seat.top, { a: i === me ? RP.you : nm(i), to: cc(E[i]), from: cc(i) }), l2: fm(RL[eff(i)].team === p.team ? RP.dawn.seat.botSame : RP.dawn.seat.bot, { from: cc(i), team: TEAM[p.team] }) }); });
 
   const vc = {}, ab = [];
   P.forEach((p, s) => { const t = P.findIndex((q) => q.id === p.vote); if (t < 0) ab.push(s); else (vc[t] = vc[t] || []).push(s); });
@@ -259,9 +259,9 @@ function scene(i, k) {
   });
   const tagsOn = night || a === 'pro' || a === 'dawn' ? k : 1;
   S.tags.forEach((tg, q) => {
-    const rv = tagsOn && (!night || rel.includes(q)), sh = (q < n ? a !== 'pro' || k : rv) && a !== 'verdict', nx = q < n && S.R.players[q].name;
+    const rv = tagsOn && (!night || rel.includes(q)), sh = (q < n || rv) && a !== 'verdict', nx = q < n && S.R.players[q].name;
     cls(tg, 'is-on', sh); cls(tg, 'rp-dim', rel && rel.indexOf(q) < 0); cls(tg, 'is-dead', dead[q]);
-    if (sh) { let h; if (q < n) { const cu = i < S.cdone || i === S.cdone && !act ? rn(S.R.night.deal[pos[q]]) : S.B.cardName(pos[q]), ar = rv && night && b.by.includes(q) ? rn(S.R.players[q].original) : cu; h = '<i>' + esc(nx) + '</i>' + (rv ? '<b>' + esc(ar) + '</b>' + (ar !== cu ? '<u>' + fm(UI.nowCard || '지금 카드 ${r}', { r: esc(cu) }) + '</u>' : '') : ''); } else h = '<i>' + esc(UI.altarShort[q - n]) + '</i>'; if (tg._h !== h) { tg._h = h; tg.innerHTML = h; } }
+    if (sh) { let h; if (q < n) { const cu = i < S.cdone || i === S.cdone && !act ? rn(S.R.night.deal[pos[q]]) : S.B.cardName(pos[q]), ar = rv && night && b.by.includes(q) ? rn(S.R.players[q].original) : cu; h = '<i>' + esc(nx) + '</i>' + (rv ? '<b>' + esc(ar) + '</b>' + (ar !== cu ? '<u>' + fm(UI.nowCard, { r: esc(cu) }) + '</u>' : '') : ''); } else h = '<i>' + esc(UI.altarShort[q - n]) + '</i>'; if (tg._h !== h) { tg._h = h; tg.innerHTML = h; } }
     if (q < n) { const rg = S.rings[q], ir = ring.includes(q); cls(rg, 'is-on', ir); cls(rg, 'is-eye', ir && b.dark); }
   });
   const votes = {};
@@ -300,7 +300,7 @@ function scene(i, k) {
 const capTxt = (b) => { const c = S.cap; c.l1.firstChild.innerHTML = b.l1; c.l2.firstChild.innerHTML = b.l2; c.l3.firstChild.innerHTML = b.l3n || ''; };
 const hs = (v) => [S.cap.l1, S.cap.l2, S.cap.l3].forEach((e) => cls(e, 'is-h', v));
 function capGo(b) {
-  hs(0); if (!b.stamp) S.cap.st.textContent = ''; cls(S.cap.st, 'is-on', b.stamp);
+  S.tm.push(setTimeout(hs, S.i ? 280 / S.rate : 0, 0)); if (!b.stamp) S.cap.st.textContent = ''; cls(S.cap.st, 'is-on', b.stamp);
   const e = $('sr'); if (e) e.textContent = (b.l1 + ' ' + b.l2 + ' ' + (b.l3n || '') + ' ' + (b.l3 || '')).replace(/<[^>]*>/g, '');
   if (S.first) S.tapAt = Date.now() + 1400;
 }
@@ -311,8 +311,8 @@ const snd = (m, v) => { const N = root.SND; if (N && N.ctx && N[m]) { try { N[m]
 const duck = (db) => { const N = root.SND; if (N && N.ctx && N.duck) { try { N.duck('rp', db); } catch (e) {} } };
 async function play(i) {
   if (!S || !S.rdy) return;
-  const my = ++S.tok, B = S.B.beats, b = B[i], a = b.act, F = root.FX, sq = S.i >= 0 && i === S.i + 1, f0 = () => { scene(i, 0); hs(1); };
-  stop(); S.i = i; const p0 = sq ? f0() : nt(f0); ui(); if (a !== 'pro') capGo(b);
+  const my = ++S.tok, B = S.B.beats, b = B[i], a = b.act, F = root.FX, sq = S.i >= 0 && i === S.i + 1, f0 = () => { scene(i, 0); hs(a !== 'pro'); };
+  stop(); S.i = i; const p0 = sq ? f0() : nt(f0); ui(); capGo(b);
   await p0; if (!S || my !== S.tok) return;
   if (a === 'pro') {
     if (!S.lite) {
@@ -321,7 +321,6 @@ async function play(i) {
       await wait(120 * S.wave.length + 400);
     }
     await nt(() => scene(i, 1)); if (!S || my !== S.tok) return;
-    capGo(b);
   } else {
     if (a === 'vote' && S.late && root.ART) { root.ART.want(S.late); S.late = 0; }   // 심판 장면의 큰 카드를 투표 장면 동안 미리 받는다
     if (b.mv || b.dark) await wait(400);

@@ -33,15 +33,14 @@
     return /^(\/|https?:|data:|blob:)/.test(v) ? v : ART.base + v;
   }
   function attr(k) { return docEl && docEl.getAttribute(k); }
-  function isSmall() { return attr('data-perf') === 'lite' || attr('data-net') === 'slow'; }
   function isSlow() { return attr('data-net') === 'slow'; }
 
-  // 역할 큰 아트 URL (lite/slow면 360px 판 우선)
-  // lite=true(선로딩)만 작은 아트를 쓴다. 내 카드·공개 카드는 느린 망에서도 큰 아트(약 28KB)
+  // 역할 큰 아트 URL. 작은 판은 선로딩(lite=true)이면서 망이 느릴 때만 (data-perf=lite 는 에셋을 줄이지 않는다).
+  // 내 카드·공개 카드는 느린 망에서도 큰 아트(약 28KB)
   function roleUrl(id, lite) {
     var m = ART.manifest || {};
     var bg = m.art || m.big, big = bg && bg[id], sm = m.lite && m.lite[id];
-    return url(lite && isSmall() ? (sm || big) : (big || sm));
+    return url(lite && isSlow() ? (sm || big) : (big || sm));
   }
   function rurl(id) { return urls['r:' + id] || roleUrl(id); }   // 실제로 받은 주소 우선
   function staticUrl(name) {
@@ -86,7 +85,7 @@
     var fin = false, rel = false;
     var release = function () { if (rel) return; rel = true; active--; if (job.x) xtra = 0; };
     // 시간 초과: 받던 이미지는 끊지 않는다. 슬롯만 돌려주고 기다리는 쪽에는 실패로 알린다(pending-late)
-    var to = setTimeout(function () { if (fin) return; late[job.key] = 1; release(); job.resolve(false); pump(); }, 12000);
+    var to = setTimeout(function () { if (fin) return; late[job.key] = 1; release(); delete pending[job.key]; job.resolve(false); pump(); }, 12000);
     var finish = function (ok) {
       if (fin) return;
       fin = true; clearTimeout(to); release(); delete late[job.key];
@@ -200,7 +199,7 @@
     (Array.isArray(ids) ? ids : [ids]).slice().reverse().forEach(function (id) {
       var u = roleUrl(id), k = 'r:' + id;
       if (!u) return;
-      if (done[k] === true && urls[k] && urls[k] !== u && !asked[u] && !isSlow()) {
+      if (done[k] === true && urls[k] && urls[k] !== u && !asked[u] && !pending['u:' + id] && !isSlow()) {
         load('u:' + id, u, front).then(function (ok) {
           if (!ok) return;
           urls[k] = u;

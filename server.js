@@ -38,6 +38,7 @@ const ACT_NOW = ['seer', 'robber', 'troublemaker', 'drunk'];
 // 테스트 전용 훅: 방장 id -> 정해진 배분(역할 배열). 소켓으로는 닿지 않는다.
 const _test = { deals: new Map() };
 
+const sidOf = (pid) => crypto.createHash('sha256').update(pid).digest('base64url').slice(0, 12);
 const obj = (d) => (d && typeof d === 'object' && !Array.isArray(d) ? d : {});
 process.on('uncaughtException', (e) => console.error('[uncaught]', e));
 process.on('unhandledRejection', (e) => console.error('[unhandled]', e));
@@ -49,7 +50,7 @@ const io = new Server(server, {
   cors: { origin: [process.env.STATIC_ORIGIN].filter(Boolean) },
   pingInterval: 10000,   // 끊긴 소켓을 18초 안에 알아챈다 (모바일 셀 전환)
   pingTimeout: 8000,
-  perMessageDeflate: false,
+  perMessageDeflate: { threshold: 1024 },
   maxHttpBufferSize: 16 * 1024,
   connectionStateRecovery: { maxDisconnectionDuration: 120000 },
 });
@@ -65,6 +66,7 @@ const MIME = {
   woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf', webmanifest: 'application/manifest+json',
 };
 const TEXT_EXT = new Set(['html', 'js', 'mjs', 'css', 'json', 'svg', 'txt', 'map', 'xml', 'webmanifest']);
+let DEPLOY_VER = '';
 let ASSETS = null; // Map<string path, {type, raw, br, gz, etag, immutable}>
 
 function installAssets(out) {
@@ -95,6 +97,7 @@ function installAssets(out) {
   }
   if (!map.has('index.html')) return false;
   ASSETS = map;
+  if (typeof out.ver === 'string') DEPLOY_VER = out.ver;
   return true;
 }
 
@@ -888,6 +891,7 @@ function backToLobby(room) {
 
 // ---------- 소켓 ----------
 io.on('connection', (socket) => {
+  { const v = socket.handshake && socket.handshake.auth && socket.handshake.auth.v; if (DEPLOY_VER && typeof v === 'string' && v && v !== DEPLOY_VER) socket.emit('outdated'); }
   const ctx = () => {
     const room = rooms.get(socket.data.code);
     const pid = socket.data.pid;
@@ -959,6 +963,7 @@ io.on('connection', (socket) => {
     name = cleanName(name);
     if (!name) return reply(cb, { ok: false, error: M('needName') });
     if (typeof playerId !== 'string' || !playerId || playerId.length > 64) return reply(cb, { ok: false, error: M('badRequest') });
+    playerId = sidOf(playerId); // 이후 모든 id 는 공개용 sid (원본 playerId 는 보관·전송하지 않는다)
     // 재시도 멱등: 방금 이 사람이 만든 방이 있으면 같은 방을 돌려준다
     const prev = rooms.get(socket.data.code);
     if (prev && socket.data.pid === playerId && prev.hostId === playerId && prev.phase === 'lobby'
@@ -987,6 +992,7 @@ io.on('connection', (socket) => {
     const room = typeof code === 'string' ? rooms.get(code.toUpperCase().trim()) : null;
     if (!room) return reply(cb, { ok: false, error: M('noTown') });
     if (typeof playerId !== 'string' || !playerId || playerId.length > 64) return reply(cb, { ok: false, error: M('badRequest') });
+    playerId = sidOf(playerId); // 이후 모든 id 는 공개용 sid (원본 playerId 는 보관·전송하지 않는다)
 
     if (room.players.has(playerId)) {
       // 재접속

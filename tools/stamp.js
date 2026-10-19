@@ -315,10 +315,10 @@ function build(opts = {}) {
 
   /* 5. sw.js */
   if (swRaw != null) {
-    const pre = ['/'];
+    const pre = [];
     // audio.js 는 precache 하지 않는다 (FEATURES_SPEC 0.3)
     for (const n of [GAME_JS, GAME_CSS, FX_JS, SIO, FONT_T, FONT_D, FONT_S, REPLAY_JS, CHATX_JS, RESULT_JS]) if (n) pre.push('/a/' + n);
-    for (const k of ['back', 'atlas', 'grain', 'horizon']) if (typeof manifest[k] === 'string') pre.push(manifest[k]);
+    // 이미지(back, atlas, grain, horizon, verdict...)는 precache 하지 않는다 - /a/ cache-first 가 런타임에 채운다
     const sw = swRaw.split('__VER__').join(ver).split('__PRECACHE__').join(JSON.stringify(pre));
     put('/sw.js', sw, 'no-cache');
   }
