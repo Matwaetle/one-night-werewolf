@@ -1,0 +1,20 @@
+{
+  "name": "one-night-werewolf-online",
+  "version": "1.0.0",
+  "description": "한밤의 늑대인간 온라인 - 웹 브라우저로 즐기는 멀티플레이어 게임",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/sim.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1"
+  }
+}

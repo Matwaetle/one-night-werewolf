@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>한밤의 늑대인간 온라인</title>
+  <meta name="description" content="친구들과 브라우저로 즐기는 한밤의 늑대인간">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐺</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#070914">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <div class="sky"></div>
+    <div class="stars"></div>
+    <div class="shooting"></div>
+    <div class="moon"><span class="crater c1"></span><span class="crater c2"></span><span class="crater c3"></span></div>
+    <div class="sun"></div>
+    <div class="clouds"></div>
+    <div class="land back"></div>
+    <div class="fog f1"></div>
+    <div class="land front"></div>
+    <div class="land windows"></div>
+    <div class="eyes e1"><i></i><i></i></div>
+    <div class="eyes e2"><i></i><i></i></div>
+    <div class="fog f2"></div>
+    <div class="vignette"></div>
+  </div>
+  <div id="app">
+    <header id="topbar" hidden>
+      <div class="brand"><span class="crescent">☾</span>한밤의 늑대인간</div>
+      <div class="top-actions">
+        <span id="roomTag" class="room-tag"></span>
+        <button class="icon-btn" data-act="toggleVoice" id="voiceBtn" title="밤 나레이션 음성">🔈</button>
+        <button class="icon-btn" data-act="guide" title="역할 설명">📖</button>
+        <button class="icon-btn" data-act="leave" title="방 나가기">🚪</button>
+      </div>
+    </header>
+    <div id="layout">
+      <main id="main"></main>
+      <aside id="chat" hidden>
+        <div class="chat-head">💬 채팅</div>
+        <div id="chatLog"></div>
+        <form id="chatForm" autocomplete="off">
+          <input id="chatInput" maxlength="300" placeholder="메시지 입력…">
+          <button type="submit">전송</button>
+        </form>
+      </aside>
+    </div>
+  </div>
+  <button id="chatFab" data-act="toChat" hidden title="채팅으로 이동">💬</button>
+  <div id="modal" hidden></div>
+  <div id="toast" hidden></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="roles.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
