@@ -760,7 +760,8 @@
       if (b.dataset.tab === ui.tab && ui.h > 0) setSheet(ui.h === 1 ? 2 : 1); else { ui.tab = b.dataset.tab; ui.deckTop = 1; if (!ui.h) setSheet(1); sched(); }
     });
     [head, grip].forEach((el) => {   // 위로 밀면 펼치고, 아래로 밀면 줄인다. 손잡이는 한 번에 닫는다
-      el.addEventListener('pointerdown', (e) => { y0 = e.clientY; try { el.setPointerCapture(e.pointerId); } catch (x) { /* 무시 */ } });
+      // 탭 줄(head)은 붙잡지 않는다: 붙잡으면 click 대상이 head가 되어 탭 버튼을 못 찾는다
+      el.addEventListener('pointerdown', (e) => { y0 = e.clientY; if (el === grip) try { el.setPointerCapture(e.pointerId); } catch (x) { /* 무시 */ } });
       el.addEventListener('pointerup', (e) => {
         if (y0 === null) return; const dy = e.clientY - y0; y0 = null;
         if (dy < -24) setSheet(2); else if (dy > 24) setSheet(el === grip ? 0 : Math.max(0, ui.h - 1));
