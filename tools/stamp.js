@@ -123,7 +123,28 @@ function build(opts = {}) {
 
   /* 1. game.js */
   const joinJs = (list) => list.filter((s) => s != null).map((s) => s.replace(/\s+$/, '') + '\n').join(';\n');
-  const gameJs = joinJs([rd('strings.js', true), rd('roles.js', true), rd('js/art.js'), rd('js/app.js')]);
+  // strings.js 표식 처리 (FEATURES_SPEC 0.2). 표식이 없으면 아무것도 하지 않는다.
+  const stripClient = (src) => {
+    const keep = [], rp = [], cx = [];
+    let mode = '';
+    for (const ln of src.split('\n')) {
+      const m = ln.match(/^\s*\/\/ @client:(drop|replay|chatx)-(start|end)\s*$/);
+      if (m) {
+        if (m[2] === 'start') { if (mode) throw new Error('strings.js 표식 중첩: ' + ln.trim()); mode = m[1]; }
+        else { if (mode !== m[1]) throw new Error('strings.js 표식 짝 불일치: ' + ln.trim()); mode = ''; }
+        continue;
+      }
+      if (mode === 'drop') continue;
+      if (mode === 'replay') { rp.push(ln); continue; }
+      if (mode === 'chatx') { cx.push(ln); continue; }
+      keep.push(ln);
+    }
+    if (mode) throw new Error('strings.js 표식이 닫히지 않았다: ' + mode);
+    return { game: keep.join('\n'), replay: rp.join('\n').trim(), chatx: cx.join('\n').trim() };
+  };
+  const strRaw = rd('strings.js', true), sc = stripClient(strRaw);
+  const gameJs = joinJs([sc.game, rd('roles.js', true), rd('js/art.js'), rd('js/app.js')]);
+  if (sc.game !== strRaw) { try { new Function(gameJs); } catch (e) { throw new Error('game.js 구문 오류(strings.js 표식 처리 뒤): ' + e.message); } }
   const GAME_JS = hashed('game', '.js', minJs(gameJs, 'game'));
 
   /* 2. game.css */
@@ -140,9 +161,23 @@ function build(opts = {}) {
     const lit = JSON.stringify(css != null ? minCss(css) : '');
     // '__REPLAY_CSS__' / "__REPLAY_CSS__" 는 따옴표째, 맨몸 토큰은 그대로 치환
     let js = rpSrc.replace(/(["'`])__REPLAY_CSS__\1|__REPLAY_CSS__/g, () => lit);
+    // game.js 에서 옮겨 온 T.replay 문자열(@client:replay 구간)을 맨 앞에서 합친다. 소스(Node 테스트)는 건드리지 않는다.
+    if (sc.replay) js = 'Object.assign(window.T.replay,{' + sc.replay + '\n});\n' + js;
     // 템플릿 문자열 안의 ${...} 와 충돌하지 않도록 JSON 리터럴만 넣는다
     REPLAY_JS = hashed('replay', '.js', minJs(js, 'replay'));
   }
+  // chatx.js(+css) — replay 와 같은 방식
+  let CHATX_JS = '', AUDIO_JS = '';
+  const cxSrc = rd('js/chatx.js');
+  if (cxSrc != null) {
+    const css = rd('css/chatx.css');
+    const lit = JSON.stringify(css != null ? minCss(css) : '');
+    let cjs = cxSrc.replace(/(["'`])__CHATX_CSS__\1|__CHATX_CSS__/g, () => lit);
+    if (sc.chatx) cjs = 'Object.assign(window.T.chat,{' + sc.chatx + '\n});\n' + cjs;
+    CHATX_JS = hashed('chatx', '.js', minJs(cjs, 'chatx'));
+  }
+  const auSrc = rd('js/audio.js');
+  if (auSrc != null) AUDIO_JS = hashed('audio', '.js', minJs(auSrc, 'audio'));
   let SIO = '';
   const vdir = path.join(pub, 'vendor');
   const sioFile = fs.existsSync(vdir) ? fs.readdirSync(vdir).filter((f) => /^socket\.io\.[\d.]+\.min\.js$/.test(f)).sort().pop() : null;
@@ -233,6 +268,7 @@ function build(opts = {}) {
   fileTok('__FONT_T__', FONT_T); fileTok('__FONT_D__', FONT_D);
   fileTok('__GAME_JS__', GAME_JS); fileTok('__GAME_CSS__', GAME_CSS);
   fileTok('__FX_JS__', FX_JS); fileTok('__REPLAY_JS__', REPLAY_JS); fileTok('__SIO__', SIO);
+  fileTok('__CHATX_JS__', CHATX_JS); fileTok('__AUDIO_JS__', AUDIO_JS);
 
   const baseCss = rd('css/base.css');
   rawTok('__BASE_CSS__', baseCss != null ? minCss(baseCss) : '');
@@ -266,7 +302,7 @@ function build(opts = {}) {
   /* 5. sw.js */
   if (swRaw != null) {
     const pre = ['/'];
-    for (const n of [GAME_JS, GAME_CSS, FX_JS, SIO, FONT_T, FONT_D, REPLAY_JS]) if (n) pre.push('/a/' + n);
+    for (const n of [GAME_JS, GAME_CSS, FX_JS, SIO, FONT_T, FONT_D, REPLAY_JS, CHATX_JS, AUDIO_JS]) if (n) pre.push('/a/' + n);
     if (typeof manifest.back === 'string') pre.push(manifest.back);
     const sw = swRaw.split('__VER__').join(ver).split('__PRECACHE__').join(JSON.stringify(pre));
     put('/sw.js', sw, 'no-cache');
@@ -283,7 +319,7 @@ function build(opts = {}) {
       fs.writeFileSync(p, f.body);
     }
   }
-  return { ver, files, warnings, outDir, names: { GAME_JS, GAME_CSS, FX_JS, REPLAY_JS, SIO, FONT_T, FONT_D } };
+  return { ver, files, warnings, outDir, names: { GAME_JS, GAME_CSS, FX_JS, REPLAY_JS, CHATX_JS, AUDIO_JS, SIO, FONT_T, FONT_D } };
 }
 
 module.exports = { build, minCss };

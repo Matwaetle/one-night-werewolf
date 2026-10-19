@@ -23,6 +23,7 @@ const size = (n) => wire(path.join(aDir, n));
 
 const rows = [];
 let bad = false;
+const GAME_WARN = 23.8 * KB;   // FEATURES_SPEC 0.4: 경고선(WARN), 상한 24KB(FAIL)
 const row = (name, bytes, limit, note = '') => {
   const ok = bytes <= limit;
   if (!ok) bad = true;
@@ -62,20 +63,25 @@ const htmlBr = row('index.html', br(htmlBuf), 16 * KB);
   } else rows.push('SKIP   base.css (public/css/base.css 없음)');
 }
 
+const gameWarn = (f) => (size(f) > GAME_WARN ? 'WARN (>23.8KB: FEATURES_SPEC 0.4 컷 순서 확인)' : '');
+
 /* 크리티컬 패스 */
 const fT = need('hanbam-t 폰트', /^hanbam-t\.[0-9a-f]+\.woff2$/);
 const sio = need('socket.io 클라이언트', /^sio\.[0-9a-f]+\.js$/);
 const game = need('game.js', /^game\.[0-9a-f]+\.js$/);
 const tS = fT ? row('hanbam-t (제목 폰트)', size(fT), 10 * KB) : 0;
 const sS = sio ? row('sio (≈15KB, 상한 17KB)', size(sio), 17 * KB) : 0;
-const gS = game ? row('game.js', size(game), 24 * KB) : 0;
+const gS = game ? row('game.js', size(game), 24 * KB, gameWarn(game)) : 0;
 const critical = row('크리티컬 패스 합계 (html+font+sio+game)', htmlBr + tS + sS + gS, 75 * KB);
 
 /* 지연 로드 */
 const gc = need('game.css', /^game\.[0-9a-f]+\.css$/); if (gc) row('game.css', size(gc), 9 * KB);
 const fx = need('fx.js', /^fx\.[0-9a-f]+\.js$/); if (fx) row('fx.js', size(fx), 5 * KB);
 const fD = need('hanbam-d 폰트', /^hanbam-d\.[0-9a-f]+\.woff2$/); if (fD) row('hanbam-d (디스플레이 폰트)', size(fD), 30 * KB);
-const rp = opt('replay.js', /^replay\.[0-9a-f]+\.js$/); if (rp.length) row('replay.js (JS+CSS+문양)', size(rp[0]), 12.5 * KB);
+const rp = opt('replay.js', /^replay\.[0-9a-f]+\.js$/); if (rp.length) row('replay.js (JS+CSS+문양)', size(rp[0]), 15 * KB);
+
+const cx = opt('chatx.js (F1 답글)', /^chatx.[0-9a-f]+.js$/); if (cx.length) row('chatx.js (JS+CSS)', size(cx[0]), 2 * KB);
+const au = opt('audio.js (F3 음악)', /^audio.[0-9a-f]+.js$/); if (au.length) row('audio.js (기본 켜짐(작게), 첫 제스처 뒤 지연)', size(au[0]), 4 * KB);
 
 /* 이미지 */
 const imgRules = [
@@ -105,7 +111,7 @@ if (bonfire) row('모닥불 추가 (아틀라스+뒷면+지평선+그레인)', b
 
 /* 한 판 전체 (캐시 없음): 크리티컬 + 지연 + 키아트 + 모닥불 + 이번 덱의 큰 아트(가장 큰 것부터 최대 8장) */
 {
-  const later = [gc, fx, fD, rp[0]].filter(Boolean).reduce((s, f) => s + size(f), 0);
+  const later = [gc, fx, fD, rp[0], cx[0], au[0]].filter(Boolean).reduce((s, f) => s + size(f), 0);
   bigs.sort((a, b) => b - a);
   const deck = bigs.slice(0, 8).reduce((s, x) => s + x, 0);
   if (deck) row('idle 선로딩 (큰 아트 최대 8장)', deck, 400 * KB);

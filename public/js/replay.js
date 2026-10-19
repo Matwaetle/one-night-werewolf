@@ -3,7 +3,7 @@
 'use strict';
 let T = root.T, RL = root.ROLES, TEAM = root.WW && root.WW.TEAM_NAME;
 if (typeof window === 'undefined') { T = require('../strings.js'); const r = require('../roles.js'); RL = r.ROLES; TEAM = r.TEAM_NAME; }
-const RP = T.replay, UI = RP.ui, AL = T.altar, CSS = '__REPLAY_CSS__', fm = T.fmt, esc = T.esc;
+const RP = T.replay, UI = Object.assign({}, RP.ui, RP.uiR), AL = T.altar, CSS = '__REPLAY_CSS__', fm = T.fmt, esc = T.esc;
 const WAKE = { werewolf: 1, minion: 1, mason: 1, insomniac: 1 }, SLEEP = { villager: 1, hunter: 1, tanner: 1 };
 const DAY = { dawn: 1, seat: 1, vote: 1, exec: 1, nodeath: 1, hunt: 1, verdict: 1 }, JUDGE = { vote: 1, exec: 1, nodeath: 1, hunt: 1, verdict: 1 };
 const GA = { seat: 'dawn', exec: 'vote', nodeath: 'vote', hunt: 'vote' }, rn = (r) => RL[r].name;
@@ -175,26 +175,45 @@ const ico = (id, c) => '<svg' + (c ? ' class="' + c + '"' : '') + '><use href="#
 const card = (r, o) => root.ART ? root.ART.card(r, o) : '';
 const cls = (e, c, on) => e.classList.toggle(c, !!on);
 const wait = (ms) => new Promise((r) => S.tm.push(setTimeout(r, ms / S.rate)));
-const nt = (f) => { const r = S.rp; r.classList.add('rp-nt'); f(); void r.offsetWidth; r.classList.remove('rp-nt'); };
+const nt = (f) => new Promise((res) => { const r = S.rp; r.classList.add('rp-nt'); f(); requestAnimationFrame(() => requestAnimationFrame(() => { r.classList.remove('rp-nt'); res(); })); });
 const vset = (e, x, y, d) => { const c = '--tx:' + x + 'px;--ty:' + y + 'px' + (d ? ';width:' + d + 'px;height:' + d + 'px' : ''); if (e._c !== c) { e._c = c; e.style.cssText = c; } };
 
 function layout() {
-  const rc = S.rp.getBoundingClientRect(), capH = S.cap ? S.cap.el.offsetHeight + 44 + 16 : 110, W = rc.width, n = S.n, nar = innerWidth < 600, cs = nar ? 28 : 40, X = [], Y = [], SC = [], TX = [], TY = [], TG = [];
+  const rc = S.rp.getBoundingClientRect(), W = rc.width, n = S.n, nar = innerWidth < 600, X = [], Y = [], SC = [], TX = [], TY = [], TG = [], SD = [];
   const seats = [...S.main.querySelectorAll('.seat[data-pid]')];
+  S.fcw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cw-md')) || 128;
   S.R.players.forEach((p, i) => {
-    const tn = seats.find((e) => e.getAttribute('data-pid') === p.id).querySelector('.seat-token'), r = tn.getBoundingClientRect(), d = r.width, cx = r.left + d / 2 - rc.left, cy = r.top + r.height / 2 - rc.top;
-    SC[i] = cs / S.cw; TX[i] = cx; TY[i] = cy; S.TD[i] = d;
-    X[i] = nar ? cx + d * .2 + cs / 2 : cx; Y[i] = nar ? cy : cy + d / 2 + 2 + cs * .7; TG[i] = nar ? cy + d / 2 + 2 : Y[i] + cs * .7 + 2; if (TG[i] + 32 > rc.height - capH) TG[i] = cy - d / 2 - 34;
+    const se = seats.find((e) => e.getAttribute('data-pid') === p.id), r = se.querySelector('.seat-token').getBoundingClientRect(), d = r.width, cx = r.left + d / 2 - rc.left, cy = r.top + r.height / 2 - rc.top;
+    const sc = se.querySelector(':scope>.card:not(.is-original)'), sr = sc && sc.getBoundingClientRect(), cs = sr && sr.width ? sr.width : nar ? 26 : 40, side = se.dataset.side || (cx < W / 2 ? 'l' : 'r');
+    SD[i] = side; SC[i] = cs / S.cw; TX[i] = cx; TY[i] = cy; S.TD[i] = d;
+    if (sr && sr.width) { X[i] = sr.left + sr.width / 2 - rc.left; Y[i] = sr.top + sr.height / 2 - rc.top; }
+    else { X[i] = cx + (side === 'r' ? -1 : 1) * (d / 2 + 6 + cs / 2); Y[i] = cy; }
+    TG[i] = cy + d / 2 + 2;
   });
   const al = S.main.querySelectorAll('.altar .card');
   for (let i = n; i < n + 3; i++) { const a = al[i - n].getBoundingClientRect(); X[i] = a.left + a.width / 2 - rc.left; Y[i] = a.top + a.height / 2 - rc.top; SC[i] = a.width / S.cw; TG[i] = Y[i] + a.height / 2 + 2; }
-  Object.assign(S, { X, Y, SC, TX, TY, W, H: rc.height - capH, capOH: S.cap ? S.cap.el.offsetHeight : 0 }); S.rp.setAttribute('data-nw', W < 420 ? 1 : 0);
-  for (let i = 0; i < n; i++) { vset(S.rings[i], TX[i], TY[i], S.TD[i] + 4); vset(S.vms[i], TX[i] + S.TD[i] * .45, TY[i] - S.TD[i] * .45); }
-  S.tags.forEach((e, i) => vset(e, i < n ? TX[i] : X[i], TG[i]));
+  Object.assign(S, { X, Y, SC, TX, TY, TG, SD, W, RH: rc.height }); S.rp.setAttribute('data-nw', W < 420 ? 1 : 0);
+  for (let i = 0; i < n; i++) { vset(S.rings[i], TX[i], TY[i], S.TD[i] + 4); vset(S.vms[i], TX[i] + (SD[i] === 'r' ? 1 : -1) * S.TD[i] * .45, TY[i] - S.TD[i] * .45); }
+  relabel();
   S.ln.forEach((l) => {
-    const t = l.t, p = (s) => s < n ? [TX[s], TY[s]] : [X[s], Y[s]], a = p(t.a), c = p(t.c);
+    const t = l.t, p = (s) => s < n ? [TX[s], TY[s]] : [X[s], Y[s]], a = p(t.a), c = p(t.c), L = Math.hypot(c[0] - a[0], c[1] - a[1]), o = t.a < n && L ? S.TD[t.a] / 2 + 2 : 0;
+    if (o) { a[0] += (c[0] - a[0]) / L * o; a[1] += (c[1] - a[1]) / L * o; }
     if (l.m) vset(l.m, (a[0] + c[0]) / 2, (a[1] + c[1]) / 2);
-    l.e.style.cssText = '--x:' + (a[0] - W / 2) + 'px;--y:' + (a[1] - rc.height / 2) + 'px;--len:' + Math.max(0, Math.hypot(c[0] - a[0], c[1] - a[1]) - (t.v && t.c < n ? S.TD[t.c] / 2 + 4 : 0)) + 'px;--ang:' + Math.atan2(c[1] - a[1], c[0] - a[0]) + 'rad;--g:' + (t.g || 0);
+    l.e.style.cssText = '--x:' + (a[0] - W / 2) + 'px;--y:' + (a[1] - rc.height / 2) + 'px;--len:' + Math.max(0, L - o - (t.v && t.c < n ? S.TD[t.c] / 2 + 4 : 0)) + 'px;--ang:' + Math.atan2(c[1] - a[1], c[0] - a[0]) + 'rad;--g:' + (t.g || 0);
+  });
+}
+
+/* capH-dependent labels only: reads the caption height, never seat/altar rects */
+function relabel() {
+  const n = S.n, oh = S.cap.el.offsetHeight, lim = S.RH - oh - 60, W = S.W;
+  S.capOH = oh; S.H = lim;
+  S.tags.forEach((e, i) => {
+    let x = i < n ? S.TX[i] : S.X[i], y = S.TG[i], sd = 0;
+    if (i < n && y + 32 > lim) {
+      const d = S.TD[i], dir = S.SD[i] === 'r' ? 1 : -1, tx = S.TX[i] + dir * (d / 2 + 6), room = dir > 0 ? W - 8 - tx : tx - 8;
+      if (room < 48) y = lim - 32; else { sd = dir; x = tx; y = S.TY[i]; }
+    }
+    cls(e, 'rp-sr', sd > 0); cls(e, 'rp-sl', sd < 0); vset(e, x, y);
   });
 }
 
@@ -213,7 +232,7 @@ function scene(i, k) {
   S.rp.setAttribute('data-act', a); S.gOn = on; cls(S.glow, 'is-on', on); if (g != null) vset(S.glow, S.X[g], S.Y[g]);
   const cp = S.B.copyAs && (S.cdone < i || S.cdone === i && act);
   S.cards.forEach((el, c) => {
-    const q = inv[c], cd = el.querySelector('.rp-front .card'), co = el.querySelector('.rp-co');
+    const q = inv[c], cd = el._cd, co = el._co;
     const css = '--tx:' + S.X[q] + 'px;--ty:' + S.Y[q] + 'px;--s:' + S.SC[q] + ';--inv:' + 1 / S.SC[q]; if (el._c !== css) { el._c = css; el.style.cssText = css; } const z = q < n ? 'seat' : 'altar'; if (el._z !== z) { el._z = z; el.setAttribute('data-z', z); }
     cls(el, 'is-f', a !== 'pro' || k); cls(el, 'rp-mv', 0); cls(el, 'rp-flip', 0); cls(el, 'rp-dim', rel && rel.indexOf(q) < 0); cls(el, 'rp-lit', lit.includes(q)); cls(el, 'rp-hunt', a === 'hunt' && k && c === pos[b.h]);
     cls(cd, 'is-swapped', sws[c]); cls(cd, 'is-dead', dead[q]); if (co) cls(co, 'is-on', cp);
@@ -238,9 +257,9 @@ function scene(i, k) {
   S.focus.forEach((f, j) => {
     const fo = act && fl[j]; cls(f, 'is-on', fo);
     if (fo) {
-      const cw = 128, vd = a === 'verdict', key = fo.role + (fo.ch ? 1 : 0) + (fo.dead ? 'd' : '') + (fo.lbl || '') + (b.k || ''), q = fo.slot < n, sx = (q ? S.TX : S.X)[fo.slot], sy = (q ? S.TY : S.Y)[fo.slot], hc = S.H / 2, wc = S.W / 2;
+      const cw = S.fcw || 128, vd = a === 'verdict', key = fo.role + (fo.ch ? 1 : 0) + (fo.dead ? 'd' : '') + (fo.lbl || '') + (b.k || ''), q = fo.slot < n, sx = (q ? S.TX : S.X)[fo.slot], sy = (q ? S.TY : S.Y)[fo.slot], hc = S.H / 2, wc = S.W / 2;
       const x = q ? wc : sx, y = q ? S.Y[n + 1] : sy - S.SC[fo.slot] * S.cw * .7 - cw * .7 - 12;
-      vset(f, Math.max(16 + cw / 2, Math.min(S.W - 16 - cw / 2, (vd ? wc : x) + (fl.length > 1 ? (j ? 1 : -1) * (cw / 2 + 8) : 0))), vd ? S.H * .26 : Math.max(8 + cw * .7, Math.min(S.H - 8 - cw * .7, y)));
+      vset(f, Math.max(16 + cw / 2, Math.min(S.W - 16 - cw / 2, (vd ? wc : x) + (fl.length > 1 ? (j ? 1 : -1) * (cw / 2 + 8) : 0))), vd ? Math.max(8 + cw * .7, S.H * .26) : Math.max(8 + cw * .7, Math.min(S.H - 8 - cw * .7, y)));
       if (f.getAttribute('data-k') !== key) { f.setAttribute('data-k', key); f.innerHTML = card(fo.role, { size: 'md', face: 1, flat: 1 }) + (b.k === 'peek' || b.k === 'copy' ? ico('rp-eye', 'rp-ey2') : b.k === 'swap' ? ico('rp-swap', 'rp-ey2') : '') + (fo.ch ? '<i class="rp-fst">' + T.stamp.changed + '</i>' : '') + (fo.lbl ? '<i class="rp-fl">' + esc(fo.lbl) + '</i>' : ''); const fc = f.querySelector('.card'); if (fc) cls(fc, 'is-dead', fo.dead); }
     }
   });
@@ -256,31 +275,44 @@ function capGo(b) {
   cls(S.cap.l1, 'is-h', 0); cls(S.cap.l2, 'is-h', 0); cls(S.cap.st, 'is-on', b.stamp);
   const e = $('sr'); if (e) e.textContent = (b.l1 + ' ' + b.l2 + ' ' + (b.l3 || '')).replace(/<[^>]*>/g, '');
   if (S.first) S.tapAt = Date.now() + 1400;
-  if (S.cap.el.offsetHeight !== S.capOH) layout();
 }
 
 /* ---------- playback ---------- */
 const stop = () => { S.tm.forEach(clearTimeout); S.tm = []; };
+const snd = (m, v) => { const N = root.SND; if (N && N.ctx && N[m]) { try { N[m](v === 1 ? true : v === 0 ? false : v); } catch (e) {} } };
+const duck = (db) => { const N = root.SND; if (N && N.ctx && N.duck) { try { N.duck('rp', db); } catch (e) {} } };
 async function play(i) {
   const my = ++S.tok, B = S.B.beats, b = B[i], a = b.act, F = root.FX;
-  stop(); S.i = i; nt(() => { scene(i, 0); cls(S.cap.l1, 'is-h', 1); cls(S.cap.l2, 'is-h', 1); }); ui(); if (a !== 'pro') capGo(b);
+  stop(); S.i = i; const p0 = nt(() => { scene(i, 0); cls(S.cap.l1, 'is-h', 1); cls(S.cap.l2, 'is-h', 1); }); ui(); if (a !== 'pro') capGo(b);
+  await p0; if (!S || my !== S.tok) return;
   if (a === 'pro') {
     if (!S.lite) {
       await wait(600);
       S.wave.forEach((sl, j) => { const e = S.cards[sl]; e.style.setProperty('--k', j); e.classList.add('rp-flip'); });
       await wait(120 * S.wave.length + 400);
     }
-    nt(() => scene(i, 1)); capGo(b);
+    await nt(() => scene(i, 1)); if (!S || my !== S.tok) return;
+    capGo(b);
   } else {
     if (b.mv || b.dark) await wait(400);
     if (S.gOn && b.gl != null) { cls(S.glow, 'is-on', 0); await wait(120); }
     scene(i, 1);
     if (a === 'dawn') {
       await wait(S.lite ? 160 : 1100);
-      for (const s of b.sw) { S.cards[b.pre[s]].querySelector('.rp-front .card').classList.add('is-swapped'); if (!S.lite) await wait(120); }
+      const sc = b.sw.map((s) => S.cards[b.pre[s]]._cd);
+      if (S.lite || sc.length > 3) { await new Promise((r) => requestAnimationFrame(r)); if (!S || my !== S.tok) return; sc.forEach((c) => c.classList.add('is-swapped')); }
+      else for (const c of sc) { c.classList.add('is-swapped'); await wait(120); }
     } else {
-      await wait(a === 'exec' ? 800 : a === 'hunt' ? 480 : b.k === 'swap' ? 300 : 0);
-      if (b.dead && F && !S.lite) { if (F.shake) F.shake(6, 4); if (F.flash) F.flash('blood', 120); if (F.buzz) F.buzz(12); }
+      await wait(a === 'exec' ? 800 : a === 'hunt' ? 480 : b.k === 'swap' ? (F && F.tremble && b.mvs && !S.lite ? 0 : 300) : 0);
+      if (b.k === 'swap') { snd('sting', 'carve'); if (F && F.tremble && b.mvs && !S.lite) await F.tremble(b.mvs.map((m) => S.cards[m.c])); }
+      if (my !== S.tok) return;
+      if (b.dead && F && F.execute) {
+        const ds = b.dead.map((q) => S.cards[b.pre[q]]), fi = b.dead.map((q, j) => S.focus[j]);
+        snd('toll', 1); S.tolled = 1;
+        const ex = ds.map((c, j) => F.execute(c, fi[j], j ? null : () => scene(i, 2), j > 0 || S.lite)); await Promise.all(ex);
+        if (my !== S.tok) return;
+      } else if (b.dead && F && !S.lite && F.shake) { F.shake(6, 4); if (F.flash) F.flash('blood', 120); }
+      if (a === 'nodeath') { snd('toll', 0); S.tolled = 1; }
       scene(i, 2);
       if (b.mvs && !S.lite) b.mvs.forEach((m) => cls(S.cards[m.c], 'rp-mv', 1));
       await wait(a === 'verdict' ? (b.l3 ? 2060 + 70 * T.syl(b.l3) : 1260) : a === 'vote' ? 300 * b.gs.length + 300 : 900);
@@ -296,7 +328,7 @@ async function play(i) {
 }
 function done() {
   if (!S || S.done) return; S.done = 1; S.tok++; stop();
-  const cb = S.o.onDone, s = S; s.rp.style.cssText += ';opacity:0;transition:opacity .3s';
+  duck(0); const cb = S.o.onDone, s = S; s.rp.style.cssText += ';opacity:0;transition:opacity .3s';
   setTimeout(() => { if (S === s) { close(); if (cb) cb(); } }, 300);
 }
 function ui() {
@@ -324,7 +356,7 @@ function rate(r) {
   if (!S) return; S.rate = r === 2 ? 2 : 1; S.rp.style.setProperty('--u', S.rate === 2 ? '.5ms' : '1ms');
   S.rateBtn.textContent = S.rate === 2 ? UI.x2 : UI.x1; S.rateBtn.setAttribute('aria-label', S.rate === 2 ? UI.normal : UI.fast);
 }
-function skip() { if (S) { S.tok++; stop(); done(); } }
+function skip() { if (S) { S.tok++; stop(); if (!S.tolled) snd('toll', S.B.beats.some((b) => b.dead) ? 1 : 0); S.tolled = 1; done(); } }
 
 function open(R, meId, o) {
   o = o || {}; close();
@@ -353,7 +385,8 @@ function open(R, meId, o) {
   bar.setAttribute('aria-label', UI.ruler); bar.setAttribute('aria-valuemin', 0); bar.setAttribute('aria-valuemax', N - 1);
   const vbt = B.beats.find((b) => b.act === 'vote'); S.vms.forEach((v, s) => v.style.setProperty('--g', Math.max(0, vbt.gs.indexOf(s))));
   const seats = [...main.querySelectorAll('.seat[data-pid]')]; S.seats = R.players.map((p) => seats.find((e) => e.getAttribute('data-pid') === p.id));
-  S.cw = rp.querySelector('.rp-front .card').offsetWidth;
+  S.cards.forEach((el) => { el._cd = el.querySelector('.rp-front .card'); el._co = el.querySelector('.rp-co'); });
+  S.cw = S.cards[0]._cd.offsetWidth;
   document.body.setAttribute('data-replay', '1');
   S.dock = dk; S.dockHTML = dk.innerHTML; S.dockHid = dk.hidden; dk.hidden = false;
   dk.innerHTML = '<button class="btn-sub rp-prev" aria-label="' + UI.prev + '">' + ico('rp-step') + '</button><button class="btn-main rp-main"><span class="lbl"></span><b class="nm"></b></button><button class="btn-sub rp-nxt" aria-label="' + UI.next + '">' + ico('rp-step') + '</button>';
@@ -363,6 +396,7 @@ function open(R, meId, o) {
     const sk = S.skipBtn = mk('button', 'hud-skip rp-skip', UI.hudSkip), hr = hud.querySelector('.hud-r') || hud; hr.insertBefore(sk, hr.firstChild);
   }
   layout();
+  if (typeof ResizeObserver !== 'undefined') { const s0 = S; let q = 0; S.ro = new ResizeObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; if (S === s0 && s0.cap.el.offsetHeight !== s0.capOH) relabel(); }); }); S.ro.observe(cp); }
   S.wave = []; for (let i = 0; i < n; i++) S.wave.push((Math.max(S.me, 0) + i) % n); S.wave.push(n, n + 1, n + 2);
   const on = (t, ev, f) => { if (t) { t.addEventListener(ev, f); S.on.push([t, ev, f]); } };
   on(rp, 'click', next); on(dk.querySelector('.rp-prev'), 'click', prev); on(dk.querySelector('.rp-nxt'), 'click', next); on(S.mainBtn, 'click', toggle); on(S.skipBtn, 'click', skip);
@@ -375,12 +409,18 @@ function open(R, meId, o) {
   });
   on(document, 'visibilitychange', () => { if (document.hidden && S.run === 'play') toggle(); });
   on(window, 'resize', () => { if (S.run === 'play') toggle(); layout(); nt(() => scene(S.i, 3)); });
-  rate(1);
-  if (o.paused) { S.run = 'pause'; S.i = o.start || 0; nt(() => scene(S.i, 3)); ui(); } else play(o.start || 0);
+  rate(1); duck(-9);
+  const s1 = S, go = () => { if (S !== s1) return; if (o.paused) { S.run = 'pause'; S.i = o.start || 0; nt(() => scene(S.i, 3)); ui(); } else play(o.start || 0); };
+  if (root.ART && root.ART.want && root.ART.ready) {
+    const rl = [...new Set(D.concat(R.players.map((p) => p.final || p.effective), B.copyAs ? [B.copyAs] : []))].filter(Boolean);
+    ART.want(rl); S.i = o.start || 0; nt(() => scene(S.i, 0));
+    Promise.all(rl.map((r) => ART.ready(r))).then(go, go);
+  } else go();
   return true;
 }
 function close() {
-  const s = S; if (!s) return; S = null; s.tok++;
+  const s = S; if (!s) return; S = null; s.tok++; duck(0);
+  if (s.ro) s.ro.disconnect();
   s.tm.forEach(clearTimeout); s.on.forEach((x) => x[0].removeEventListener(x[1], x[2]));
   [s.rp, s.skipBtn].forEach((e) => e && e.remove());
   s.dock.innerHTML = s.dockHTML; s.dock.hidden = s.dockHid;

@@ -48,9 +48,11 @@ function staticChecks() {
 // ---------- 봇 ----------
 function bot(name, pid) {
   const s = io(URL, { forceNew: true, transports: ['websocket'] });
-  const b = { name, s, pid: pid || `bot-${name}-${Math.random()}`, state: null, chats: [], script: null, handled: new Set(), gameIds: new Set(), seen: [] };
+  const b = { name, s, pid: pid || `bot-${name}-${Math.random()}`, state: null, chats: [], script: null, handled: new Set(), gameIds: new Set(), seen: [], stepSeen: {}, insoPrompt: null };
   s.on('state', (st) => {
     b.state = st;
+    if (st.phase === 'night' && st.stepIdx >= 0 && b.stepSeen[st.stepIdx] === undefined) b.stepSeen[st.stepIdx] = Date.now();
+    if (st.prompt && st.prompt.type === 'info' && st.prompt.reveal) b.insoPrompt = st.prompt;
     const json = JSON.stringify(st);
     const bytes = Buffer.byteLength(json);
     if (st.gameId) b.gameIds.add(st.gameId);
@@ -139,6 +141,7 @@ function scripted(b) {
       for (const rv of r1.reveal) {
         if (!(rv.at === 'p' && typeof rv.id === 'string' && rv.role) && !(rv.at === 'c' && Number.isInteger(rv.idx) && rv.role)) bad('reveal 모양 오류');
       }
+      b.ackAt = Date.now();
       b.acks.push([p.type, r1]);
       const r2 = await b.emit('nightAction', data);     // 멱등: 같은 ack
       if (!isDeepStrictEqual(r1, r2)) bad(`[${sc.name}] ${p.type}: 재전송 ack 불일치`);
@@ -291,6 +294,19 @@ const DG = 'doppelganger', WF = 'werewolf', MI = 'minion', MA = 'mason', SE = 's
 const SC = [];
 function sc(name, deal, acts, votes, extra = {}) { SC.push({ name, deal, acts, votes, ...extra }); }
 
+// F2: 불면증환자 프롬프트 reveal, 강도 reveal.from, 카드를 본 뒤 VIEW_HOLD(10초 x TIME_SCALE) 동안 단계가 끝나지 않음
+sc('f2-reveal', [SE, RO, IN, WF, VI, VI], { 0: { seer: { player: 1 } }, 1: { robber: { player: 2 } } }, [1, 0, 0], {
+  expect: (r, bots) => {
+    const ids = bots.map((b) => b.pid);
+    const rb = bots[1].acks.find((a) => a[0] === 'robber');
+    assert(rb && rb[1].reveal[0].from === ids[2] && rb[1].reveal[0].id === ids[1] && rb[1].reveal[0].role === IN, 'robber reveal.from');
+    const ip = bots[2].insoPrompt;
+    assert(ip && isDeepStrictEqual(ip.reveal, [{ at: 'p', id: ids[2], role: RO }]), 'insomniac prompt reveal');
+    const st = bots[0].state, si = st.steps.indexOf('seer'), nxt = bots[0].stepSeen[si + 1];
+    const hold = 10000 * Number(process.env.TIME_SCALE);
+    assert(nxt !== undefined && nxt - bots[0].ackAt >= hold * 0.9, 'VIEW_HOLD 보장: ' + (nxt - bots[0].ackAt) + 'ms < ' + hold);
+  },
+});
 sc('min-3', [WF, SE, RO, WF, TR, VI], { 0: { lonewolf: { center: 0 } }, 1: { seer: { player: 0 } }, 2: { robber: { player: 1 } } }, [1, 0, 0]);
 sc('full-10', [DG, WF, MI, MA, MA, SE, RO, TR, DR, IN, HU, TA, VI], {
   0: { doppelganger: { player: 5 }, seer: { player: 2 } }, 1: { lonewolf: { center: 1 } }, 5: { seer: { centers: [0, 2] } },
@@ -575,6 +591,155 @@ async function batches(tasks, size) {
   return out;
 }
 
+// ---------- F1: 채팅 mid / 답글 ----------
+// ---------- 잘못된 페이로드 (프로세스가 죽지 않아야 한다) ----------
+async function badPayloads() {
+  const EVENTS = ['create', 'join', 'leave', 'kick', 'setDeck', 'preset', 'setSettings', 'start', 'nightAction', 'ready', 'forceVote', 'vote', 'playAgain', 'chat'];
+  const PAYLOADS = [null, 0, 1, 'x', [], [1], true];
+  const errs = [];
+  const origErr = console.error;
+  console.error = (...a) => { errs.push(a); };
+  const socks = [];
+  try {
+    const witness = bot('증인');
+    const wit2 = bot('증인2');
+    socks.push(witness, wit2);
+    await sleep(100);
+    const wr = await witness.emit('create', { name: witness.name, playerId: witness.pid });
+    assert(wr && wr.ok, '증인 방 생성');
+    // 방 밖
+    const outside = io(URL, { forceNew: true, transports: ['websocket'] });
+    socks.push({ s: outside });
+    await new Promise((r) => outside.on('connect', r));
+    for (const ev of EVENTS) for (const p of PAYLOADS) outside.emit(ev, p);
+    await sleep(150);
+    // 방 안
+    const inside = bot('난입');
+    socks.push(inside);
+    await sleep(100);
+    const ir = await inside.emit('create', { name: inside.name, playerId: inside.pid });
+    assert(ir && ir.ok, '난입 방 생성');
+    for (const ev of EVENTS) for (const p of PAYLOADS) inside.s.emit(ev, p);
+    await sleep(200);
+    // 덮어쓰기 형태의 값 (프로토타입 오염 시도)
+    inside.s.emit('setDeck', { role: '__proto__', count: 3 });
+    inside.s.emit('setDeck', { role: 'constructor', count: 3 });
+    inside.s.emit('join', { code: ['A'], name: ['b'], playerId: 'p' });
+    inside.s.emit('create', { name: { toString: 1 }, playerId: 'p'.repeat(100) });
+    await sleep(100);
+    // 20KB 채팅: 연결이 끊기거나 버려져야 하고 서버는 멀쩡해야 한다
+    const big = io(URL, { forceNew: true, transports: ['websocket'] });
+    socks.push({ s: big });
+    await new Promise((r) => big.on('connect', r));
+    big.emit('chat', { text: 'x'.repeat(20000) });
+    await sleep(300);
+    assert(!big.connected, '20KB 페이로드는 연결을 끊는다 (maxHttpBufferSize)');
+    // 살아 있는지
+    const fresh = bot('새봇');
+    socks.push(fresh);
+    await sleep(100);
+    const fr = await fresh.emit('create', { name: fresh.name, playerId: fresh.pid });
+    assert(fr && fr.ok === true && fr.code, '잘못된 페이로드 뒤에도 방 생성');
+    const before = witness.state;
+    const jr = await wit2.emit('join', { code: wr.code, name: wit2.name, playerId: wit2.pid });
+    assert(jr && jr.ok, '증인2 합류');
+    await sleep(100);
+    assert(witness.state && witness.state !== before && witness.state.players.length === 2, '원래 방이 계속 상태를 방송한다');
+    const sockErrs = errs.filter((a) => String(a[0]).includes('[sock]') || String(a[0]).includes('[uncaught]'));
+    assert(!sockErrs.length, '핸들러 예외 없음: ' + sockErrs.map((a) => String(a[1] && a[1].message)).join(' | '));
+    console.log('  잘못된 페이로드 검사 통과');
+  } finally {
+    console.error = origErr;
+    socks.forEach((x) => x.s.close());
+  }
+}
+
+async function chatChecks() {
+  const T = require('../public/strings.js');
+  assert(T.msg && T.msg.newChief && T.replay && T.replay.hunt && T.replay.cause && T.replay.ui && T.replay.why, 'strings.js 서버 호환 (T.msg, T.replay 전체)');
+  assert(T.body.bgmLv.length === 3 && T.btn.bgmOn && T.chat.reply, '새 문자열 키');
+  const bots = Array.from({ length: 3 }, (_, i) => bot(`채팅${i + 1}`));
+  try {
+    await sleep(100);
+    const [a, b, c] = bots;
+    const cr = await a.emit('create', { name: a.name, playerId: a.pid });
+    for (const x of [b, c]) await x.emit('join', { code: cr.code, name: x.name, playerId: x.pid });
+    await sleep(100);
+    const send = async (x, o) => { const w = 430 - (Date.now() - (x._t || 0)); if (w > 0) await sleep(w); x._t = Date.now(); x.s.emit('chat', o); await sleep(60); };
+    const last = () => a.chats[a.chats.length - 1];
+    await send(a, { text: '첫 메시지\n줄바꿈   포함' });
+    const m1 = last();
+    assert(m1.mid && !m1.re, 'mid 부여');
+    const sys = a.chats.find((m) => m.system);
+    assert(sys && sys.mid, '시스템 메시지에도 mid');
+    await send(b, { text: '답글', re: m1.mid });
+    assert(last().re && last().re.mid === m1.mid && last().re.name === a.name && last().re.t === '첫 메시지 줄바꿈 포함', '인용은 서버 원문(공백 정리)');
+    // 잘못된 re 는 버리고 일반 메시지로
+    let n = 0;
+    for (const bad_ of ['12', -1, 0, 1.5, 99999, sys.mid, null, {}, [1]]) {
+      await send([a, b, c][n++ % 3], { text: 'x' + n, re: bad_ });
+      assert(last().text === 'x' + n && last().re === undefined, 're 검증: ' + JSON.stringify(bad_));
+    }
+    // 클라이언트가 보낸 인용 내용은 무시
+    await send(c, { text: '위조', re: { mid: m1.mid, name: '가짜', t: '가짜' } });
+    assert(last().text === '위조' && last().re === undefined, '객체 re 는 무시');
+    await send(c, { text: '정상', re: m1.mid, name: '가짜', t: '가짜' });
+    assert(last().re.name === a.name && last().re.t !== '가짜', '서버가 인용을 만든다');
+    // 45자 + 서로게이트 쌍
+    const long = '가'.repeat(38) + '𠀀𠀀𠀀𠀀𠀀' + '나';
+    await send(a, { text: long });
+    const lm = last();
+    await send(b, { text: '긴 인용', re: lm.mid });
+    const q = last().re.t, cp = Array.from(q);
+    assert(cp.length === 41 && cp[40] === '…' && cp.slice(38, 40).join('') === '𠀀𠀀', '40자 + … (서로게이트 보존)');
+    // 인용은 한 단계만
+    await send(a, { text: '재인용', re: last().mid });
+    assert(last().re.t === '긴 인용' && !('re' in last().re), '한 단계 인용');
+    // mid 는 1부터 빠짐없이 증가
+    const mids = a.chats.map((m) => m.mid);
+    mids.forEach((v, i) => assert(v === mids[0] + i, 'mid 연속: ' + mids.join(',')));
+    assert(mids[0] <= 3, 'mid 는 1부터 시작');
+    // ack: 정상 / 너무 빠름 / cid 재전송 멱등 / 잘못된 re / 밤
+    const ack = (x, o) => new Promise((r) => x.s.timeout(2000).emit('chat', o, (e, v) => r(e ? null : v)));
+    await sleep(450);
+    const a1 = await ack(b, { text: 'ack첫', cid: 'c1' });
+    assert(a1 && a1.ok === true, '정상 전송은 ok:true: ' + JSON.stringify(a1));
+    const a2 = await ack(b, { text: 'ack둘', cid: 'c2' });
+    assert(a2 && a2.ok === false && a2.error === T.msg.chatFast, '400ms 안의 두 번째 전송은 chatFast: ' + JSON.stringify(a2));
+    await sleep(450);
+    const a3 = await ack(b, { text: 'ack첫', cid: 'c1' });
+    assert(a3 && a3.ok === true, '같은 cid 재전송은 ok:true: ' + JSON.stringify(a3));
+    await sleep(80);
+    assert(a.chats.filter((m) => m.text === 'ack첫').length === 1, '같은 cid 는 한 번만 게시');
+    assert(!a.chats.some((m) => m.text === 'ack둘'), '거부된 메시지는 게시되지 않음');
+    await sleep(450);
+    const a4 = await ack(b, { text: 'ack답글', re: 99999 });
+    assert(a4 && a4.ok === true && a4.reDropped === true, 're 99999 는 reDropped: ' + JSON.stringify(a4));
+    await sleep(80);
+    assert(last().text === 'ack답글' && last().re === undefined, 'reDropped 도 일반 메시지로 게시');
+    await sleep(450);
+    const a5 = await ack(b, { text: ['배열'] });
+    assert(a5 && a5.ok === false && a5.error === T.msg.badRequest, '문자열이 아닌 text 는 거부: ' + JSON.stringify(a5));
+    // 밤에는 re 가 붙은 메시지도 거부
+    await a.emit('start');
+    await waitPhase(bots, 'night');
+    const cnt = a.chats.length;
+    b.s.emit('chat', { text: '밤 채팅', re: 1 });
+    await sleep(80);
+    assert(!a.chats.slice(cnt).some((m) => m.text === '밤 채팅'), '밤 채팅 거부');
+    const an = await ack(b, { text: '밤 ack' });
+    assert(an && an.ok === false && an.error === T.msg.chatNight, '밤 채팅 ack 는 chatNight: ' + JSON.stringify(an));
+    await waitPhase(bots, 'result', 40000);
+    a.s.emit('playAgain');
+    await waitPhase(bots, 'lobby');
+    await send(b, { text: '로비 복귀 뒤' });
+    assert(last().mid > mids[mids.length - 1], '로비 복귀 뒤에도 chatSeq 유지');
+    console.log('  채팅 mid/답글 검사 통과');
+  } finally {
+    bots.forEach((x) => x.s.close());
+  }
+}
+
 (async () => {
   try {
     staticChecks();
@@ -592,6 +757,10 @@ async function batches(tasks, size) {
 
     console.log(`시나리오 ${SC.length}개:`);
     const res = await batches(SC.map((s) => () => runScenario(s).then((x) => { console.log(`  ok ${s.name}${x.bytes ? ` (state 최대 ${x.bytes.max}B, night ${x.bytes.night}B)` : ''}`); return x; })), 6);
+    console.log('잘못된 페이로드 검사:');
+    await badPayloads();
+    console.log('채팅 답글 검사:');
+    await chatChecks();
     if (problems.length) throw new Error('문제 ' + problems.length + '건:\n  ' + [...new Set(problems)].slice(0, 20).join('\n  '));
 
     // W9 클라이언트 테스트가 있으면 함께 돌린다 (픽스처가 만들어진 뒤)

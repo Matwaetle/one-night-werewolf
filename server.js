@@ -14,9 +14,10 @@ const { ROLES, ROLE_ORDER, NIGHT_ORDER, MIN_PLAYERS, MAX_PLAYERS } = WW;
 const SCALE = Number(process.env.TIME_SCALE || 1);
 const TM = {
   CARD_CHECK: 13000,   // 처음 패 확인 시간 (spec 9.5)
-  ACT: 30000,          // 역할별 밤 행동 제한 시간
-  DOPPEL: 45000,       // 도플갱어 (두 단계라 더 길게)
+  ACT: 45000,          // 역할별 밤 행동 제한 시간 (카드를 보는 행동이 있어 30초에서 +50%)
+  DOPPEL: 68000,       // 도플갱어 (두 단계라 더 길게)
   MIN_STEP: 8000,      // 행동이 빨리 끝나도 최소 이만큼은 기다림 (정보 노출 방지)
+  VIEW_HOLD: 10000,    // 카드를 본 행동 뒤, 단계가 끝나기까지 최소로 기다리는 시간 (펼친 카드를 읽을 시간)
   IDLE_MIN: 8000,      // 아무도 없는 역할 차례에 기다리는 시간 (무작위)
   IDLE_MAX: 16000,
   VOTE: 60000,
@@ -37,6 +38,10 @@ const ACT_NOW = ['seer', 'robber', 'troublemaker', 'drunk'];
 // 테스트 전용 훅: 방장 id -> 정해진 배분(역할 배열). 소켓으로는 닿지 않는다.
 const _test = { deals: new Map() };
 
+const obj = (d) => (d && typeof d === 'object' && !Array.isArray(d) ? d : {});
+process.on('uncaughtException', (e) => console.error('[uncaught]', e));
+process.on('unhandledRejection', (e) => console.error('[unhandled]', e));
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -45,6 +50,7 @@ const io = new Server(server, {
   pingInterval: 10000,   // 끊긴 소켓을 18초 안에 알아챈다 (모바일 셀 전환)
   pingTimeout: 8000,
   perMessageDeflate: false,
+  maxHttpBufferSize: 16 * 1024,
   connectionStateRecovery: { maxDisconnectionDuration: 120000 },
 });
 
@@ -82,7 +88,7 @@ function installAssets(out) {
       immutable: p.startsWith('a/'),
     };
     if (TEXT_EXT.has(ext) && raw.length > 256) {
-      e.br = zlib.brotliCompressSync(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9 } });
+      e.br = zlib.brotliCompressSync(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11 } });
       e.gz = zlib.gzipSync(raw, { level: 9 });
     }
     map.set(p, e);
@@ -182,6 +188,7 @@ function createRoom() {
     game: null,
     result: null,
     chat: [],
+    chatSeq: 0,
     cleanupTimer: null,
     createdAt: Date.now(),
   };
@@ -246,6 +253,7 @@ function sysChat(room, text) {
   pushChat(room, { system: true, text, ts: Date.now() });
 }
 function pushChat(room, msg) {
+  msg.mid = ++room.chatSeq;
   room.chat.push(msg);
   if (room.chat.length > 150) room.chat.shift();
   io.to(room.code).emit('chat', msg);
@@ -386,7 +394,7 @@ function startGame(room) {
     steps: ['_check', ...NIGHT_ORDER.filter((r) => room.deck[r] > 0)],
     stepIdx: -1, stepRole: null, stepStartedAt: 0, stepEndsAt: 0,
     votes: {}, dayEndsAt: null, voteEndsAt: null,
-    timer: null, token: 0,
+    timer: null, token: 0, viewAt: 0,
   };
   g.seats.forEach((id, i) => {
     g.original[id] = g.cards[id] = cards[i];
@@ -438,6 +446,7 @@ function runStep(room, idx) {
   g.prompts = {};
   const now = Date.now();
   g.stepStartedAt = now;
+  g.viewAt = 0;
 
   if (role === '_check') {
     g.stepEndsAt = now + TM.CARD_CHECK;
@@ -451,7 +460,7 @@ function runStep(room, idx) {
 
   const dur = actors.length ? (role === 'doppelganger' ? TM.DOPPEL : TM.ACT) : rand(TM.IDLE_MIN, TM.IDLE_MAX);
   g.stepEndsAt = now + dur;
-  setGameTimer(room, dur, () => endStep(room));
+  setGameTimer(room, dur, () => holdEnd(room));
   broadcast(room);
 }
 
@@ -497,7 +506,7 @@ function makePrompt(room, pid, role, actors) {
       const now = g.cards[pid];
       const text = M('nowCard', { r: rn(now) });
       log(room, pid, text, [{ at: 'p', id: pid, role: now }]);
-      return setPrompt(room, pid, { type: 'info', title: rn('insomniac'), text });
+      return setPrompt(room, pid, { type: 'info', title: rn('insomniac'), text, reveal: [{ at: 'p', id: pid, role: now }] });
     }
     default: // seer, robber, troublemaker, drunk
       return setPrompt(room, pid, { type: role });
@@ -606,7 +615,7 @@ function doAction(room, pid, data, auto = false) {
       const mv = swapSlots(room, s, ts);
       const text = M('stole', { t: pn(room, t), r: rn(g.cards[pid]) });
       // 훔친 패는 이제 강도의 좌석에 놓여 있다
-      const reveal = [{ at: 'p', id: pid, role: g.cards[pid] }];
+      const reveal = [{ at: 'p', id: pid, role: g.cards[pid], from: t }];
       log(room, pid, text, reveal);
       recStep(g, { r: 'robber', k: 'swap', by: [s], tg: [ts], mv, see: [seeAt(s)] });
       return done(okAck(text, reveal));
@@ -675,11 +684,18 @@ function endStep(room) {
   runStep(room, room.game.stepIdx + 1);
 }
 
+// 카드를 본 행동 뒤 VIEW_HOLD가 지나기 전에는 단계를 끝내지 않는다
+function holdEnd(room) {
+  const w = room.game.viewAt + TM.VIEW_HOLD - Date.now();
+  if (w > 0) setGameTimer(room, w, () => endStep(room));
+  else endStep(room);
+}
+
 function checkStepDone(room) {
   const g = room.game;
   const all = Object.values(g.prompts);
   if (!all.length || all.some((p) => !p.done)) return;
-  const wait = Math.max(0, g.stepStartedAt + TM.MIN_STEP - Date.now());
+  const wait = Math.max(0, g.stepStartedAt + TM.MIN_STEP - Date.now(), g.viewAt + TM.VIEW_HOLD - Date.now());
   setGameTimer(room, wait, () => endStep(room));
 }
 
@@ -860,6 +876,7 @@ io.on('connection', (socket) => {
     return { room, pid, isHost: room.hostId === pid };
   };
   const reply = (cb, v) => typeof cb === 'function' && cb(v);
+  const on = (ev, fn) => socket.on(ev, (...a) => { try { fn(...a); } catch (e) { console.error('[sock]', ev, e); } });
 
   function attach(room, pid) {
     const p = room.players.get(pid);
@@ -872,17 +889,19 @@ io.on('connection', (socket) => {
     socket.join(room.code);
     clearTimeout(p.leaveTimer);
     clearTimeout(room.cleanupTimer);
-    socket.emit('chatHistory', room.chat);
+    socket.emit('chatHistory', room.chat, room.code);
     const g = room.game;
     if (room.phase === 'vote' && g && g.votes[pid] === undefined) {   // 투표 전 복귀: 모두 투표했다고 잡힌 결말 예약을 되돌린다
       setGameTimer(room, Math.max(TM.VOTE_GRACE, g.voteEndsAt - Date.now()), () => resolve(room));
     }
   }
 
-  socket.on('create', ({ name, playerId } = {}, cb) => {
+  on('create', (d, cb) => {
+    let { name, playerId } = obj(d);
+    if (typeof name !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
     name = cleanName(name);
     if (!name) return reply(cb, { ok: false, error: M('needName') });
-    if (!playerId || typeof playerId !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
+    if (typeof playerId !== 'string' || !playerId || playerId.length > 64) return reply(cb, { ok: false, error: M('badRequest') });
     // 재시도 멱등: 방금 이 사람이 만든 방이 있으면 같은 방을 돌려준다
     const prev = rooms.get(socket.data.code);
     if (prev && socket.data.pid === playerId && prev.hostId === playerId && prev.phase === 'lobby'
@@ -900,10 +919,11 @@ io.on('connection', (socket) => {
     broadcast(room);
   });
 
-  socket.on('join', ({ code, name, playerId, rejoin } = {}, cb) => {
-    const room = rooms.get(String(code || '').toUpperCase().trim());
+  on('join', (d, cb) => {
+    let { code, name, playerId, rejoin } = obj(d);
+    const room = typeof code === 'string' ? rooms.get(code.toUpperCase().trim()) : null;
     if (!room) return reply(cb, { ok: false, error: M('noTown') });
-    if (!playerId || typeof playerId !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
+    if (typeof playerId !== 'string' || !playerId || playerId.length > 64) return reply(cb, { ok: false, error: M('badRequest') });
 
     if (room.players.has(playerId)) {
       // 재접속
@@ -913,6 +933,7 @@ io.on('connection', (socket) => {
       return broadcast(room);
     }
     if (rejoin) return reply(cb, { ok: false, error: M('cannotReturn') });
+    if (typeof name !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
     name = cleanName(name);
     if (!name) return reply(cb, { ok: false, error: M('needName') });
     if (room.phase !== 'lobby') return reply(cb, { ok: false, error: M('alreadyStarted') });
@@ -931,7 +952,7 @@ io.on('connection', (socket) => {
     broadcast(room);
   });
 
-  socket.on('leave', (_, cb) => {
+  on('leave', (_, cb) => {
     const { room, pid } = ctx();
     if (!room) return reply(cb, { ok: true });
     socket.leave(room.code);
@@ -953,9 +974,10 @@ io.on('connection', (socket) => {
     if (rooms.has(room.code)) broadcast(room);
   });
 
-  socket.on('kick', ({ id } = {}) => {
+  on('kick', (d) => {
+    const { id } = obj(d);
     const { room, pid, isHost } = ctx();
-    if (!room || !isHost || room.phase !== 'lobby' || id === pid || !room.players.has(id)) return;
+    if (typeof id !== 'string' || !room || !isHost || room.phase !== 'lobby' || id === pid || !room.players.has(id)) return;
     const p = room.players.get(id);
     if (p.socketId) {
       const s = io.sockets.sockets.get(p.socketId);
@@ -965,16 +987,17 @@ io.on('connection', (socket) => {
     broadcast(room);
   });
 
-  socket.on('setDeck', ({ role, count } = {}) => {
+  on('setDeck', (d) => {
+    const { role, count } = obj(d);
     const { room, isHost } = ctx();
-    if (!room || !isHost || room.phase !== 'lobby' || !ROLES[role]) return;
+    if (!room || !isHost || room.phase !== 'lobby' || typeof role !== 'string' || !Object.prototype.hasOwnProperty.call(ROLES, role)) return;
     const c = Math.max(0, Math.min(ROLES[role].max, Number(count) | 0));
     room.deck[role] = c;
     room.deckCustom = true;
     broadcast(room);
   });
 
-  socket.on('preset', () => {
+  on('preset', () => {
     const { room, isHost } = ctx();
     if (!room || !isHost || room.phase !== 'lobby') return;
     room.deckCustom = false;
@@ -982,7 +1005,8 @@ io.on('connection', (socket) => {
     broadcast(room);
   });
 
-  socket.on('setSettings', ({ dayTime } = {}) => {
+  on('setSettings', (d0) => {
+    const { dayTime } = obj(d0);
     const { room, isHost } = ctx();
     if (!room || !isHost || room.phase !== 'lobby') return;
     const d = Number(dayTime);
@@ -990,7 +1014,7 @@ io.on('connection', (socket) => {
     broadcast(room);
   });
 
-  socket.on('start', (_, cb) => {
+  on('start', (_, cb) => {
     const { room, isHost } = ctx();
     if (!room || !isHost) return reply(cb, { ok: false, error: M('cannotStart') });
     // 재시도 멱등: 방금 시작된 판이면 같은 ack
@@ -1006,19 +1030,21 @@ io.on('connection', (socket) => {
     reply(cb, { ok: true });
   });
 
-  socket.on('nightAction', (data, cb) => {
+  on('nightAction', (data, cb) => {
     const { room, pid } = ctx();
     if (!room || !room.game) return reply(cb, { ok: false, error: M('noGame') });
     const before = room.game.prompts[pid];
     const wasDone = !!(before && before.done);
-    const ack = doAction(room, pid, data);
+    const ack = doAction(room, pid, obj(data));
     reply(cb, ack);
     if (!ack.ok || (wasDone && before === room.game.prompts[pid])) return;   // 재전송이면 상태를 다시 흔들지 않는다
+    if (before && (before.type === 'info' || (ack.reveal && ack.reveal.length))) room.game.viewAt = Date.now();
     checkStepDone(room);
     broadcast(room);
   });
 
-  socket.on('ready', ({ ready } = {}) => {
+  on('ready', (d) => {
+    const { ready } = obj(d);
     const { room, pid } = ctx();
     if (!room || room.phase !== 'day') return;
     room.players.get(pid).ready = !!ready;
@@ -1026,13 +1052,14 @@ io.on('connection', (socket) => {
     checkAllReady(room);
   });
 
-  socket.on('forceVote', () => {
+  on('forceVote', () => {
     const { room, isHost } = ctx();
     if (!room || !isHost || room.phase !== 'day') return;
     startVote(room);
   });
 
-  socket.on('vote', ({ target } = {}, cb) => {
+  on('vote', (d, cb) => {
+    const { target } = obj(d);
     const { room, pid } = ctx();
     if (room && room.phase === 'result' && room.game && target && room.game.votes[pid] === target) return reply(cb, { ok: true });   // 멱등(결과 직후 재전송)
     if (!room || room.phase !== 'vote') return reply(cb, { ok: false, error: M('notVoteTime') });
@@ -1044,25 +1071,39 @@ io.on('connection', (socket) => {
     checkAllVoted(room);
   });
 
-  socket.on('playAgain', () => {
+  on('playAgain', () => {
     const { room, isHost } = ctx();
     if (!room || !isHost || room.phase !== 'result') return;
     backToLobby(room);
   });
 
-  socket.on('chat', ({ text } = {}) => {
+  on('chat', (d, cb) => {
+    const { text, re, cid } = obj(d);
     const { room, pid } = ctx();
-    if (!room) return;
-    if (room.phase === 'night') return;
-    const t = String(text || '').trim().slice(0, 300);
-    if (!t) return;
+    if (!room) return reply(cb, { ok: false, error: M('noGame') });
+    if (room.phase === 'night') return reply(cb, { ok: false, error: M('chatNight') });
+    if (typeof text !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
+    const t = text.trim().slice(0, 300);
+    if (!t) return reply(cb, { ok: false, error: M('badRequest') });
+    const p = room.players.get(pid);
+    const cidOk = typeof cid === 'string' && cid.length <= 24;
+    if (cidOk && p && p.lastCid === cid) return reply(cb, { ok: true });
     const now = Date.now();
-    if (socket.data.lastChat && now - socket.data.lastChat < 400) return;
+    if (socket.data.lastChat && now - socket.data.lastChat < 400) return reply(cb, { ok: false, error: M('chatFast') });
     socket.data.lastChat = now;
-    pushChat(room, { id: pid, name: pn(room, pid), text: t, ts: now });
+    if (p && cidOk) p.lastCid = cid;
+    const msg = { id: pid, name: pn(room, pid), text: t, ts: now };
+    const o = Number.isInteger(re) && re > 0 ? room.chat.find((m) => m.mid === re && !m.system) : null;
+    if (o) {
+      const s = String(o.text).replace(/\s+/g, ' '), cp = Array.from(s);
+      msg.re = { mid: o.mid, name: o.name, t: cp.length > 40 ? cp.slice(0, 40).join('') + '…' : s };
+    }
+    const reDropped = re != null && re !== 0 && !o;
+    pushChat(room, msg);
+    reply(cb, reDropped ? { ok: true, reDropped: true } : { ok: true });
   });
 
-  socket.on('disconnect', () => {
+  on('disconnect', () => {
     const { room, pid } = ctx();
     if (!room) return;
     const p = room.players.get(pid);

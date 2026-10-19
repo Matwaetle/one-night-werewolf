@@ -1,0 +1,632 @@
+[
+ {
+  "score": 6,
+  "improved": [
+   "All new button/menu strings follow the -기 rule: 채팅 끄기/켜기, 음악 켜기/끄기, 답글하기, 취소하기, 원래 메시지로 이동하기 (public/strings.js 123-126, 329-333)",
+   "Toasts are consistent polite past tense and parallel: 채팅을 껐습니다./켰습니다., 배경음악을 켰습니다./껐습니다.",
+   "offNote is clear and actionable (상태 + 무엇이 보이는지 + 되돌리는 곳) and matches the real menu location shown in mobile 019-menu.png",
+   "The F2 card caption '철수의 카드' renders cleanly with the name highlighted (mobile 013-night-reveal.png); the '의'/'에게서' templates avoid particle (조사) problems",
+   "Strings live only in T.* (chatx.js and audio.js read C.*/B.*), so nothing is hardcoded in modules",
+   "The menu order (음성 > 채팅 > 음악 > 규칙 > 카드 구성) reads naturally and every label fits on one line at 375px"
+  ],
+  "remaining": [
+   {
+    "severity": "critical",
+    "title": "bgmTip says music is playing, but it only appears while music is off",
+    "files": [
+     "public/js/app.js",
+     "public/strings.js",
+     "design/COPY_DECK.md"
+    ],
+    "fix": "app.js:34 sets bgmOn = LS.get('ww_bgm') === '1', so music defaults to off. The menu in 019-menu.png shows '음악 켜기'. Line 191 shows the tip only when !bgmOn, yet the tip reads '배경음악이 작게 재생됩니다. 오른쪽 위 메뉴에서 끌 수 있습니다.' That is false at the moment it appears. Pick one: (a) follow the owner decision in COPY_DECK 706/711 and make the app default to on with bgmOn = LS.get('ww_bgm') !== '1' ? ... (match audio.js:9, ls('ww_bgm') !== '0'), and show the tip when bgmOn is true; or (b) keep the default off and change the string to '오른쪽 위 메뉴에서 배경음악을 켤 수 있습니다.' (the FEATURES_SPEC 2.3 text), then fix the COPY_DECK 687/706/711 rows. Copy and behavior must agree."
+   },
+   {
+    "severity": "major",
+    "title": "The tip says music plays quietly (작게), but the default volume is 보통",
+    "files": [
+     "public/strings.js",
+     "public/js/audio.js"
+    ],
+    "fix": "audio.js:10 defaults vl to 2, which is '보통' in bgmLv, and the comment on line 2 says '보통 음량'. If the default-on tip stays, either start at vl=1 when there is no ww_bgm_vol, or change the tip to '배경음악이 재생됩니다. 오른쪽 위 메뉴에서 끄거나 크기를 바꿀 수 있습니다.'"
+   },
+   {
+    "severity": "major",
+    "title": "'음성 켜기' and '음악 켜기' are easy to confuse when stacked",
+    "files": [
+     "public/strings.js"
+    ],
+    "fix": "The two items differ by one syllable in two adjacent rows (019-menu.png). Rename the music items to '배경음악 켜기'/'배경음악 끄기', which also matches the toasts. If the glyphs 배/경 push hanbam-d over 30KB, move bgmOn/bgmOff to T.body as FEATURES_SPEC section 2 already allows, then rerun tools/subset-font.mjs."
+   },
+   {
+    "severity": "minor",
+    "title": "'답글하기' is unidiomatic",
+    "files": [
+     "public/strings.js",
+     "design/COPY_DECK.md"
+    ],
+    "fix": "Korean says '답글 달기' or '답장하기', not '답글하기'. Set reply: '답글 달기' and replyAria: '${n}의 메시지에 답글 달기'. Both keep the -기 ending."
+   },
+   {
+    "severity": "minor",
+    "title": "'음악 크기' is an odd label for volume",
+    "files": [
+     "public/strings.js"
+    ],
+    "fix": "Set bgmVol: '음악 소리 크기' (or '배경음악 음량'). The bgmLv values ['작게','보통','크게'] are fine."
+   },
+   {
+    "severity": "minor",
+    "title": "'당신의 지금 카드' has awkward word order",
+    "files": [
+     "public/strings.js"
+    ],
+    "fix": "Set whoNow: '지금 당신의 카드'. Keep whoNew '당신의 새 카드' as is."
+   },
+   {
+    "severity": "minor",
+    "title": "The 'gone' toast states as fact something that only might be true",
+    "files": [
+     "public/strings.js"
+    ],
+    "fix": "The original can be missing for reasons other than age, such as a reconnect. Set gone: '원래 메시지를 찾을 수 없습니다. 오래된 메시지는 지워졌을 수 있습니다.'"
+   },
+   {
+    "severity": "minor",
+    "title": "The quote's aria-label hides who is being quoted, and no screenshot covers the new chat states",
+    "files": [
+     "public/js/app.js",
+     "public/strings.js"
+    ],
+    "fix": "At app.js:704, aria-label overrides the quoted name and text, so a screen reader hears only '원래 메시지로 이동하기'. Change jump to '${n}의 원래 메시지로 이동하기' and call fmt(T.chat.jump,{n:m.re.name}). None of the refreshed shots shows the reply button, reply bar, quote line, chat-off note or volume .seg, so this copy has not been checked visually. Verify these states by hand, since capture.mjs must not be changed."
+   }
+  ]
+ },
+ {
+  "score": 6,
+  "improved": [
+   "Server reply validation matches the spec. re must be Number.isInteger and > 0 and point to a non-system message in room.chat. Otherwise only re is dropped. The quote is rebuilt on the server from the original text, so a client cannot forge one. test/sim.js:617 covers bad re values ('12', -1, 0, 1.5, null, {}, [1], a system mid).",
+   "Quotes survive a reconnect because chatHistory carries mid and re. The server and the client both cap chat at 150 messages, so neither side can hold a mid the other has dropped.",
+   "chatx.js treats server text as data: it uses textContent only and never innerHTML. It attaches only delegated listeners and creates one reusable reply button. If the quoted message is no longer in the DOM, jump() shows the T.chat.gone toast and does not throw.",
+   "audio.js listens for visibilitychange itself: it suspends when the tab is hidden and resumes only when sound is on. tick() stops scheduling when ctx.state !== 'running' and clamps e.t to currentTime, so returning to the tab does not fire a burst of queued notes. Every public SND method is wrapped in try.",
+   "Reconnect handling is solid. connectionStateRecovery lasts 120s, pings are 10s/8s, and stale() closes a connection that went quiet without notice. When the tab becomes visible the client reconnects or runs stale(), then re-requests wake lock and calls toEnd(). send() waits up to 8s for a reconnect and retries once on an ack timeout.",
+   "Chat stays pinned to the bottom unless the reader has scrolled up: ui.stick plus ui.chatTop keep the reading position when the sheet is closed and reopened."
+  ],
+  "remaining": [
+   {
+    "severity": "critical",
+    "title": "A null payload crashes the whole server process (any client can trigger it)",
+    "files": [
+     "server.js"
+    ],
+    "fix": "Every handler destructures its payload with a default, e.g. socket.on('chat', ({ text, re } = {}) ...) at server.js:1065. The default only applies to undefined, so socket.emit('chat', null) throws a TypeError. socket.io runs listeners inside process.nextTick (node_modules/socket.io/dist/socket.js:688), and server.js has no uncaughtException handler, so the process exits and every room is lost. The same pattern is in create, join, kick, setDeck, setSettings, ready and vote (server.js:893-1065). Fix: change each signature to (d, cb) and start with `const { text, re } = d && typeof d === 'object' ? d : {};`, or wrap socket.on in a small helper that does this and catches errors. As a backstop, add process.on('uncaughtException', e => console.error(e)) and add a sim.js case that emits null to every event."
+   },
+   {
+    "severity": "major",
+    "title": "Sent chat can be lost silently: no ack, and the input is cleared anyway",
+    "files": [
+     "public/js/app.js",
+     "server.js"
+    ],
+    "fix": "At app.js:657 the client clears i.value as soon as it emits. The server silently drops the message on the 400ms flood guard, at night, or when the socket is half-dead (sock.connected is still true and recovery does not replay packets from client to server). Fix: on the server, call cb({ok:false,error:M('tooFast')}) or cb({ok:true}). On the client, use sock.timeout(4000).emit('chat', payload, (err, r) => { if (err || !r || !r.ok) { i.value = t; if (re) f.dataset.re = re; fail(r && r.error || TB.ackFail); } }). Clear the input optimistically but restore the text on failure."
+   },
+   {
+    "severity": "major",
+    "title": "No server message size limit (maxHttpBufferSize defaults to 1MB)",
+    "files": [
+     "server.js"
+    ],
+    "fix": "At server.js:42 the Server is created without maxHttpBufferSize, so a client can send a 1MB chat or nightAction payload many times a second. The server parses all of it before slicing the text to 300 characters. Add maxHttpBufferSize: 16 * 1024 to the options; the largest legitimate payload is under 1KB. Also check typeof text === 'string' before String(text), because String() on an array calls join on attacker-supplied data."
+   },
+   {
+    "severity": "major",
+    "title": "Replying to a message the server has already evicted is silently turned into a plain message",
+    "files": [
+     "server.js",
+     "public/js/chatx.js"
+    ],
+    "fix": "When the target mid has fallen out of the server's 150-message chat buffer, server.js:1074 drops re without telling anyone. The reply bar has already disappeared, so the sender thinks the reply went through. Fix: either return {ok:true, reDropped:true} in the chat ack (see the ack fix above) and show toast(T.chat.gone), or have chatx.startReply refuse targets near eviction: if (+mid <= newestMid - 140) toast(C.gone). The ack approach is preferable."
+   },
+   {
+    "severity": "major",
+    "title": "Every reconnect jumps chat to the bottom and loses the reading position",
+    "files": [
+     "public/js/app.js"
+    ],
+    "fix": "The chatHistory handler at app.js:170 runs l.innerHTML='' and then sets ui.stick=1 and calls toEnd() on every attach. Because of connectionStateRecovery plus the rejoin emit, that happens on every reconnect, and stale() closes the socket on tab return, which triggers one. A user scrolled up reading lands back at the bottom, and replayed chat events are rebuilt twice. Fix: compare against the existing log. If the last data-mid in #chatLog is >= the last mid in the history, return early. Otherwise append only messages with mid > lastMid and leave ui.stick alone. Also store ui.chatBuf = m only for buildSheet."
+   },
+   {
+    "severity": "minor",
+    "title": "Rejected suspend()/resume() promises become unhandled rejections in the console",
+    "files": [
+     "public/js/audio.js"
+    ],
+    "fix": "audio.js:125, 164, 165, 176 and 183 wrap ctx.suspend() and ctx.resume() in try/catch, but these methods return Promises. A rejection, such as InvalidStateError after the iOS 'interrupted' or closed state, escapes try and logs an 'Uncaught (in promise)' console error. Add a helper `const P = (p) => p && p.catch && p.catch(() => {});` and wrap every call: P(ctx.suspend()), P(ctx.resume()). Also clear the 250ms tick interval while D.hidden and restart it on visible, so the page does not run 4 timer callbacks a second in the background."
+   },
+   {
+    "severity": "minor",
+    "title": "chatx wraps the chat form so the send button drops to its own row at 375px",
+    "files": [
+     "public/js/chatx.js",
+     "public/css/chatx.css"
+    ],
+    "fix": "review/shots/mobile-375x812/018-chat-sheet-sent.png shows the send (return) icon on a second line under the input. Once the lazy module injects .chat-form{flex-wrap:wrap}, the input no longer leaves room for the button. Fix in chatx.css: `.chat-form .in{flex:1 1 0;min-width:0}` and `.chat-send{flex:0 0 auto}`, so only .chat-re (flex:1 0 100%) wraps. Without this, the layout also shifts after chatx loads."
+   },
+   {
+    "severity": "minor",
+    "title": "chatHistory rebuild leaves chatx pointing at a detached message node",
+    "files": [
+     "public/js/chatx.js"
+    ],
+    "fix": "When innerHTML='' wipes #chatLog, chatx's selEl still points at the removed node and its 3s timer is still running. Clicking the reply button inside that 3s window calls startReply(selEl) on a detached node, which sets form.dataset.re to a mid that may no longer render. Fix: in startReply and the .msg-act click path, check `if (!selEl || !selEl.isConnected) return hideBtn();`. Fixing the incremental chatHistory issue above also removes this case."
+   }
+  ]
+ },
+ {
+  "score": 6.5,
+  "improved": [
+   "The 1024px+ desktop chat drawer works: the 320px side panel with 채팅/기록/카드 구성 tabs leaves the stage and dock usable.",
+   "The mobile sheet has a sensible half-height state (min(50dvh,400px)) with a grip, a 48px close button, backdrop-tap close and Android back handled through history. Overscroll is contained and the log stays pinned to the newest message with the reading position remembered (015/017 shots).",
+   "Night lock works: the sheet is forced closed on mobile at night, the input shows the locked placeholder and any reply target is dropped. System messages are visually separated by a left rule.",
+   "Chat-off is built as specified. Ordinary messages and the form are hidden, the off-note shows, the unread count and ticker stop growing, the setting survives a refresh, and turning chat back on lazy-loads chatx. The menu item 채팅 끄기 sits correctly after 음성 (019-menu).",
+   "chatx follows the spec: delegated listeners only, a single reused reply button, textContent only, tap shows 답글하기 for 3s on touch, hover and arrow keys work on desktop, Escape cancels, a quote tap jumps to and highlights the original or shows a toast, and reduced-motion and lite modes are respected.",
+   "360x640 lobby, vote and final screens fit with no horizontal scroll. The seat ring, dock and 48px targets hold at 360 wide (small-360x640/001,003,006)."
+  ],
+  "remaining": [
+   {
+    "severity": "critical",
+    "title": "Once chatx.css loads, the send button wraps onto its own row under the input",
+    "files": [
+     "public/css/chatx.css",
+     "public/css/base.css"
+    ],
+    "fix": "chatx.css sets .chat-form{flex-wrap:wrap}, and .in has width:100%. The input takes the whole row, so the send button drops below it at the left edge, adding about 56px of dead height to the sheet (mobile 017/018 shots). Add `.chat-form .in{flex:1 1 0;width:auto;min-width:0}` to chatx.css (or base.css). The reply bar keeps flex:1 0 100%, so only the bar sits on its own row and the input and button stay side by side."
+   },
+   {
+    "severity": "major",
+    "title": "A day-phase chat ticker covers the player's own name label",
+    "files": [
+     "public/css/screens.css",
+     "public/js/app.js"
+    ],
+    "fix": ".band>.ticker{bottom:calc(100% + 6px)} places the ticker right on the 나 seat's name. In mobile 016-day and small 002-day, 나그네 is hidden behind '철수: 저는 밤새…'. Move it clear of the seat ring: drop the .band>.ticker override so it uses the default top:8px stage position (append it to .stage/#main instead of .band in ticker()), or pin it under the HUD with `top:calc(var(--hud-h) + 8px)` as a position:fixed strip."
+   },
+   {
+    "severity": "major",
+    "title": "At full height with the keyboard open, the sheet pushes its tabs and close button off-screen",
+    "files": [
+     "public/css/base.css",
+     "public/js/app.js"
+    ],
+    "fix": "#sheet[data-h=2] uses height 85dvh with bottom:var(--kb). On browsers with dvh support, --app-h is never set, so 85dvh plus the keyboard height can exceed the visual viewport (360x640: 544px + about 260px). In kb(), also set `--vvh: v.height+'px'` on #sheet, and add `#sheet{max-height:calc(var(--vvh,100dvh) - var(--sat) - 8px)}`. Verify by focusing #chatInput at 360x640 with the keyboard emulated."
+   },
+   {
+    "severity": "major",
+    "title": "The 3-line clamp cuts off the day hint at 360-412px wide",
+    "files": [
+     "public/css/screens.css",
+     "public/strings.js"
+    ],
+    "fix": "On mobile and small, '왼쪽 아래 카드를 누르면 밤에 확인한 정보를 다시 …' is truncated (016-day, small 002-day), so the most useful line never shows. Shorten the copy to '왼쪽 아래 카드로 밤에 본 정보를 다시 볼 수 있습니다.', or show it only until the first dock-card peek and then drop it. Keep the clamp at 3 lines and make sure no copy line exceeds about 22 Hangul characters at 14px on 360px."
+   },
+   {
+    "severity": "minor",
+    "title": "On the dock card, the crack overlay crosses the 내 카드 보기 label and the label clips at the left edge",
+    "files": [
+     "public/css/screens.css",
+     "public/css/base.css"
+    ],
+    "fix": ".dock-card .crack and ::after use inset:0 with height:100% on the whole 56px column, so the crack line runs through the label text (016-day, desktop 015). Scope the overlay to the card only: `.dock-card .card{position:relative}` and append .crack inside .card, or set `height:var(--card-h)` on the crack. Give the label `white-space:nowrap;font-size:11px`, or shorten it to '내 카드', so it fits inside the 56px column without touching x<8px."
+   },
+   {
+    "severity": "minor",
+    "title": "Wrapped chat messages lose their indent, and the reply affordance can't be discovered on touch",
+    "files": [
+     "public/css/base.css",
+     "public/css/chatx.css"
+    ],
+    "fix": "Long messages wrap back under the speaker name (017: '영희 나는 강도였어요… / 늑대인간이었어요.'). Add `.msg[data-sys=\"0\"]{padding-left:calc(var(--name-w,3.2em) + 8px);text-indent:calc(-1 * (var(--name-w,3.2em) + 8px))}`, or use a grid: `.msg{display:grid;grid-template-columns:auto 1fr}` with .msg-q and .msg-t in column 2. For touch, show a one-time .chat-offnote-style hint line, '메시지를 누르면 답글할 수 있습니다.', the first time the sheet opens, and add a reply-bar screenshot (tap message, then 답글하기) to the capture set so this flow gets reviewed."
+   },
+   {
+    "severity": "minor",
+    "title": "The 투표 시간입니다 headline overlaps the center cards while it fades out",
+    "files": [
+     "public/css/screens.css"
+    ],
+    "fix": "In mobile 021-vote and small 003-vote, the fading headline is drawn over the three center card backs and looks like a smear. Hide or dim the center cards (`body.fx-heading .center{opacity:0}`, transition opacity) while .fx-head exists, or make the headline's exit opacity-only and shorter (≤200ms) so the capture never lands mid-overlap."
+   },
+   {
+    "severity": "minor",
+    "title": "The chat badge shows a red diamond and a count at the same time",
+    "files": [
+     "public/js/app.js",
+     "public/css/base.css"
+    ],
+    "fix": "In 016-day the badge shows both the .is-new diamond and the number 3. When .bd has text, show only the number and keep the diamond for logNew-only (기록) news: `.dock-badge.is-new .bd:not(:empty)~::after`, or toggle a separate class `is-log` for the diamond in render (`bdg.classList.toggle('is-new', !ui.unread && !!ui.logNew)`)."
+   }
+  ]
+ },
+ {
+  "score": 6,
+  "improved": [
+   "audio.js mostly follows the cheap path in spec 5.4: oscillators, Biquads and one shared 2 s noise buffer. It uses no ConvolverNode, HRTF or AudioWorklet. Beats are scheduled from a 250 ms setInterval that looks 0.5 s ahead, not from rAF, and tick() returns early when ctx is not running.",
+   "The audio context is suspended when the tab is hidden, and off() suspends it about 400 ms after the fade. A muted or backgrounded phone therefore uses almost no audio CPU. One-shot tones and noise bursts call stop() and disconnect in onended. The old scene bus is killed 4 s after a cross-fade, so the node graph does not keep growing.",
+   "Lite mode trims the audio as specified: no echo, no unease swell, plucks spaced x1.5, and 5 of the 8 bell partials. The night scene stays at about 5 sources.",
+   "fx.js animates only transform/opacity and the individual translate/scale properties, through WAAPI. run() caps concurrent animations at 6 and sets and clears will-change for each animation. Every effect jumps to its end state when the device is lite, reduced-motion is on, d.hidden is true or WAAPI is missing. The stamp, X and execution end states stay on screen at every tier, as the spec requires.",
+   "Lite and reduced-motion overrides exist for the new effects: tremble and shake are skipped, the fan fold is short, execute becomes a 160 ms opacity change and lids fade. chatx .is-hit stops animating and reduce() removes it after 600 ms. replay.css drops all animation under reduced motion and replay.js skips tremble, shake and the waits when S.lite is set.",
+   "Infinite pulses (vignette heartbeat, selectable token, night dot, home eyes) have lite overrides and animate opacity only. In the 6x CPU throttle runs the frame p95 is 7-14 ms and there are no console errors."
+  ],
+  "remaining": [
+   {
+    "severity": "critical",
+    "title": "The replay misses the long-task budget badly: 44 long tasks (6978 ms in total, max 450 ms) at 6x CPU, against a target of 0 tasks over 50 ms",
+    "files": [
+     "public/js/replay.js",
+     "review/metrics.json"
+    ],
+    "fix": "metrics.json shows cpu.replay with longTasks 44, max 450 ms, total 6978 ms, and wholeGame max 574 ms. The long tasks recur roughly once per beat. The checklist in FEATURES_SPEC asks for zero tasks over 50 ms at 6x throttle. Suspected cause: each beat runs nt() (add class, then f(), then void offsetWidth, then remove class), which forces a synchronous style and layout. layout() then reads getBoundingClientRect for every seat and altar card, and scene() rebuilds the .rp-front innerHTML with card(...) markup. (1) Call layout() only on start and on resize, cache X/Y/SC, and never call it inside play(). (2) In scene(), write only the attributes that change and reuse the card nodes, instead of setting f.innerHTML when data-k changes. (3) Preload card face images with ART.want(allRoles) when the replay starts and await img.decode(), so decoding does not land on a beat. (4) Wrap the beat's DOM writes in a single requestAnimationFrame. Then record a Performance trace at 6x throttle and confirm the max long task is 50 ms or less."
+   },
+   {
+    "severity": "major",
+    "title": "Night transitions still show 8 long tasks (max 231 ms) at 6x throttle",
+    "files": [
+     "public/js/app.js",
+     "public/js/fx.js"
+    ],
+    "fix": "In metrics.json, cpu.nightTransitions shows long tasks at 2939 ms (231), 16474 ms (154) and 18032 ms (168). These line up with phase renders and lidsClose/lidsOpen at app.js:267. Split render() so the phase change (body data-phase, lids) commits in the first frame. Defer the patch() of seats, the log and the secret list (app.js:739, a filter:blur(14px) layer full of card images) to the next idle callback or rAF. Also stop rebuilding the blurred .secret-in log on every render: patch it only when the items change, because every repaint of a 14 px blur layer is expensive on Mali/Adreno GPUs."
+   },
+   {
+    "severity": "major",
+    "title": "Deal flights can hit the 6-animation cap, and a ghost card then sticks at the deck fan",
+    "files": [
+     "public/js/fx.js"
+    ],
+    "fix": "In FX.deal, a flight starts every 90 ms and lasts 360 ms plus a 60 ms ink fade. That is about 5 animations in flight at once, and a concurrent flash or shake pushes live.length to 6 or more. run() then returns null and calls done without moving anything. The ghost has no fill transform, so it sits at the fan position until dealEnd removes it. Fix: let deal() bypass the cap by calling el.animate directly through track(), or have run() apply the last keyframe as an inline style before calling done when it refuses. Also run the ink fade only when the flight actually animated."
+   },
+   {
+    "severity": "major",
+    "title": "Default state disagrees: audio.js treats a missing key as on, app.js and the spec treat it as off",
+    "files": [
+     "public/js/audio.js"
+    ],
+    "fix": "audio.js:9 sets var en = ls('ww_bgm') !== '0', and its header comment says on by default (owner decision). app.js:34 uses bgmOn = LS.get('ww_bgm') === '1', and FEATURES_SPEC 5.1 says the default is off. Today audio.js only loads when bgmOn, so nothing breaks yet. But if a future preload or the SW loads it, the four capture-phase gesture listeners (pointerup, keydown, touchend, click) would create an AudioContext and start the drone on the first tap, at a cost to low-end CPU and battery. Change it to var en = ls('ww_bgm') === '1', and update the comment."
+   },
+   {
+    "severity": "minor",
+    "title": "Gesture listeners and the tick interval stay alive forever",
+    "files": [
+     "public/js/audio.js"
+    ],
+    "fix": "gx runs on every pointerup, keydown, touchend and click (four capture listeners) for the whole session. Once mst exists and ctx.state === 'running', remove them, and add them back only on ctx.onstatechange to 'interrupted' or 'suspended' while en is true. In the visibilitychange handler, also clearInterval(tm) when the tab hides and restart it when the tab shows. Today setInterval(tick, 250) keeps waking the main thread four times a second in the background, and timers are not throttled when the page is in a WebView or PWA."
+   },
+   {
+    "severity": "minor",
+    "title": "Lite mode is checked once for the echo, and the result bell is scheduled early",
+    "files": [
+     "public/js/audio.js"
+    ],
+    "fix": "mk() checks L() only once, so the echo is decided at context creation. That is acceptable while data-perf is static, but it should be documented, or rebuilt if data-perf can change. In the result scene, the ev callback receives the scheduled time z, but S.toll() uses ctx.currentTime + 0.02, so the bell can sound up to 0.5 s early. Pass z into toll: S.toll = wrap(function (dead, at) { var t = at || ctx.currentTime + 0.02; ... }) and call S.toll(o.dead > 0, z)."
+   },
+   {
+    "severity": "minor",
+    "title": "card.is-selectable::before pulse has no lite override",
+    "files": [
+     "public/css/card.css"
+    ],
+    "fix": "card.css:221 runs an infinite card-pulse animation. screens.css:289 already turns off the matching seat-token pulse in lite mode. Add html[data-perf=lite] .card.is-selectable::before{animation:none;opacity:.6}, and add the same rule inside the reduced-motion block at card.css:289. Several selectable cards (altar, night actions) otherwise keep compositor layers animating on low-end devices."
+   },
+   {
+    "severity": "minor",
+    "title": "Lite and reduced-motion screenshots and metrics are missing",
+    "files": [
+     "review/metrics.json",
+     "tools/capture.mjs"
+    ],
+    "fix": "metrics.json only measures data-perf=full (desktop Chrome, 6x throttle) and has no audio-on pass. The checklist items 'lite·reduced 각각에서 deal, tremble, execute, stamp' and 'CPU 1~2% with music on the vote screen' have no evidence. tools/capture.mjs must not be modified, so do this as a manual or separate run. Use DevTools at 6x throttle with an emulated deviceMemory of 2 (which gives lite) and with emulated prefers-reduced-motion. Record a trace through deal, swap and execute, and record the vote scene for 30 s with music on, using the Performance monitor's CPU %. Shut every server down afterwards."
+   }
+  ]
+ },
+ {
+  "score": 6.5,
+  "improved": [
+   "The art direction holds together. The bone-on-void engraving style is consistent across the forest backdrop, the wolf card back, the role art and the blood-red plates, so it reads as one menacing 'blood woodcut' world instead of a generic dark theme.",
+   "Seat cards now sit beside each token on the inner side, vertically centred on it (민/영/지/철/도 at 1280, 375 and 360 widths). This fixes the old misalignment and leaves the altar row clean, with even gaps on desktop.",
+   "The execution beat in the replay (043) is the strongest moment in the game. The card goes scaleX 1->0, swaps to the dead face, comes back 0->1, then gets the -6deg '처형' stamp, a 6px x4 shake and a 120ms blood flash. It is short, punchy and still tasteful. Every vote line converges on the executed seat in red with a count badge, which makes it legible.",
+   "The motion grammar is disciplined. stepped eases (steps(3/5/6)) make reveals feel ink-printed rather than slick, everything animates transform/opacity/translate/scale only, and lite/reduced fallbacks exist for deal, tremble, stamp and execute. tremble never runs on other people's seats at night, so it cannot leak information.",
+   "The deal (fx.js FX.deal) is a good idea done cheaply. The fan folds, then card-back ghosts fly to each seat and the altar on a 90ms stagger with ±4deg rotation settling to 0 and an ink fade at landing. It runs once per game and skips on hidden tabs and reconnects.",
+   "The mobile final screen (060) looks premium. The red '늑대인간 팀 승리' headline sits on the moonlit howling-wolf plate, the executed card is crossed out next to my own card, and the hierarchy is clear.",
+   "Small screens (360x640) hold up: no collisions between the seats, the altar and the instruction band."
+  ],
+  "remaining": [
+   {
+    "severity": "major",
+    "title": "Card check: the large card covers the '당신의 카드입니다.' title",
+    "fix": "In desktop 008, the card's bottom edge (y=537) cuts through the top half of the check-t1 headline. Give .check a top-aligned flow instead of centring an oversized card: in screens.css set .check-card{--cw:min(var(--cw-xl), calc((100dvh - 320px)/1.4))} so the card shrinks to fit the viewport height, and add .check-t1{position:relative;z-index:1;margin-top:14px}. Check again at 1280x800 and 360x640.",
+    "files": [
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "Phase banners smear across the altar cards (night role call, vote)",
+    "fix": "In 013/009, the .fx-head radial black band and the left-anchored, half-printed fx-head-2 ('말썽쟁', '도플갱어의') sit on top of the centre cards. In 018, a ghosted '투표...입니다.' bleeds through the cards. Centre the subtitle with .fx-head-2{width:100%;text-align:center}. Fade the altar fully while a head is up (.stage:has(.fx-head) .altar{opacity:0}) instead of .12, so text and art never overlap. Shorten the vote head's fade-out (fx-out 400ms -> 240ms) so a half-transparent banner never sits over interactive cards.",
+    "files": [
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "Desktop replay verdict shows an empty black slab and sits flush against the timeline",
+    "fix": "In 022, a 720x295 opaque box shows only the title for about 400ms before .rp-vw/.rp-vs fade in. Its bottom border is hidden behind .rp-bar, and it covers the altar while the executed card floats above it. In the replay.css desktop media rule, add opacity 0->1 on .rp-vd.is-on over 200ms (or delay the background until .is-w). Set bottom:56px (12px clear of the 44px bar) and restore border-bottom:1px solid var(--blood). Use height:auto/max-height so the box hugs its text instead of leaving about 60px of dead void.",
+    "files": [
+     "public/css/replay.css"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "Replay: my seat's label flips above the token and collides with the host key icon",
+    "fix": "In mobile 044/054, '나그네 / 늑대인간' sits above the 나 token while every other seat's label is below, and the key glyph overlaps the second line. Keep labels below the token for the bottom seat too (remove the bottom-seat override in replay.css, or clamp the stage height so the label fits underneath). Move the host key to the token's top-left (left:-6px;top:-6px) so it never touches a label or a seat card.",
+    "files": [
+     "public/css/replay.css",
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Replay vote lines and swap lines run through name labels",
+    "fix": "In 054 and 040, lines cross '민수 말썽쟁이' and '영희 강도' because the label boxes sit under the SVG/line layer. Give the seat labels z-index above .ln (e.g. .rp .seat-name{position:relative;z-index:3}) with their existing void background. Start and end each line at the token edge (offset by --tk/2 along the vector) rather than the token centre, so lines stop at the ring instead of stabbing into the letter.",
+    "files": [
+     "public/css/replay.css",
+     "public/js/replay.js"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Results: the verdict paragraph is set in heavy bold, centred, with orphans",
+    "fix": "In desktop 049 and mobile 060, the six-line '나' explanation uses bold display weight, centred, and leaves orphan words ('마을', '입니다.'). Use the body serif at regular weight for that block, text-align:left inside a max-width:28em column, text-wrap:pretty and word-break:keep-all, and keep bold only on names and role names. The block currently reads like a shouting wall that undercuts the stamp moment.",
+    "files": [
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Lobby deck fan: the top card's label is clipped and a stray count badge sits outside the fan",
+    "fix": "In 005 (desktop and mobile), the rightmost fan card shows a cut role plate ('뱅이', '쟁이') rotated over its neighbour, and a loose '2' sits off the right edge on mobile. Hide the plates on fan cards (.fan .card .card-plate{display:none}, since the fan is decorative), and either drop the duplicate-count badge in the fan or pin it to the card's top-right corner inside the card bounds.",
+    "files": [
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Card-composition sidebar alignment and the eyelid not covering it",
+    "fix": "The sidebar header '카드 구성 (가운데 카드 3장 포함)' is right-aligned above a large empty band, and the counts ('1', '2') hang left-aligned under each card. Left-align the header with padding-bottom:12px, and centre the counts under the card as a small chip (×2) or overlay them on the card corner. Also, in 009 the closing-eyelid black covers only #main and leaves the bright sidebar art untouched. Extend the lids to the full viewport (or dim the aside to .15 during lidsClose) so 'close your eyes' actually darkens the whole screen.",
+    "files": [
+     "public/css/screens.css",
+     "public/css/base.css",
+     "public/js/fx.js"
+    ]
+   }
+  ]
+ },
+ {
+  "score": 6,
+  "improved": [
+   "The critical path is light and fast on 1MB/s with 300ms RTT: FCP 544ms, form usable at 770ms, socket ready at 1111ms. About 58KB loads before the form works (metrics.json home), and html+font+sio+game is 52.17KB against a 75KB cap.",
+   "BGM costs nothing to download. public/js/audio.js is a WebAudio synth engine (2.64KB br) with no fetch, ogg, mp3 or decodeAudioData. The app only adds it when ww_bgm is '1' (app.js:71) or when the user turns it on (app.js:1080-1083), and it creates the context inside the click, which iOS requires.",
+   "chatx.js is 1.75KB of a 2KB cap. It loads lazily at idle or on the first sheet open, and not at all when chat is off (app.js:73-77).",
+   "Every image row is within budget. Mobile home loads key-m (37KB) and the 001-home screenshot shows the key art arriving inside 4s (keyArtRequestedWithin4s true). Deck prefetch is skipped on slow networks (art.js prefetchDeck isSlow) and the loader runs 2 requests at a time with a priority queue.",
+   "Hashed /a/ assets are served immutable for a year and pre-compressed with br/gz at startup. The service worker serves /a/ cache-first, and the app shell is stale-while-revalidate.",
+   "Moving the T.replay strings out of game.js (stamp @client:replay) worked: game.js is 23.86KB, under the 24KB hard cap."
+  ],
+  "remaining": [
+   {
+    "severity": "critical",
+    "title": "replay.js is over budget and check:budget exits 1 (14.41KB vs 12.5KB)",
+    "fix": "The bundle has two parts: the moved T.replay strings at about 5.1KB br and the code+CSS at about 9.6KB br. Exact fix: (1) In tools/stamp.js minJs, set terser compress.passes:2 and mangle.properties with regex /^_/ for replay only, and rename internal replay.js fields to start with _. (2) In public/strings.js, cut the replay narration variants that only differ in wording (keep one top/bot pair for idle.one and idle.many, and merge the doppel/doppelOf/copyOf templates). (3) Re-run `node tools/stamp.js && npm run check:budget` until replay is at or under 12.5KB. If that cannot reach 12.5KB, have the owner amend FEATURES_SPEC §10.2 to 14.5KB and say why: the spec's '-0.8~1.0KB' estimate counted only game.js savings, and the strings cost 5.1KB once they sit in replay. Network impact is small either way (about 15ms extra at 1MB/s, idle-loaded at vote)."
+   },
+   {
+    "severity": "major",
+    "title": "Server brotli quality 9 makes wire bytes larger than check-budget measures; game.js is really about 25.3KB on the wire",
+    "fix": "server.js:86 precompresses at BROTLI_PARAM_QUALITY 9, but check-budget measures q11. At q9 game.js is 25,953B against 24,437B at q11, which is over the 24KB cap on the wire. sio is +990B, replay +875B, game.css +552B. Change server.js:86 to quality 11. It runs once at startup on a few files, so the cost is under 100ms. This saves about 4KB per cold visit."
+   },
+   {
+    "severity": "major",
+    "title": "game.js is over the 23.8KB warn line and the FEATURES_SPEC 0.4 cut order was not applied",
+    "fix": "check:budget reports WARN at 23.86KB. Following spec §0.4 / §671, cut in order: (1) the §4.3 name plate (werewolf, minion, mason), (2) the §4.5 night-log tags, (3) the bgmTip toast (app.js:191). Stop at the first cut that brings game.js to 23.8KB or less."
+   },
+   {
+    "severity": "major",
+    "title": "The measured one-game network total is 901KB (744KB of images), against the checker's own estimate of 508KB",
+    "fix": "This is probably not real traffic. The capture runs with Network.setCacheDisabled, which also turns off the memory cache, so each re-rendered `--art:url()` card background downloads again. I did not verify this by rerunning. To confirm without touching capture.mjs, run a one-off script in the scratchpad that groups metrics-net requests by URL and counts duplicates. If repeat fetches show up with the cache on, reuse the decoded Image via `keep` for 'r:' keys too (art.js finish: change `job.key.indexOf('s:') === 0` to keep both s: and r:), and make ART.card reuse the same URL string. Then put a per-URL unique byte total in the report next to the raw total."
+   },
+   {
+    "severity": "minor",
+    "title": "The service worker precaches audio.js and chatx.js for every visitor, even though music is off by default",
+    "fix": "dist/sw.js PRE contains /a/audio.*.js, which is about 2.8KB wire per install for users who never turn music on. In tools/stamp.js, where `pre` is built (near line 300), drop AUDIO_JS from the list. The runtime /a/ cache-first rule will still cache it once music is turned on."
+   },
+   {
+    "severity": "minor",
+    "title": "check-budget has the wrong audio label and counts audio in the one-game total",
+    "fix": "In tools/check-budget.mjs, rename the row label from '기본 켜짐' to '기본 꺼짐, 켤 때만'. Also remove au[0] from the `later` array in the one-game total: FEATURES_SPEC §658 says to add chatx and not audio."
+   },
+   {
+    "severity": "minor",
+    "title": "The display font hanbam-d (20KB) is fetched during home idle, before it is needed",
+    "fix": "In metrics, hanbam-d (20.8KB) is the third-heaviest home request and competes with key-m on 1MB/s. In app.js loadAssets, move the `D.fonts.load(TH.sign)` idle call to the first lobby entry (scene 'lobby' branch), or gate it with `root.dataset.net !== 'slow'`. The key art then gets the full link during the first 4s."
+   }
+  ]
+ },
+ {
+  "score": 7,
+  "improved": [
+   "Night 'whose card' labels work for the seer. The revealed card has a caption '철수의 카드' (name in red) above it and a '누르면 카드를 덮습니다.' hint below (mobile 013-night-reveal). app.js whoOf/revealHTML also covers center cards (T.altar), the robber ('당신의 새 카드' + '철수에게서 가져온 카드') and the doppelganger ('이제 당신은 이 역할입니다.').",
+   "The dock peek now shows two lines (who + where it came from) through peekInfo/lastSeen, so a player who was robbed or swapped can tell which card they are looking at.",
+   "The result story is in plain second person and explains the twist well: '말썽쟁이 지은이 당신의 카드를 철수의 카드와 바꿨습니다. 당신은 이제 늑대인간입니다. 당신은 예언자 카드인 줄 알았지만…' (mobile 060).",
+   "Result rows tell each player's card history step by step (처음 X → who did what → 알고 있던 카드), and the center cards are labeled 가운데 카드 1/2/3. A beginner can follow every swap.",
+   "In the replay, every seat shows name + role and the center cards are labeled 가운데 1/2/3. The swap arrows and the '바뀐 카드: 5장' line make the night understandable.",
+   "The lobby rule line ('카드는 인원수보다 3장 많아야 합니다…'), the vote instruction ('처형할 사람을 누른 뒤 아래 버튼을 길게 눌러 투표하세요. 끝나기 전까지 바꿀 수 있습니다.') and the hold-to-confirm dock ('카드 보기 / 철수 / 길게 눌러 확정하세요.') are clear and in polite Korean (존댓말)."
+  ],
+  "remaining": [
+   {
+    "severity": "major",
+    "title": "On the result screen the player's own card is labeled with a third-person name ('나그네의 카드') and the story mixes the name with '당신'",
+    "fix": "In app.js lines 910-912, when building heroes, check whether q is me (R.players index === my seat / q.id === S.me). If it is, use TB.whoMine ('당신의 카드') in place of fmt(TB.heroKey,{n}), and add a string such as heroDeadMe: '당신 · 처형' in place of heroDead. In the verdict sentence '늑대인간 나그네는 처형되지 않았습니다', print '당신' (or '나그네(당신)') when the wolf is me. A beginner currently reads 나그네 as another player.",
+    "files": [
+     "public/js/app.js",
+     "public/strings.js"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "The day coach hint, the only explanation of the cracked dock card, is cut off with an ellipsis",
+    "fix": "Mobile 016/020 and small 002 show '왼쪽 아래 카드를 누르면 밤에 확인한 정보를 다시 …'. Either shorten the copy so it fits in three lines at 360px, e.g. dockCoach: '왼쪽 아래 카드로 밤 정보를 다시 볼 수 있습니다.', or put the coach on its own line under the dock instead of appending it to V.band, and raise -webkit-line-clamp to 4 in day mode (screens.css line 303).",
+    "files": [
+     "public/strings.js",
+     "public/js/app.js",
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "A day chat bubble covers the player's own name plate at the bottom seat",
+    "fix": "Mobile 016 and small 002 show '철수: 저는 밤새 아무것도 못 봤어요.' drawn exactly over '나그네' under my token. A beginner thinks they said it, or loses track of which seat is theirs. For the bottom seat (or any seat whose label is in the lower 30% of the stage), place the bubble above the token (translateY(-100%) from the token top), or move it to the top center of the stage. Never let it overlap .seat-name.",
+    "files": [
+     "public/css/screens.css",
+     "public/js/app.js"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "The card-check press is not captured: the 'pressing' shot is already night on every viewport",
+    "fix": "Mobile 009 and desktop 009 show the lids closing on '도플갱' instead of the face-up card, so 'do beginners see their role, team and description while pressing' is unverified. It may be harness timing: capture.mjs must not be edited, so verify by hand. If the check phase ends during a 1.4s press, a slow first-timer may never see their role. Make sure the check step (13s) is not cut short, and keep the card face visible while the press is held even if the step timer expires.",
+    "files": [
+     "public/js/app.js",
+     "server.js"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "The result row labels '투표 나그네' and the red underline on 알고 있던 카드 are unexplained",
+    "fix": "Change the vote label (strings.js line 161) to a phrase such as votedFor: '${n}에게 투표' and render '나그네에게 투표 · 득표 5'. For the red underline (.rec-belief.is-diff), add a short legend line once above the list, e.g. '붉은 밑줄: 알고 있던 카드와 마지막 카드가 다릅니다.', or append '(바뀜)' after the name.",
+    "files": [
+     "public/strings.js",
+     "public/js/app.js",
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Contradictory instructions while the seer's reveal is open",
+    "fix": "In mobile 013 the band says '행동을 마쳤습니다. 눈을 감으세요.' and the dock says '눈을 감고 차례를 기다리는 중입니다.' while the card is still face up, waiting for a tap to cover it. While ui.reveals.length > 0, show TB.coverHint (or '카드를 확인한 뒤 눌러 덮으세요.') in the band, and switch to doneClose only after coverAll().",
+    "files": [
+     "public/js/app.js"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "The boxed '나' tag in front of the personal result paragraph reads as a stray glyph",
+    "fix": "Mobile 060 / small 005 show a bordered '나' chip at the start of '말썽쟁이 지은이…'. Replace it with a short heading line above the paragraph, e.g. '당신의 밤' (bold, its own line), or drop the chip, since the sentence already says '당신'.",
+    "files": [
+     "public/js/app.js",
+     "public/strings.js",
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Small overlaps that hurt legibility for first-timers",
+    "fix": "(a) The day crack overlay on the dock card runs through the '내 카드 보기' label (mobile 016/020). Clip the crack to the card box (overflow:hidden on .dock-card, or put the crack on the card's inner element). (b) In the replay, the host key icon collides with the '나그네 늑대인간' label at the bottom seat (mobile 044). Offset the key to the token's top-right with no overlap of .seat-name. (c) The vote-start watermark '투표 시간입니다.' is drawn behind the center cards (mobile 021). Raise it above the cards or fade the cards during the stamp.",
+    "files": [
+     "public/css/base.css",
+     "public/css/screens.css",
+     "public/css/replay.css"
+    ]
+   }
+  ]
+ },
+ {
+  "score": 6,
+  "improved": [
+   "Chat replies work end to end. The server stamps every message with mid via pushChat (server.js:250), builds the re quote itself from stored text (trimmed, 40 code points), ignores a bad or system re, and keeps chat and chatSeq through backToLobby. The client sends {text, re}, clears form.dataset.re on submit, at night and on chatTog, and renders .msg-q with esc(). test/sim.js passes its 'chat mid/reply' check, and test/replay.js passes all 44 fixtures.",
+   "chatx.js matches the spec: listeners are delegated, init runs only once, a single movable reply button is used, messages without data-mid get no button, input.disabled or chat-off hides it, the bar shows only while form.dataset.re is set, Esc and the 취소하기 button both cancel, and jumping to a quote uses scrollIntoView, keeps is-hit for 1200ms (600ms in reduced or lite mode) and shows a toast (T.chat.gone) when the original is missing. User text goes in with textContent only.",
+   "Turning chat off works as specified: the setting persists in ww_chat, the unread count and day ticker stop counting, the badge aria-label drops chat, an off notice appears and system messages stay visible, chatx is not loaded while chat is off, and the CSS hides user messages, the form and the reply button.",
+   "Seer viewing time is enforced on the server. VIEW_HOLD is 10000ms, viewAt is set on any ack that reveals a card or on an info prompt, both checkStepDone and the step timeout (holdEnd) wait for it, ACT was raised to 45s and DOPPEL to 68s, and sim.js asserts the hold. On the client, the reveal is covered only by a tap, a step change or a phase change.",
+   "Labels showing whose card it is cover every role that views a card: seer looking at a player shows 'X의 카드'; seer or lone wolf looking at a center card shows T.altar[idx]; the robber sees '당신의 새 카드' plus 'X에게서 가져온 카드'; the insomniac sees '당신의 지금 카드'; the doppelganger sees 'X의 카드' plus '이제 당신은 이 역할입니다.'. Dock peek uses lastSeen/peekInfo, which handles robber, insomniac and doppelganger plus a first-card fallback. The night log tags each card with altarShort, 나 or a name. The 013-night-reveal shot shows the '철수의 카드' caption above the card and the source seats outlined.",
+   "Chat scrolls to the latest message using ui.stick and ui.chatTop. Showing the chat, sending a message, chatHistory and keyboard resize (kb) all call toEnd(), which re-applies the scroll on rAF and again at 380ms. When the reader has scrolled up, that position is kept when switching tabs.",
+   "Every sheet close path goes through setSheet(0): the X button (data-act=sheetClose), a backdrop tap, dragging the grip down, dragging the header, Esc, toggling the dock badge, and the automatic close at night. Android back works through a single pushState, plus a skipPop counter so closing in code calls history.back() without a second pop.",
+   "Background music plumbing: the AudioContext is created synchronously inside the click handler for iOS, calls made before audio.js loads are queued with scene coalesced to the latest one, playback suspends on visibilitychange and resumes on the next gesture after an iOS interruption, the 3-level volume control persists to ww_bgm_vol and updates aria-pressed, and TTS ducks the music to -8dB."
+  ],
+  "remaining": [
+   {
+    "severity": "critical",
+    "title": "Music defaults to off in the code, but the owner decided on, and the first-visit tip says the opposite of what happens",
+    "files": [
+     "public/js/app.js",
+     "public/js/audio.js",
+     "design/COPY_DECK.md",
+     "design/FEATURES_SPEC.md"
+    ],
+    "fix": "COPY_DECK.md:687/706/711 (owner decision) says music is on by default at a low volume, and audio.js:9 assumes the same (en = ls('ww_bgm') !== '0'). But app.js:34 sets bgmOn = LS.get('ww_bgm') === '1', so audio.js never loads, the menu shows '음악 켜기', and app.js:191 shows bgmTip ('배경음악이 작게 재생됩니다…') only when !bgmOn, which tells the user music is playing while it is silent. Fix: change app.js:34 to `bgmOn = LS.get('ww_bgm') !== '0'`. Change app.js:191 to `else if (bgmOn && LS.get('hb.bgmTip') !== '1')`. Update FEATURES_SPEC 5.1 ('기본값은 꺼짐') to match the owner decision."
+   },
+   {
+    "severity": "major",
+    "title": "Send button wraps below the input once chatx loads (seen in mobile 018-chat-sheet-sent)",
+    "files": [
+     "public/css/chatx.css",
+     "public/css/base.css"
+    ],
+    "fix": "chatx.css adds .chat-form{flex-wrap:wrap}, and .in has width:100%, so #chatInput takes the whole row and .chat-send drops to a second line. The screenshot shows the ↵ button under the input with about 70px of wasted height. Fix: add `.chat-form .in{flex:1 1 0;width:auto;min-width:0}` to base.css or chatx.css, so only .chat-re (flex:1 0 100%) takes a full row."
+   },
+   {
+    "severity": "major",
+    "title": "Turning music on and then off before audio.js loads leaves it playing",
+    "files": [
+     "public/js/app.js"
+    ],
+    "fix": "In bgm(), the on path queues ['on'] and creates the context. If the user turns it off before the script arrives, W.SND.off does not exist yet, so nothing is queued. audio.js then replays 'on' (en=true) and go() starts sound while bgmOn is false. Fix at app.js:1085: `} else if (W.SND.off) W.SND.off(); else W.SND.q = W.SND.q.filter((x) => x[0] !== 'on').concat([['off', []]]);`"
+   },
+   {
+    "severity": "major",
+    "title": "Android back with the menu, rules or kick modal open leaves the game page",
+    "files": [
+     "public/js/app.js"
+    ],
+    "fix": "Only the sheet pushes a history entry, and openModal and closeModal (app.js:767/773) do not. A back press with a modal open goes back past the room and disconnects the player. Fix: reuse the sheet pattern. In openModal on mobile, if !hs, call pushState({ww:'modal'}) and set hs=2. In closeModal, if hs===2, set hs=0, increment skipPop and call history.back(). In popstate, if hs===2, set hs=0 and call closeModal()."
+   },
+   {
+    "severity": "minor",
+    "title": "No signal for new messages while the reader is scrolled up",
+    "files": [
+     "public/js/app.js",
+     "public/css/base.css"
+    ],
+    "fix": "addChat never auto-scrolls when ui.stick is false, which is correct. But unread is not counted while the sheet is open (`|| ui.h` at app.js:711), so messages arrive with no sign. Fix: when chatShown() && !ui.stick && !mine && !m.system, show a small '새 메시지 보기' pill pinned to the bottom of .sheet-body; tapping it sets ui.stick=1, calls toEnd() and hides the pill. Hide it from the scroll handler when stick becomes true. Add the key to strings T.chat and COPY_DECK."
+   },
+   {
+    "severity": "minor",
+    "title": "Default volume level contradicts COPY_DECK",
+    "files": [
+     "public/js/audio.js"
+    ],
+    "fix": "COPY_DECK.md:708 says bgmLv defaults to 작게(1), but audio.js:10 uses `+ls('ww_bgm_vol') || 2` and its header comment says '보통 음량'. Change it to `|| 1` and fix the comment."
+   },
+   {
+    "severity": "minor",
+    "title": "Doppelganger-seer can stack 3 large cards in a row that does not wrap (about 400px wide at 375px)",
+    "files": [
+     "public/js/app.js",
+     "public/css/screens.css"
+    ],
+    "fix": "The copy reveal (copy:1) stays in ui.reveals when the follow-up seer or robber ack pushes more cards, and .reveal-row{display:flex} does not wrap. Fix: in onAck, if sn.fromDoppel (or the prompt was fromDoppel), first run `ui.reveals = ui.reveals.filter((r) => !r.copy)`. Alternatively add flex-wrap:wrap;justify-content:center to .reveal-row."
+   },
+   {
+    "severity": "minor",
+    "title": "Missing screenshot evidence for the new features",
+    "files": [
+     "review/shots/mobile-375x812",
+     "review/shots/desktop-1280x800"
+    ],
+    "fix": "The refreshed shots show no reply bar, no .msg-q quote, no chat-off notice, no music volume segment and no robber or insomniac captions. The night reveal shot covers only the seer. tools/capture.mjs must not be modified. Check these states by hand or with a separate script, especially the send-button wrap after it is fixed, the 360x640 chat sheet with the reply bar open, and the menu with music on (segHTML)."
+   }
+  ]
+ }
+]

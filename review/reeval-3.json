@@ -1,0 +1,408 @@
+[
+ {
+  "score": 7.5,
+  "improved": [
+   "The desktop final board (desktop 051) no longer collides with itself, which was the critical issue last round. All six seats show their token, name and final card cleanly around a 3-card altar. The 득표 tags and the execution X sit on the right token. The cards are readable at 64/112px.",
+   "On desktop night, day and vote (011, 022), the top seat 민 is no longer clipped by the HUD, and the night pips sit above it without overlapping. The altar backs are fully opaque.",
+   "The desktop final ledger (052/053) is now a clean list with one row per player: stamp, start-to-end card, vote and votes received. The ledger and the chat side panel never overlap.",
+   "The verdict now explains the night in plain second-person sentences on all three sizes (mobile 058, small 005, desktop 049), for example '말썽쟁이 지은이 당신의 카드를 철수의 카드와 바꿨습니다. 당신은 이제 늑대인간입니다.' The text fits without clipping at 360px.",
+   "The mobile vote screen (small 004) is clean. The vote line, selected ring, hint and two-line hold button fit at 360x640 with no overlap.",
+   "The '눌러 보기' label no longer overprints the dock thumbnail. The label now sits under the card as '내 카드 보기'."
+  ],
+  "remaining": [
+   {
+    "severity": "major",
+    "title": "Desktop replay: the bottom seat (나) collides with the centre cards",
+    "files": [
+     "public/js/app.js",
+     "public/css/replay.css"
+    ],
+    "fix": "In desktop 030 and 040, the 나 token (y≈480-535) overlaps the '가운데 2' label. The seat name '나그네' prints inside the bottom of the 주정뱅이 centre card (y≈449). Cause: in placeSeats, every seat is shifted up by rp/2 (48px) in replay mode, but the .altar stays at the stage centre, and ry is never clamped against the altar height. Fix: (1) shift the altar by the same amount, `body[data-replay=\"1\"] .stage .altar{margin-top:-48px}` (or set a --rp-shift var that both use). (2) In placeSeats, after computing ry, apply `ry = Math.max(ry, ah/2 + sh/2 + 16)`. When that exceeds H/2 - sh/2, shrink the altar instead (`st.style.setProperty('--altar-cw', ...)`, or use the existing data-tight path) so seats never overlap the centre row."
+   },
+   {
+    "severity": "major",
+    "title": "Mobile replay: seat cards hide under the token ring, and the bottom name label floats detached",
+    "files": [
+     "public/css/replay.css",
+     "public/css/screens.css"
+    ],
+    "fix": "In mobile 032, the 26px seat card sits at left:50%+tk/2-4px, so the token's focus ring (::before inset:-8px plus the halo) covers half of it on 민/영/지/철/도. Also '나그네' is drawn at y≈1022, about 100px above the 나 token, with nothing connecting the two. Fix: in replay, move the card clear of the ring with `.rp .seat .card{left:calc(50% + var(--tk)/2 + 10px)}`. Render the seat name only inside the .seat flex column. The stray label is most likely the altar's slot-owner caption ('나그네' under 주정뱅이 on desktop too). Hide `.altar .card-owner` when the owner is a seat, or position it below its card instead of at the stage centre."
+   },
+   {
+    "severity": "major",
+    "title": "The lobby deck fan is still unreadable (mobile 005)",
+    "files": [
+     "public/js/app.js",
+     "public/css/screens.css"
+    ],
+    "fix": "The overlapping cards still show name fragments such as '늑', '하', '예' and '주정뱅이' on top of each other. Keep the fan as art only (`.lobby-fan .card-name{display:none}`). Below it, add a wrapping row of text chips, one per role with its count (for example '늑대인간 ×2'), at 12px with gap 4px 6px and max-width:300px. Wolf-team chips get a blood-hot border."
+   },
+   {
+    "severity": "major",
+    "title": "The mobile deck sheet header shows a stray seat token, and the intro line is cut off (mobile 006)",
+    "files": [
+     "public/css/base.css",
+     "public/js/app.js"
+    ],
+    "fix": "The sheet opens at about y=120, so the 민 token from the stage shows through the band above the tabs, and the first line of the intro is scrolled off, leaving only '가운데 카드가 됩니다.' and a 90px dead gap above the grid. Fix: make the backdrop opaque (`#sheet::before{background:rgba(5,4,3,.92)}`) or open the sheet from top:var(--hud-h). Reset scrollTop=0 on open. Drop the fixed min-height on `.deck-note` so the intro starts right under the tabs. Apply the same fix to the blank band in the desktop side panel (desktop 011, y 140-185)."
+   },
+   {
+    "severity": "minor",
+    "title": "Replay timeline labels '투표' and '결과' run together on mobile",
+    "files": [
+     "public/css/replay.css",
+     "public/js/replay.js"
+    ],
+    "fix": "In mobile 032 and 057 they read '투표결과'. The act labels are positioned at the first tick of each act, and those two acts are 1-2 ticks apart on a 330px track. Fix: give the labels a minimum spacing (in JS, if `x - prevX < 44`, set the label's text-anchor to end at the previous label, or hide '투표'). Alternatively, reserve the last 40px of the track for '결과' with `padding-right` so it right-aligns before the ×1 pill."
+   },
+   {
+    "severity": "minor",
+    "title": "Ledger rows are missing a space or line break between sentences",
+    "files": [
+     "public/js/app.js"
+    ],
+    "fix": "Desktop 052/053 and mobile 059 render '밤새 바뀌지 않았습니다.알고 있던 카드 · 예언자'. Put '알고 있던 카드' on its own line, as the changed rows already do: wrap each part in `<div class=\"ledger-line\">` instead of concatenating the strings."
+   },
+   {
+    "severity": "minor",
+    "title": "Small 360x640 day screen: a chat bubble sticks to the seat name, and the hint is truncated",
+    "files": [
+     "public/css/screens.css",
+     "public/js/app.js"
+    ],
+    "fix": "In small 002, '철수: 저는 밤새…' is drawn directly under '나그네' with no gap. The band text is also clamped to '…다시..', so it loses the key instruction. Fix: when `max-height:700px`, set `.band-text{-webkit-line-clamp:4}`, shorten the third line to '왼쪽 아래 내 카드로 밤 정보를 다시 볼 수 있습니다.', and anchor the latest-line bubble above the band with `bottom:calc(100% + 8px)` instead of below the bottom seat."
+   },
+   {
+    "severity": "minor",
+    "title": "The dock label '내 카드 보기' touches the bottom edge, and the night chat button shows '밤' over its icon",
+    "files": [
+     "public/css/base.css"
+    ],
+    "fix": "In mobile 011 and small 002, the label baseline sits about 4px from the viewport bottom, under the iOS home indicator. Add `padding-bottom:max(6px, env(safe-area-inset-bottom))` to #dock, and shrink the thumbnail to `--cw:28px` so the column fits. Move the '밤' lock label on the chat button below the icon (`.dock-chat small{position:static}`) or replace it with a lock glyph."
+   }
+  ]
+ },
+ {
+  "score": 8,
+  "improved": [
+   "The vote button dropped its clipped third line. Mobile 022 now reads '투표하기 / 철수', and the hold hint moved into the prompt above.",
+   "Josa now stay with the name. fmt() wraps the name and its josa in <span class=\"nw\"> (strings.js fmt), so lines no longer start with '가 되었습니다.'",
+   "The card-journey rows on the final board now use verb phrases instead of roman numerals: '말썽쟁이 지은이 바꿈 → 예언자', '강도 민수가 가져감 → 도플갱어(강도)'. A separator has been added: '알고 있던 카드 · 말썽쟁이'.",
+   "The dawn seat beat handles team changes correctly. botSame '팀은 그대로 ${team}입니다.' and bot '팀이 ${team:으로/로} 바뀌었습니다.' are picked by comparing teams (replay.js:100). Mobile 045 reads '팀이 마을 팀으로 바뀌었습니다.' for a real flip.",
+   "The '대기 중' button is gone from the night screen. Mobile 010 shows a dim dock status, '눈을 감고 차례를 기다리는 중입니다.'",
+   "'처형' is no longer said twice. execCard is now '${n}의 카드는 ${r} 카드였습니다.'",
+   "The owner's plain-sentence request is met. The cause lines read like an official localization: '말썽쟁이 지은이 당신의 카드를 철수의 카드와 바꿨습니다. 당신은 이제 늑대인간입니다.' The replay night beats are complete sentences ('늑대인간 철수는 혼자 깨어났지만 카드를 보지 않았습니다.' plus where the other wolf card was).",
+   "All buttons end in -기 and use polite forms (투표하기, 리플레이 보기, 처음부터 보기, 다시 하기, 건너뛰기, 멈추기)."
+  ],
+  "remaining": [
+   {
+    "severity": "major",
+    "title": "Rows that never changed show '밤새 바뀌지 않았습니다.알고 있던 카드 · 하수인' with no space or break",
+    "files": [
+     "public/css/screens.css",
+     "public/js/replay.js"
+    ],
+    "fix": "This shows on mobile 059/060 (도윤) and on every row of desktop 052/053. When j.length<2, .rec-path is a bare inline span and .rec-belief follows it inline. Add .rec-path,.rec-belief{display:block} in screens.css:219-222. Also, for the stayed case, show only the belief line when the belief matches, or merge it into one sentence: '밤새 바뀌지 않았습니다. 알고 있던 카드와 같습니다.'"
+   },
+   {
+    "severity": "major",
+    "title": "The viewer is named in the third person on their own result, and self-hops have no object",
+    "files": [
+     "public/js/replay.js",
+     "public/strings.js"
+    ],
+    "fix": "Desktop 052 shows '강도 나그네가 가져감 → 강도', but 나그네 is the viewer. Mobile 059 shows '도플갱어 영희가 훔쳐 옴' in 영희's own row and '강도 민수가 훔쳐 옴' in 민수's row. In replay.js:405, when x.by===me, use RP.you ('당신') as the actor. For robSelf, name the victim instead of the actor: hop.robSelf: '${t}의 카드를 훔쳐 옴' (pass t = the robbed seat's name). Do the same for drunkSelf: '${P:과/와} 바꿈'."
+   },
+   {
+    "severity": "major",
+    "title": "The personal verdict says '당신은' three times and repeats the final card",
+    "files": [
+     "public/strings.js",
+     "public/js/replay.js"
+    ],
+    "fix": "Mobile 058/057: '…당신은 이제 늑대인간입니다. 당신은 예언자 카드인 줄 알았지만, 마지막 카드는 늑대인간 카드였습니다. 늑대인간 팀으로 승리했습니다.', with a '나' badge next to it. When a cause line exists, skip self.diff and self.same, and add self.diffAfter: '${b} 카드인 줄 알았던 당신은 ${team:으로/로} ${res}했습니다.' (or just append win/lose). Use self.diff only when there is no cause, and drop its leading '당신은' because the badge already marks the subject."
+   },
+   {
+    "severity": "major",
+    "title": "'입니다' wraps away from the role chip",
+    "files": [
+     "public/strings.js"
+    ],
+    "fix": "Mobile 058: '당신은 이제 🐺늑대인간' then a new line starting '입니다.' In fmt(), when v is an object and there is no josa pair, also absorb the Hangul that directly follows the placeholder in the template. Run the template replace with a lookahead capture /\\$?\\{(\\w+)(?::([^}]+))?\\}([가-힣]*)/ and wrap html + pair + tail in <span class=\"nw\">. This covers '${r}입니다', '${r} 카드' (keep the space as &nbsp;) and '${n}의'."
+   },
+   {
+    "severity": "minor",
+    "title": "The board's '처음' hop contradicts the header for the doppelganger, and centre rows repeat a role as if it moved",
+    "files": [
+     "public/js/replay.js",
+     "public/strings.js"
+    ],
+    "fix": "Mobile 059, 영희: the header says '도플갱어 → 강도' but the first hop says '처음 도플갱어(강도)'. For q===0 use the original role name, not cardName with the copy suffix. Centre rows read '늑대인간 → 늑대인간' with '밤새 바뀌지 않았습니다.' under them. When first===last, show a single chip ('🐺 늑대인간 · 밤새 그대로'). Also drop the '처음' hop line when it only repeats the first chip of the header."
+   },
+   {
+    "severity": "minor",
+    "title": "The timeline labels '투표' and '결과' collide into '투표결과'",
+    "files": [
+     "public/css/replay.css"
+    ],
+    "fix": "This happens on every mobile replay shot (030/045/057). Anchor the last act label with transform:translateX(-100%) and the others with translateX(-50%). Hide a label if its left offset is within 2.5em of the next one, or shorten the acts on mobile (acts.verdict → '끝')."
+   },
+   {
+    "severity": "minor",
+    "title": "Duplicated lines on the result hero and the night screen",
+    "files": [
+     "public/strings.js",
+     "public/js/app.js"
+    ],
+    "fix": "Mobile 058: the card caption '철수 · 처형' sits right above '철수가 처형되었습니다.' Change heroDead to just '${n}' (the 처형 stamp is already on the card). Mobile 010: the heading '눈을 감으세요.' and the dock line '눈을 감고 차례를 기다리는 중입니다.' say the same thing. Change body.sleeping to '다른 사람의 차례가 끝나기를 기다리는 중입니다.' or hide it while the heading shows."
+   },
+   {
+    "severity": "minor",
+    "title": "Small phrasing polish",
+    "files": [
+     "public/strings.js"
+    ],
+    "fix": "(1) other.at: '남은 늑대인간 카드는…' should be '다른 늑대인간 카드는 ${where}에 있었습니다.' because '남은' implies the card was left over. (2) The vote button can be one line: add btn.executeNm '${n:에게} 투표하기' (add an '에게' passthrough) so it reads '철수에게 투표하기' instead of stacking the name. (3) The chat system line '지금부터 채팅할 수 / 없습니다' splits; shorten msg.nightStart to '밤이 되었습니다. 채팅이 잠깁니다.' (4) Desktop replay captions (040) are about 13px and left-aligned in a 960px column. Bump .rp-cap to --fs-body (16-17px) and center it, so the plain-sentence explanation the owner wants is readable at 1280."
+   }
+  ]
+ },
+ {
+  "score": 7.5,
+  "improved": [
+   "The mobile result hero (mobile 058, small 005) now explains the outcome in plain sentences: who was executed, what that card really was, that 늑대인간 나그네 survived, and a personal line about the 말썽쟁이 swap, your new role and your win. This is the clearest 'why did I win' text so far.",
+   "The replay result banner no longer sits on the seat ring (mobile 057, desktop 047). The verdict cards sit above, the sentences sit on a solid plate below, and a 승리 stamp closes the scene. Last round's major overlap is fixed.",
+   "The replay's dawn 'seat' steps (mobile 044, 050) give one plain sentence per player, such as '당신은 이제 늑대인간 카드를 가지고 있습니다. 처음 카드는 예언자 카드였습니다. 팀이 늑대인간 팀으로 바뀌었습니다.' This is exactly the per-player explanation the owner asked for.",
+   "The swap steps (mobile 038) say who did what and to whom, with role sigils, and show the ⇄ link line plus labels under both seats with the before and after roles.",
+   "The final ledger rows (mobile 059, desktop 052) now show the chain of events, '처음 → 강도 민수가 훔쳐 옴 → 말썽쟁이', instead of bare notation. The stamps sit under the name, so the rows are even.",
+   "On desktop, the card-composition panel cards are large enough to read their names (desktop 011), and the top seat is no longer clipped by the HUD."
+  ],
+  "remaining": [
+   {
+    "severity": "critical",
+    "title": "On desktop, the result screen opens without any verdict (desktop 051)",
+    "fix": "At 1280x800 the first result view shows only the table with face-up cards and a '다시 하기' button. '마을 팀 승리', the execution sentence and the personal '나' line are all below the fold, and the only hint is a small grey '결과: 마을 팀 승리' in the chat log. A first-time player cannot tell whether they won. In public/css/screens.css, for desktop (min-width:960px) in the result phase, put .board above or beside the stage. Use a 2-column grid with `grid-template-columns: minmax(0,1fr) 420px`, and put `.board{order:-1; overflow:auto}` in the right half of the left column. Alternatively, shrink the stage to `max-height:42vh` so `.verdict` starts above y=400. In startResult()/drawBoard() in public/js/app.js, call `$('.verdict').scrollIntoView({block:'start'})` on desktop when the replay has been skipped."
+   },
+   {
+    "severity": "major",
+    "title": "The replay dawn caption says '바뀐 카드가 없습니다' right after showing two swaps (desktop 041)",
+    "fix": "In the desktop game, the robber took 철수's card and the troublemaker then swapped it back, so the net mapping E is the identity and the caption reads '아침이 되었습니다. 최종 카드 배치입니다. / 바뀐 카드가 없습니다.' A beginner who just watched two swaps reads this as a bug. In public/js/replay.js line 99, count the move events (`ev.some(e => (e.mv||[]).length)`). When moves happened but sw is empty, use a new string `RP.dawn.botBack: '카드가 여러 번 오갔지만, 결국 모두 처음 카드로 돌아왔습니다.'` (add it to strings.js replay.dawn). Also, on line 100, add a seat step for any player whose card moved during the night even if it ended where it started, for example '당신의 카드는 강도 → 늑대인간 → 강도로 돌아왔습니다.'"
+   },
+   {
+    "severity": "major",
+    "title": "The player is called both '나그네' and '당신' in the same explanation",
+    "fix": "The mobile result says '늑대인간 나그네는 처형되지 않았습니다.' and then, two lines later, '당신은 이제 늑대인간입니다.' Replay 038 says '말썽쟁이 지은이 나그네와 철수의 카드를…', and the ledger has 투표 나그네. Nothing tells a beginner that 나그네 is them. In app.js drawBoard(), map the player's own name to '당신' in the why lines (pass `me` into names() and substitute T.replay.you). In replay.js, every nm(i) where i===me should already use RP.you, which seat.top does but the swap.top/bot and exec templates do not, so route those through the same `i===me?RP.you:nm(i)` helper. Fix the particles too, for example '당신과 철수의 카드를'."
+   },
+   {
+    "severity": "major",
+    "title": "The '도플갱어(강도)' and '도플갱어(예언자)' notation is never explained",
+    "fix": "The ledger rows and replay seat labels (mobile 050, 059, desktop 052) show '도플갱어(강도)' as a final card. A beginner cannot tell whether that is a doppelganger, a robber, or both. Change strings.js doppelArrow to '도플갱어(강도 복사)'. In the ledger, for any row whose final card is doppelganger, add a sub-line: '도플갱어 카드는 밤에 강도 능력을 복사했으므로 강도 팀으로 계산합니다.' Show the same sentence as the replay l2 the first time the doppel copy step plays."
+   },
+   {
+    "severity": "minor",
+    "title": "Missing space and an unexplained red underline in the ledger",
+    "fix": "'밤새 바뀌지 않았습니다.알고 있던 카드 · 하수인' has no space between the sentences (mobile 059, desktop 052/053). Put the 'believed' line in its own block element (`<div class=\"rec-believed\">`), or add a space in the template. The red underline under '알고 있던 카드 · 늑대인간' on 철수/지은 marks belief ≠ final, but nothing says so. Add the text '(실제와 다름)' after it, or a legend line at the top of the ledger: '빨간 밑줄: 알고 있던 카드와 실제 카드가 다릅니다.' Red also breaks the rule that red means the wolf team, so use --sepia-hi instead."
+   },
+   {
+    "severity": "minor",
+    "title": "Replay captions are clipped or missing, and timeline labels collide",
+    "fix": "On mobile 030 the l2 line '남은 늑대인간 카드' is cut off mid-character, and the caption box only spans about half the width. Remove the typewriter width clip, or set `.rp-cap{max-width:none; width:calc(100% - 32px)}` in public/css/replay.css. On mobile 024 (step 1, 시작) the caption area is empty. Show RP.pro.top/bot immediately and do not wait for the floor timer. In the timeline header, '투표' and '결과' merge into '투표결과' at 375px. Give the phase labels `min-width` and `text-align` per segment, or drop '결과' on narrow screens and keep its tick only."
+   },
+   {
+    "severity": "minor",
+    "title": "The '내 카드' stamp points to the wrong seat in replay 038",
+    "fix": "At step 밤 7/8 (troublemaker swaps 나그네 and 철수) the '내 카드' tag sits next to 지은. 지은 is the actor, not the holder of the player's original card (that card is now under 철수). In replay.js, anchor the 'yours' stamp to the slot that currently holds pre[me]'s original card (`slot = pre.indexOf(me)`), not to the actor seat. Anchor 'you' to the actor only when by includes me."
+   },
+   {
+    "severity": "minor",
+    "title": "The desktop replay is cramped: small caption text, and the 나 seat overlaps the centre cards",
+    "fix": "On desktop 041 the 나 seat and its 'нагне 강도' label print over 가운데 2. Apply the same table box offset as the night table (`--ry` from the area between the HUD and the dock) to `.replay .ring` on desktop. The caption is about 13px, left-aligned across 960px (desktop 032, 047). Set `.rp-cap{font-size:var(--fs-body); max-width:640px; margin:0 auto; text-align:center}`. In the replay's result step, break selfLine() into one sentence per <p> so the four '당신은…' clauses read as a sequence. On desktop 047 the primary button still says '멈추기' on the final step, while mobile says '처음부터 보기'. Use the same label on both."
+   }
+  ]
+ },
+ {
+  "score": 7.5,
+  "improved": [
+   "The mobile result hero (mobile 058, small 005) is now the strongest payoff screen. It has the red '늑대인간 팀 승리', the executed card crossed out in blood with a '처형' tag beside the winning wolf card, howling-moon art behind it, and plain sentences ('말썽쟁이 지은이 당신의 카드를 철수의 카드와 바꿨습니다. 당신은 이제 늑대인간입니다.'). It reads as premium and menacing.",
+   "The replay result step no longer sits on the seat ring. On mobile 057 and desktop 047 the decisive cards sit in the upper band and the verdict has its own black panel and a '승리' stamp. Last round's top major is closed.",
+   "On desktop 1280x800 the top seat is no longer clipped by the HUD (011, 024). The altar card backs are now at full opacity, so the wolf-head backs read as live key art rather than disabled.",
+   "Colour meaning is restored: '마을 팀' on card check (desktop 009) is now bone, so red again means wolves only.",
+   "The small card nameplates in the deck sheet (mobile 006) and the desktop side panel no longer have their tops cut off by the art. '말썽쟁이', '주정뱅이' and '불면증환자' are fully legible.",
+   "The vote button is down to two lines ('투표하기 / 철수'). The how-to hint moved into the caption above, and the hold fill is a darker blood (mobile 022).",
+   "The final ledger rows now use a grid with icons on both sides of the arrow. The win/lose stamps sit in their own grid cell, and each hop is a plain line ('말썽쟁이 지은이 바꿈 → 예언자'). The 'VI' glyph separator is gone.",
+   "On desktop, the final board (051) no longer collides with itself. Seats, the altar and the vote marks all have their own space."
+  ],
+  "remaining": [
+   {
+    "severity": "major",
+    "title": "Desktop result screen has no verdict headline above the fold (desktop 051)",
+    "fix": "At 1280x800 the first screen is the board plus '다시 하기', and the win line shows only as a chat system message. The verdict hero with its art, cards and sentences is pushed below the 60vh stage. In public/css/screens.css inside @media(min-width:1024px), add `.res>.verdict{order:-1}` and shrink the board: `.res>.stage:not(.is-fold){height:clamp(360px,48vh,440px)!important}`. Even better, lay the two side by side: `.res{display:grid;grid-template-columns:minmax(0,1fr) 380px;grid-template-rows:auto 1fr}` with `.res>.verdict{grid-column:2;grid-row:1/3;border:0;border-left:1px solid var(--blood);text-align:left}` and `.res>.stage{grid-column:1}`. That way the board and the verdict ('누가 당신 카드를 바꿨나') can be read together on one screen.",
+    "files": [
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "The desktop replay vote/execution beat collides (desktop 045)",
+    "fix": "The execution focus card (--cw-md) lands on top of 가운데 2 and covers the 나 seat token. Its '처형' tag overprints the ribbon, and the ghost of the centre card bleeds through the semi-transparent body. On desktop, place the focus card in the empty upper-centre area instead of at the altar: in public/css/replay.css, add `@media(min-width:1024px){.rp-focus{--ty:28%!important}.rp-focus .card{--cw:132px}}` (or compute ty in replay.js so it sits between the 민 seat and the altar). Fade the altar while a focus card is on with `.rp-stage:has(.rp-focus.is-on) .altar{opacity:.25}`, and give the focus card a solid `background:var(--void)` so nothing shows through.",
+    "files": [
+     "public/css/replay.css",
+     "public/js/replay.js"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "The desktop replay result step is a single wall of text with ghost seats underneath (desktop 047)",
+    "fix": "Mobile 057 splits the outcome (dim) from the personal story (bright) into two paragraphs. Desktop prints one 3-line centred run at about 15px in a 960px column, which is hard to scan. Ghost labels ('영희 도플갱어(예언자)', '지은 말썽쟁이') and the faint altar also still show around the focus card. Render verdict-why and verdict-self as separate <p> blocks on desktop too. Cap them at `max-width:36em;margin-inline:auto`, set `font-size:18px`, and show each sentence on its own line (join with <br> as the mobile final hero does). Add `body[data-replay] [data-step=result] .rp-ring,body[data-replay] [data-step=result] .altar{visibility:hidden}` so the ring is fully gone rather than ghosted, and show both decisive cards (executed + the viewer's final card) as mobile does.",
+    "files": [
+     "public/js/replay.js",
+     "public/css/replay.css"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "Desktop replay captions and seat labels are too small for the stage",
+    "fix": "On desktop 030/045 the caption ('늑대인간 철수는 혼자 깨어났지만…') is 15px and left-aligned in a 960px stage, and the seat labels ('영희 도플갱어(예언자)') are about 11px, while mobile gets large serif captions. Add `@media(min-width:1024px){.rp-l1{font-size:20px;text-align:center}.rp-l2{font-size:15px;text-align:center}.rp-cap{padding:10px 48px 18px}}`. Set the seat role plates to `font-size:13px`. On the desktop final board, raise `.res .seat>.card` from 44px to 56px and drop the 30px `.is-original` ghost card (it is unreadable). The ledger already carries that information.",
+    "files": [
+     "public/css/replay.css",
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Ledger sentences run together with no space: '밤새 바뀌지 않았습니다.알고 있던 카드' (desktop 052/053, mobile 059 도윤)",
+    "fix": "In public/js/replay.js line ~405-407, .rec-path and .rec-belief are inline spans that get appended side by side. Add `.rec-path,.rec-belief{display:block}` in public/css/screens.css (.rec-path already has margin-top, so it will then apply).",
+    "files": [
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "The replay timeline labels '투표' and '결과' collide on mobile ('투표결과', mobile 053/057)",
+    "fix": "The last two act ticks sit 1-2 steps apart, so their labels overlap. In replay.js, when two act labels fall within 48px of each other, hide the earlier one or anchor the last label right-aligned (`.rp-act:last-child{transform:translateX(-100%)}`). Alternatively, merge the vote and result acts into one '투표·결과' label.",
+    "files": [
+     "public/js/replay.js",
+     "public/css/replay.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "The lobby deck fan is still unreadable (desktop 005)",
+    "fix": "The fanned cards show only '늑', '하', '예' and '말'. Fan only the art (hide `.fan .card-name` except on the top card). Under the fan, list the deck as text chips ('늑대인간 ×2 · 하수인 · 도플갱어 …') with `font:600 13px var(--f-body)` and red text for wolf-team roles only.",
+    "files": [
+     "public/css/screens.css",
+     "public/js/app.js"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Desktop chrome seams: the side-panel corner shows backdrop art, and there is dead space",
+    "fix": "Above the 채팅/기록 tabs, the strip from x 960 to 1280 and y 0 to 44 shows the forest backdrop because #sheet starts at top:var(--hud-h) and the HUD ends at 960. Set `#sheet,#sheet[data-h]{top:0}` and pad `.sheet-head{min-height:var(--hud-h)}`, or give that strip `background:var(--char)`. Under the side panel's '카드 구성 (가운데 카드 3장 포함)' heading there is an empty block about 50px tall, which is the empty note element: hide it with `:empty{display:none}`. On card check (desktop 009), the 72px dock under '다른 사람에게 보이지 않게 확인하세요.' is empty. Collapse it or move that line into the dock.",
+    "files": [
+     "public/css/base.css",
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Stray elements on the mobile deck sheet and the my-seat key glyph",
+    "fix": "On mobile 006 the dimmed '민' seat token still shows through the sheet header, and the intro reads only '가운데 카드가 됩니다.' (a fragment). Make the sheet opaque behind its header (`#sheet::before` opacity 1 at h=2), and show the full sentence '카드는 인원수보다 3장 많아야 합니다. 남는 3장은 가운데 카드가 됩니다.'. The small key/flag glyph at the top-right of the 나 token (desktop 005/011/024/051, mobile 022) has no meaning to the player. Replace it with a clear '나' plate style, or remove it.",
+    "files": [
+     "public/css/base.css",
+     "public/strings.js",
+     "public/css/screens.css"
+    ]
+   }
+  ]
+ },
+ {
+  "score": 7.5,
+  "improved": [
+   "The owner's main request is now met on mobile. The result hero (mobile 058) and the replay verdict (mobile 057, desktop 049) explain the player's night in plain sentences, for example '말썽쟁이 지은이 당신의 카드를 철수의 카드와 바꿨습니다. 당신은 이제 늑대인간입니다. 당신은 예언자 카드인 줄 알았지만, 마지막 카드는 늑대인간 카드였습니다.' It says who changed your card, what you are now, and what you believed.",
+   "The replay verdict no longer sits on top of the seat ring. The executed card and the player's own card are shown large at the top (057, desktop 049), the ring fades to 8%, and the verdict text has its own solid block underneath. Last round's major collision is closed.",
+   "Steal and swap beats now describe both directions of the move (mobile 035): '민수는 지은의 말썽쟁이 카드를 가져갔고, 지은은 민수의 도플갱어(강도) カード를 받았습니다.' The focus card, the ⇄ arrow and the line between the two seats agree with the caption.",
+   "The final ledger replaced the roman-numeral notation with readable hops: '처음 강도', '도플갱어 영희가 가져감 → 도플갱어(강도)', '강도 민수가 훔쳐 옴 → 말썽쟁이', and '알고 있던 카드', underlined in red when the belief was wrong. The header now uses start → end chips with icons, and the VI separator is gone.",
+   "The village verdict is bone-coloured, not red ('마을 팀 승리' on desktop 049), so red again means wolves only.",
+   "The verdict pair is labelled '철수 · 처형' and '나그네의 카드', with a 처형 stamp and a red X, which makes the decisive card clear at a glance."
+  ],
+  "remaining": [
+   {
+    "severity": "major",
+    "title": "On desktop (1280x800), the result screen does not show the verdict above the fold",
+    "fix": "Desktop 051 opens on the board only: tiny seat cards and the chat panel, with no '마을 팀 승리' and no personal story. 052/053 then jump straight to the ledger. The owner's priority sentence is invisible on PC. In screens.css, inside @media(min-width:1024px), make the result a two-column layout. Option 1: put .verdict (line, why, self) in the right side panel and default that panel to a '결과' tab instead of 채팅 while the phase is final. Option 2: put the .verdict block above the stage at a max-height of 40vh and shrink the board with `.res .stage{height:56vh}`. Also cap `.verdict-why,.verdict-self{max-width:36em;margin-inline:auto}`. On desktop 049 the replay verdict runs to about 900px per line, which is hard to read.",
+    "files": [
+     "public/css/screens.css",
+     "public/js/app.js"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "Replay captions are cut off",
+    "fix": "`.rp-l1,.rp-l2{max-height:2.7em;overflow:hidden}` in replay.css cuts the second line after two rows. On mobile 035 the caption ends in mid-sentence ('…받았습니다. · 카드가'), and mobile 030 cuts the remaining-wolf line. Remove the max-height. Let .rp-cap grow up to `max-height:34%` and turn on `overflow-y:auto` only past that. In replay.js, stop appending the extra clause with ' · ' and render it as its own <p class=rp-l2>. Check that the cover-wipe (.rp-cv) still runs over the taller lines.",
+    "files": [
+     "public/css/replay.css",
+     "public/js/replay.js"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "The desktop replay ring is squashed, and the bottom seat collides with the altar",
+    "fix": "On desktop 030 and 036, the 나 token sits right under the centre cards, and its '나그네' tag lands on the 주정뱅이 card. About 100px between the ring and the caption goes unused (y≈600–680). In replay.js layout(), compute the ring radius from the space between the HUD and the caption: `ry=(H-hud-capH-barH)/2 - tokenR - tagH` and `cy=hud+(H-hud-capH-barH)/2`. Place the bottom seat's tag beside the token (`translate(40px,-50%)`) rather than above it. On mobile 030 and 040 the '나그네' tag floats about 50px above the 나 token, detached from it. Use the same side placement there.",
+    "files": [
+     "public/js/replay.js",
+     "public/css/replay.css"
+    ]
+   },
+   {
+    "severity": "major",
+    "title": "Ledger rows run two sentences together with no space",
+    "fix": "On every unchanged row (mobile 059, desktop 052/053) the ledger reads '밤새 바뀌지 않았습니다.알고 있던 카드 · 하수인'. When the card stayed, `.rec-path` is an inline span holding plain text, and `.rec-belief` follows it inline. Add `.rec-path,.rec-belief{display:block}` in screens.css (lines 219 and 221).",
+    "files": [
+     "public/css/screens.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "The verdict does not say why the original wolf survived or died",
+    "fix": "Mobile 058 says '철수의 카드는 예언자 카드였습니다' but never says that 철수 started as the werewolf and that 지은 swapped that card onto you, which is the real reason the wolves won. In the verdict-why builder, add one sentence whenever an executed player's card or a surviving wolf's card was moved: '{name}은 원래 {start}였지만, {actor role} {actor}가 카드를 바꿔 {end}(으)로 처형되었습니다.' End with a causal close such as '늑대인간 카드를 가진 사람이 처형되지 않아 늑대인간 팀이 이겼습니다.'",
+    "files": [
+     "public/js/replay.js",
+     "public/strings.js"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "The personal-story paragraph uses a different style and leaves a dangling '입니다.'",
+    "fix": "On mobile 058 the '나' box looks like a stray glyph, and this paragraph is heavier and larger than the three lines above it. The role chip also wraps away from its josa ('…🐺늑대인간 / 입니다.'). Replace .verdict-you with a small caption '당신의 밤' on its own line. Set .verdict-self to `font-weight:400`, the same as .verdict-why. Wrap each role chip and the josa after it in `<span style=white-space:nowrap>`.",
+    "files": [
+     "public/css/screens.css",
+     "public/js/replay.js"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "The mobile timeline labels '투표' and '결과' run together into '투표결과'",
+    "fix": "This is still unfixed from the previous round (mobile 030/040/057). For widths under 600px, hide the 투표 label when it sits within 3em of the end label. Alternatively, draw act labels under the track for odd acts: `.rp-tick.is-first:nth-of-type(odd)::after{top:30px}`, or shorten them to icons.",
+    "files": [
+     "public/css/replay.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Faint seat tags show through the replay verdict",
+    "fix": "On mobile 057 a faded '강도)' tag shows at the right edge of the card pair, because verdict mode only drops tags to opacity .08. Add `.rp[data-act=verdict] :is(.rp-tag,.rp-vm,.rp-mk){visibility:hidden}`. On desktop 050 the final step was captured while the board was half-faded behind the verdict. Make the verdict block's background opaque from the first frame.",
+    "files": [
+     "public/css/replay.css"
+    ]
+   },
+   {
+    "severity": "minor",
+    "title": "Ledger rows are uneven and their icons are inconsistent",
+    "fix": "On mobile 059 the 승리/패배 stamp still takes its own row, and each row's height depends on it. 영희's row shows '처음 ⟨robber icon⟩ 도플갱어(강도)' while the header shows the doppelganger icon. Put the stamp in the meta column next to the votes (`grid-template-areas:\"n chg st\" \"n meta meta\"`). For a copied card, always use the doppelganger sigil and put the copied role in parentheses. On the desktop final board (051), the '득표 5' badge covers 철수's token and X. Offset it with `.vote-badge{translate:0 -100%}`.",
+    "files": [
+     "public/css/screens.css",
+     "public/js/replay.js"
+    ]
+   }
+  ]
+ }
+]

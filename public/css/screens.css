@@ -14,11 +14,19 @@
 .vignette.fx-dark::after{opacity:.9}
 
 /* ================= 탁자 (§5.3) ================= */
-.stage{--tk:48px;position:relative;width:100%;height:100%;overflow:hidden;transition:opacity var(--t-phase)}
-.stage[data-n="7"],.stage[data-n="8"],.stage[data-n="9"],.stage[data-n="10"]{--tk:40px}
-@media(min-width:1024px){.stage,.stage[data-n]{--tk:56px}}
+.stage{--tk:48px;--seat-cw:var(--cw-seat);--sw:calc(100vw - var(--drawer));--sh:calc(100vh - var(--hud-h) - var(--dock-h) - var(--band-h));
+  --aw:calc((var(--sw)/2 - 40px - var(--tk)/2 - 16px - var(--seat-cw))/1.62);--altar-cw:clamp(44px,var(--aw),var(--cw-sm));--fan-cw:44px;--gap-c:calc(var(--altar-cw)*.12);--cy:0px;
+  position:relative;width:100%;height:100%;overflow:hidden;transition:opacity var(--t-phase)}
+@supports(height:100dvh){.stage{--sh:calc(100dvh - var(--hud-h) - var(--dock-h) - var(--band-h))}}
+.stage[data-n="7"],.stage[data-n="8"]{--tk:40px;--fan-cw:40px}
+.stage[data-n="9"],.stage[data-n="10"]{--tk:40px;--seat-cw:22px;--fan-cw:36px}
+@media(max-height:620px){.stage{--tk:44px}.stage[data-n="7"],.stage[data-n="8"],.stage[data-n="9"],.stage[data-n="10"]{--tk:40px}}
+@media(max-width:399px){.stage{--fan-cw:36px}}
+@media(min-width:600px){.stage,.stage[data-n]{--fan-cw:64px}}
+@media(min-width:1024px){.stage,.stage[data-n]{--tk:56px}.stage{--altar-cw:clamp(44px,min(var(--aw),calc(var(--sh)*.2)),104px)}}
+#stage[data-tight="1"]{--seat-cw:calc(var(--cw-seat)*.9);--altar-cw:64px}
 .seat{position:absolute;left:50%;top:50%;z-index:1;width:84px;display:flex;flex-direction:column;align-items:center;pointer-events:none;
-  transform:translate(calc(var(--x) - 50%),calc(var(--y) - 50%))}
+  transform:translate(calc(var(--x) - 50%),calc(var(--y) - var(--tk)/2))}
 .seat-token{position:relative;flex:none;width:var(--tk);height:var(--tk);display:grid;place-items:center;pointer-events:auto;
   background:var(--ink) repeating-linear-gradient(115deg,rgba(217,203,176,.07) 0 1px,transparent 1px 4px);border:0;border-radius:50%;
   box-shadow:0 0 0 1px var(--ink),0 0 0 2px var(--bone-dim),0 0 0 4px var(--ink),0 0 0 5px rgba(168,154,128,.35),2px 2px 0 4px #000;
@@ -31,12 +39,12 @@
 .seat-mark:empty{display:none}
 .seat-mark[data-k=wolf],.seat-mark[data-k=minion]{border-color:var(--blood-hot)}
 .seat-mark[data-k=mason]{border-color:var(--bone-hi)}
-.seat-mark[data-k=votes]{top:auto;bottom:calc(100% - var(--tk) - 2px);left:auto;right:-6px;transform:none;border-color:var(--blood-hot)}
-.seat .card{pointer-events:none;margin-top:2px}
-@media(max-width:599px){        /* 좌석 높이 64px: 카드 28px를 토큰 오른쪽 아래에 겹친다 */
-  .seat .card{--cw:26px;position:absolute;left:calc(50% + var(--tk)/2 - 4px);top:-4px;margin:0}
-  .seat-mark[data-k=votes]{left:calc(50% - var(--tk)/2 - 10px);right:auto}
-}
+.seat-mark[data-k=votes]{top:-6px;bottom:auto;left:auto;right:calc(50% + var(--tk)/2 - 10px);transform:none;border-color:var(--blood-hot)}
+.seat[data-side=r] .seat-mark[data-k=votes]{right:auto;left:calc(50% + var(--tk)/2 - 10px)}
+.seat>.card{--cw:var(--seat-cw);position:absolute;z-index:2;margin:0;pointer-events:none;top:calc(var(--tk)/2 - var(--cw)*.7);left:calc(50% + var(--tk)/2 + 6px)}   /* 탁자 안쪽, 토큰과 세로 중심 일치 */
+.seat[data-side=r]>.card{left:auto;right:calc(50% + var(--tk)/2 + 6px)}
+.seat>.card.is-original{--cw:calc(var(--seat-cw)*.7);top:calc(var(--tk)/2 + var(--seat-cw)*.7 + 4px);left:calc(50% + var(--tk)/2 + 24px);opacity:.75}
+.seat[data-side=r]>.card.is-original{left:auto;right:calc(50% + var(--tk)/2 + 24px)}
 .seat.is-me .seat-token{box-shadow:0 0 0 1px var(--ink),0 0 0 2px var(--bone-hi),0 0 0 4px var(--ink),0 0 0 5px var(--bone-dim),2px 2px 0 4px #000}
 .seat.is-host::before{content:"";position:absolute;z-index:2;top:-5px;right:calc(50% - var(--tk)/2 - 9px);width:13px;height:7px;
   background:linear-gradient(var(--bone-hi),var(--bone-hi)) 0 0/6px 1px,linear-gradient(var(--bone-hi),var(--bone-hi)) 0 6px/6px 1px,
@@ -58,11 +66,22 @@
 .fx-ring-wolf .seat-token{box-shadow:0 0 0 1px var(--ink),0 0 0 2px var(--blood-hot),0 0 0 4px var(--ink),0 0 0 5px var(--blood),2px 2px 0 4px #000}   /* 밤 정보: 무리·주인 (seat에 붙임) */
 .fx-ring-mason .seat-token{box-shadow:0 0 0 1px var(--ink),0 0 0 2px var(--bone-hi),0 0 0 4px var(--ink),0 0 0 5px var(--bone-hi),2px 2px 0 4px #000}
 
-.altar{position:absolute;left:50%;top:50%;z-index:1;transform:translate(-50%,-50%);display:flex;gap:8px;align-items:center}
+.altar{position:absolute;left:50%;top:calc(50% + var(--cy));z-index:1;transform:translate(-50%,-50%);display:flex;gap:var(--gap-c);align-items:center}
+.altar .card{--cw:var(--altar-cw)}
 .altar .card.is-selectable{cursor:pointer}
 .altar .card.is-dim{opacity:.6}
 .reveal{position:absolute;left:50%;top:50%;z-index:3;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;animation:fx-rise 360ms var(--ease-out) both}
-.reveal-row{display:flex;gap:8px}
+.reveal-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.rv-it{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.rv-who{max-width:max(var(--cw-md),40vw);padding:1px 6px;font:600 13px/1.35 var(--f-body);color:var(--bone-hi);background:rgba(10,8,7,.78);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 0 #000}
+.rv-n{display:inline-block;max-width:6.6em;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;color:var(--blood-hot)}
+.rv-sub{margin:0;font-size:var(--fs-small);color:var(--bone-dim)}
+.rv-names{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:min(300px,86vw);margin:0;padding:0;list-style:none}
+.rv-names li{padding:2px 8px;font:600 15px/1.4 var(--f-body);color:var(--bone-hi);border:1px solid var(--blood);background:rgba(10,8,7,.78);max-width:7em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.peek-label{display:flex;flex-direction:column;gap:2px}
+.peek-who{font:600 15px/1.3 var(--f-body);color:var(--bone-hi)}
+.log-c{display:inline-flex;flex-direction:column;align-items:center;gap:2px;width:44px;flex:none}
+.log-who{font:500 10px/1.2 var(--f-body);font-style:normal;color:var(--bone-dim);max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .reveal-hint{font-size:var(--fs-small);color:var(--bone-dim)}
 
 /* 선 (§5.4) — 투표선·말썽쟁이 예고선·리플레이 칼선 공용 */
@@ -82,14 +101,13 @@
 .lobby-copy{min-height:44px;padding:0 18px;font-size:var(--fs-small);font-weight:600;color:var(--bone-hi);background:var(--char-hi);border:var(--hair);box-shadow:3px 3px 0 #000}
 .lobby-copy:active{transform:translate(2px,2px);box-shadow:none}
 .lobby-count{font-size:var(--fs-small);color:var(--smoke)}
-.fan{display:flex;justify-content:center;margin-top:4px;max-width:calc(100vw - 2*(var(--tk) + 40px));overflow:visible}
-.fan .card{--cw:56px;transform:rotate(var(--r,0deg)) translateY(var(--ty,0px))}
-.fan .card+.card{margin-left:calc(var(--cw)*-.55)}
-.fan-more{align-self:center;margin-left:6px;font:600 var(--fs-small)/1 var(--f-body);color:var(--bone-dim)}
-.fan .card-sg,.altar-card .card-sg,.res .seat .card-sg{display:none}
-@media(max-height:700px){.fan .card{--cw:44px}}
-@media(min-width:600px){.fan .card{--cw:72px}}
-@media(max-width:399px){.fan .card{--cw:40px}}
+.fan{position:relative;display:flex;justify-content:center;align-items:flex-end;margin-top:4px;max-width:calc(100vw - 2*(var(--tk) + 40px));overflow:visible}
+.fan .card{--cw:var(--fan-cw);transform-origin:50% 140%;transform:rotate(var(--r,0deg));z-index:calc(10 - var(--i,0))}
+.fan .card+.card{margin-left:calc(var(--cw)*-.58)}
+.fan .card-name{opacity:0}
+.fan .card:last-of-type .card-name{opacity:1}
+.fan-more{position:absolute;right:0;bottom:calc(100% + 2px);font:600 var(--fs-small)/1 var(--f-body);color:var(--bone-dim)}
+.fan .card-sg,.altar-card .card-sg,.seat>.card .card-sg,.fan .card .card-plate{display:none}
 @media(max-width:599px){.lobby-mid{top:46%}}
 .fx-drop{animation:fx-drop 180ms var(--ease-out) both}
 .seat.fx-join .seat-token{animation:fx-join 300ms var(--ease-out) both}
@@ -107,10 +125,10 @@ body[data-ns=check] #stage .seat,body[data-ns=check] #stage .altar{visibility:hi
 .night-dot.is-past{opacity:.12}
 .night-dot.is-now{background:var(--bone-hi);opacity:1;animation:fx-dot 1.2s ease-in-out infinite alternate}
 html[data-perf=lite] .night-dot.is-now{animation:none}
-.check{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 24px;text-align:center;background:rgba(5,4,3,.92)}
-.check-card{--cw:var(--cw-xl);animation:fx-in 800ms linear both;transition:transform 1.2s var(--ease-out),opacity 1.2s linear}
+.check{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:safe center;overflow-y:auto;gap:10px;padding:0 24px;text-align:center;background:rgba(5,4,3,.92)}
+.check-card{--cw:min(var(--cw-xl),max(120px,calc((100vh - 330px)/1.4)));--cw:min(var(--cw-xl),max(120px,calc((100dvh - 330px)/1.4)));animation:fx-in 800ms linear both;transition:transform 1.2s var(--ease-out),opacity 1.2s linear}
 .check-card.is-sink{transform:translateY(40px);opacity:0}
-.check-t1{margin-top:6px;font:400 var(--fs-h2)/1.3 var(--f-display);letter-spacing:.06em;color:var(--bone-hi)}
+.check-t1{position:relative;z-index:1;margin-top:6px;font:400 var(--fs-h2)/1.3 var(--f-display);letter-spacing:.06em;color:var(--bone-hi)}
 .check-t2{font-size:var(--fs-body);color:var(--bone-dim)}
 .check-team{font:600 var(--fs-small)/1.3 var(--f-body);letter-spacing:.12em;color:var(--bone)}
 .check-team[data-team=wolf]{color:var(--blood-hot)}
@@ -120,25 +138,26 @@ html[data-perf=lite] .night-dot.is-now{animation:none}
 .check-t2.is-blink{animation:fx-blink 700ms linear}
 .check-bar{width:min(64vw,300px);height:1px;margin-top:6px;background:var(--bone-dim);transform:scaleX(1);transform-origin:50% 50%;transition:transform var(--ms,13s) linear}
 .check-bar.is-run{transform:scaleX(0)}
-.secret{position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.secret{contain:paint;position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .secret-in{filter:blur(14px)}
 .secret.is-on .secret-in{filter:none}
+html[data-perf=lite] .secret-in{filter:none;opacity:0}
+html[data-perf=lite] .secret.is-on .secret-in{opacity:1}
 .secret-lbl{position:absolute;inset:0;display:grid;place-items:center;font-size:var(--fs-small);font-weight:600;color:var(--bone-hi)}
 .secret.is-on .secret-lbl{display:none}
-.dock-card.is-cracked::after,.dock-card .crack{content:"";position:absolute;inset:0;width:100%;height:100%;color:var(--bone);opacity:.5;pointer-events:none}
+.dock-card.is-cracked::after,.dock-card .crack{content:"";position:absolute;inset:0 auto auto 50%;margin-left:calc(var(--cw)/-2);width:var(--cw);height:calc(var(--cw)*1.4);color:var(--bone);opacity:.5;pointer-events:none}
 .dock-card.is-cracked::after{background:linear-gradient(100deg,transparent calc(46% - .5px),currentColor calc(46% - .5px) calc(46% + .5px),transparent calc(46% + .5px)) 0 0/100% 40% no-repeat,
   linear-gradient(80deg,transparent calc(52% - .5px),currentColor calc(52% - .5px) calc(52% + .5px),transparent calc(52% + .5px)) 0 40%/100% 35% no-repeat,
   linear-gradient(110deg,transparent calc(44% - .5px),currentColor calc(44% - .5px) calc(44% + .5px),transparent calc(44% + .5px)) 0 75%/100% 25% no-repeat}
-.dock-card .crack{inset:0}
+.dock-card .dock-hint{white-space:nowrap;font-size:11px}
 
 /* ================= 새벽·낮·심판 (§6.7 §6.8) ================= */
 .fx-head{position:absolute;inset:0;z-index:4;background:radial-gradient(70% 34% at 50% 50%,rgba(7,6,6,.94) 0 40%,rgba(7,6,6,.6) 65%,transparent 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 20px;text-align:center;pointer-events:none;animation:fx-out 600ms 4s linear both}
 .fx-head-1{font:400 min(var(--fs-hero),8vw)/1.2 var(--f-display);letter-spacing:.06em;color:var(--bone-hi);text-shadow:2px 2px 0 #000,0 0 18px #000;white-space:nowrap;animation:fx-in 500ms linear both;word-break:keep-all}
-.fx-head-2{max-width:22em;font:var(--fs-body)/1.5 var(--f-serif);color:var(--bone);animation:fx-in 500ms 1s linear both}
-.stage:has(.fx-head) .altar,#main:has(.fx-head) .altar{opacity:.12;transition:opacity 400ms linear}
-.fx-head[data-k=vote]{animation-delay:1.2s;animation-duration:400ms}
+.fx-head-2{width:100%;text-align:center;word-break:keep-all;max-width:22em;font:var(--fs-body)/1.5 var(--f-serif);color:var(--bone);animation:fx-in 500ms 1s linear both}
+.stage:has(.fx-head) .altar,#main:has(.fx-head) .altar{opacity:0;transition:opacity 400ms linear}
+.fx-head[data-k=vote]{animation-delay:1.2s;animation-duration:240ms}
 .ticker{position:absolute;left:16px;right:16px;top:8px;width:fit-content;max-width:calc(100% - 32px);margin:0 auto;padding:2px 8px;background:var(--void);z-index:3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:var(--fs-small);color:var(--bone-hi);text-shadow:0 1px 0 #000;pointer-events:none;animation:fx-tick 2.5s linear both}
-.band>.ticker{position:absolute;top:auto;bottom:calc(100% + 6px)}
 .band-q{position:relative;flex:none;width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--ash);font:600 14px/1 var(--f-body);color:var(--bone-dim)}
 .band-q::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%)}
 .band-q[aria-expanded=true]{color:var(--bone-hi);border-color:var(--bone-dim)}
@@ -149,33 +168,31 @@ html[data-perf=lite] .night-dot.is-now{animation:none}
 .seg-btn[aria-pressed=true]{color:var(--bone-hi);box-shadow:inset 0 -2px 0 var(--bone-hi)}
 
 /* ================= 덱 시트 (§6.2) ================= */
-.deck-bar{display:flex;align-items:center;gap:10px;padding:6px 0 10px}
-.deck-count{font:400 var(--fs-h2)/1.2 var(--f-display);letter-spacing:.06em;color:var(--blood-hot)}
+.deck-bar{display:flex;align-items:center;gap:10px;padding:6px 0 10px;min-width:0}
+.deck-count{font:400 var(--fs-h2)/1.2 var(--f-display);letter-spacing:.06em;color:var(--blood-hot);white-space:nowrap}
+.deck-bar>:last-child{white-space:nowrap;margin-left:auto}
 .deck-count.is-ok{color:var(--bone-hi)}
 .deck-warn{width:32px;height:32px;position:relative;display:grid;place-items:center;border:1px solid var(--ash);font-weight:600;color:var(--bone-dim)}
 .deck-warn::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%)}
 .deck-desc{min-height:2.8em;padding:8px 0;font:14px/1.5 var(--f-serif);color:var(--bone-dim);border-bottom:var(--hair)}
 .sheet-body{overflow-x:hidden}
-.deck-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 8px;padding:12px 0}
-.deck-cell .card{--cw:64px}
-@media(min-width:480px){.deck-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(min-width:800px){.deck-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.deck-grid,#sheet .deck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:16px 8px;padding:12px 0}
+.deck-cell .card,#sheet .deck-cell .card{--cw:64px}
 .deck-cell{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
-.deck-ctl{display:flex;align-items:center;justify-content:center;gap:2px}
-.deck-ctl output{min-width:1.4em;text-align:center;font:400 16px/1 var(--f-title);color:var(--bone-hi)}
-.deck-dec,.deck-inc{position:relative;width:40px;height:44px;font-size:18px;line-height:1;color:var(--bone-hi);background:var(--char-hi);border:var(--hair)}
+.deck-ctl{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:112px}
+.deck-ctl output{min-width:1.2em;text-align:center;font:400 16px/1 var(--f-title);color:var(--bone-hi)}
+.deck-dec,.deck-inc,#sheet .deck-dec,#sheet .deck-inc{position:relative;width:34px;height:40px;font-size:18px;line-height:1;color:var(--bone-hi);background:var(--char-hi);border:var(--hair)}
 .deck-dec::before,.deck-inc::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%)}
 .deck-cell.is-zero .card{opacity:.35}
 
 /* ================= 결말: 판결·끝판 보드 (§6.9 §13.8) ================= */
-.res{display:flex;flex-direction:column;min-height:100%}
-.res>.stage:not(.is-fold){flex:none;height:clamp(440px,60vh,600px)!important}
-.res .altar{top:46%}
-.res .seat>.card{--cw:40px}
-@media(max-width:599px){.res>.stage:not(.is-fold){height:clamp(360px,56vh,480px)!important}.res .seat>.card{--cw:26px}}
 .board{padding-bottom:56px}
-#stage[data-tight="1"] .seat>.card{--cw:36px}
-#stage[data-tight="1"] .altar .card{--cw:64px}
+@media(min-width:600px){body[data-phase=result] .stage{--seat-cw:56px}}
+@media(min-width:1024px){   /* 결과: 좌 탁자, 우 판결·기록 — 판결이 첫 화면에 보인다 */
+  body[data-phase=result]:not([data-replay]) #main:has(.board:not([hidden])){display:grid;grid-template-columns:minmax(0,1fr) 360px;align-items:start}
+  body[data-phase=result]:not([data-replay]) #main:has(.board:not([hidden])) .stage{--sw:calc(100vw - var(--drawer) - 360px);grid-column:1;grid-row:1;position:sticky;top:0;height:var(--sh)!important}
+  body[data-phase=result]:not([data-replay]) #main:has(.board:not([hidden])) .board{grid-column:2;grid-row:1;min-width:0;border-left:var(--hair)}
+}
 .stage-bar{display:none;flex:none;align-items:center;justify-content:center;height:40px;font-size:var(--fs-small);font-weight:600;color:var(--bone-dim);border-bottom:var(--hair)}
 .stage.is-fold{height:40px;flex:none}
 .stage.is-fold>*:not(.stage-bar){display:none}
@@ -191,13 +208,14 @@ html[data-perf=lite] .night-dot.is-now{animation:none}
 .verdict[data-team=wolf] .verdict-line{color:var(--blood-hot)}
 .verdict-why{margin-top:8px;font:var(--fs-body)/1.55 var(--f-serif);color:var(--bone);word-break:keep-all;text-wrap:balance}
 .verdict-why,.verdict-self,.verdict-line{text-shadow:0 1px 0 #000,0 0 10px #000}
-.verdict-cards{display:flex;justify-content:center;gap:18px;margin:14px 0 6px}
-.verdict-cards figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
-.verdict-cards .card{--cw:96px}
-.verdict-cards figcaption{font:600 var(--fs-small)/1.3 var(--f-body);color:var(--bone)}
+.verdict-cards{display:flex;justify-content:center;align-items:flex-start;gap:calc(var(--cw-hero)*.16);margin:14px 0 6px}
+.verdict-cards figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;width:var(--cw-hero)}
+.verdict-cards .card{--cw:var(--cw-hero)}
+.verdict-cards figcaption{width:max-content;max-width:calc(var(--cw-hero)*1.4);text-align:center;word-break:keep-all;font:600 var(--fs-small)/1.3 var(--f-body);color:var(--bone)}
 .tl-t,.verdict-why,.verdict-self{text-wrap:pretty}
 .verdict-you{display:inline-block;margin-right:6px;padding:0 6px;border:1px solid var(--bone-dim);font:600 var(--fs-label)/1.4 var(--f-body);vertical-align:2px}
-.verdict-self{margin-top:6px;font:600 var(--fs-body)/1.55 var(--f-serif);color:var(--bone-hi);word-break:keep-all;text-wrap:balance}
+.verdict-self{margin-top:6px;font:400 var(--fs-body)/1.55 var(--f-serif);color:var(--bone-hi);word-break:keep-all;text-align:left;max-width:28em;margin-inline:auto;text-wrap:pretty}
+.verdict-self .nm,.verdict-self .rp-rc{font-weight:600}
 .rec-head{padding:14px 12px 6px;font:600 var(--fs-small)/1.3 var(--f-body);letter-spacing:.06em;color:var(--bone-dim)}
 .rec-list,.tl-list{list-style:none;margin:0;padding:0}
 .rec-row{display:block;padding:10px 12px;background:rgba(10,8,6,.88);border-bottom:var(--hair);font-size:var(--fs-small);color:var(--bone-dim)}
@@ -216,6 +234,7 @@ html[data-perf=lite] .night-dot.is-now{animation:none}
 .rec-got{color:var(--bone-hi)}
 .rec-stamp{grid-area:st;justify-self:start;flex:none;padding:0 6px;border:2px solid var(--bone-dim);font:400 16px/1.4 var(--f-display);letter-spacing:.06em;color:var(--bone-dim);transform:rotate(-6deg)}
 .rec-stamp.is-win,.rec-row.is-win .rec-stamp{border-color:var(--bone-hi);color:var(--bone-hi)}
+.rec-path,.rec-belief{display:block}
 .rec-path{margin-top:6px;color:var(--bone-dim)}
 .rec-path .rec-hop{display:block;padding-left:.2em;line-height:1.5}
 .rec-hop i{font-style:normal;color:var(--smoke)}
@@ -259,7 +278,7 @@ html[data-perf=lite] .night-dot.is-now{animation:none}
 @keyframes fx-in{from{opacity:0}to{opacity:1}}
 @keyframes fx-out{from{opacity:1}to{opacity:0}}
 @keyframes fx-rise{from{opacity:0;transform:translate(-50%,calc(-50% - 12px))}to{opacity:1;transform:translate(-50%,-50%)}}
-@keyframes fx-drop{from{opacity:0;transform:rotate(var(--r,0deg)) translateY(-20px)}to{opacity:1;transform:rotate(var(--r,0deg)) translateY(var(--ty,0px))}}
+@keyframes fx-drop{from{opacity:0;transform:rotate(var(--r,0deg)) translateY(-20px)}to{opacity:1;transform:rotate(var(--r,0deg))}}
 @keyframes fx-join{from{transform:scale(0)}to{transform:scale(1)}}
 @keyframes fx-tight{from{transform:scale(1.15)}to{transform:scale(1)}}
 @keyframes fx-pulse{from{opacity:.3}to{opacity:.9}}
@@ -289,20 +308,47 @@ html[data-perf=lite] .vignette[data-hb]::after{animation:none;opacity:.8}
 @media(min-width:1024px){
   #dock{grid-template-columns:56px 1fr}
   .dock-badge{display:none}
-  #sheet .deck-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 6px}
-  #sheet .deck-cell .card{--cw:64px}
-  #sheet .deck-dec,#sheet .deck-inc{width:36px;height:40px}
-  .seat .card{--cw:64px}
-  .altar .card{--cw:112px}
-  .altar{gap:14px}
-  .res .seat>.card{--cw:44px}
-  .res .altar .card{--cw:76px}
-  .res .altar{gap:10px}
-  .res .seat>.card.is-original{--cw:30px;left:calc(50% - 22px - 36px);top:auto;bottom:0;opacity:.75}
-  .verdict-cards .card{--cw:88px}
-  .res .seat.is-dead .seat-token::after{display:none}
-  .seat-name{font-size:14px}
+  #sheet .deck-count{font-size:var(--fs-body)}
+  .seat-name{font-size:15px}
   .stage::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
     background:radial-gradient(38% 46% at 50% 50%,rgba(214,170,110,.07),transparent 70%),radial-gradient(120% 90% at 50% 50%,transparent 50%,rgba(0,0,0,.7))}
 }
 .stage-bar:focus-visible{outline:2px solid var(--bone-hi);outline-offset:-4px}
+
+/* ================= F5 연출 (FEATURES_SPEC §7) — transform·opacity만 ================= */
+:root{--t-gap:90ms;--t-deal:360ms;--t-stamp:140ms;--t-line:250ms;--t-trem:120ms;--t-silence:600ms;--ease-cut:steps(6,end)}
+.fx-stamp{position:absolute;left:50%;top:50%;z-index:6;translate:-50% -50%;rotate:-6deg;margin:0;padding:0 6px;border:2px solid;background:var(--void);font:400 16px/1.4 var(--f-display);font-style:normal;letter-spacing:.06em;white-space:nowrap;pointer-events:none;color:var(--blood-hot)}
+.fx-stamp[data-k=paper]{color:var(--bone-hi)}
+.fx-ghost .fx-ink{position:absolute;inset:0;z-index:3;background:var(--ink);opacity:0;pointer-events:none}
+.check-card{animation:fx-rise2 360ms 200ms var(--ease-out) backwards}
+.night-dot{transition:opacity 180ms linear}
+.night-dot.is-past{opacity:.35}
+.night-dot.is-now{animation:nd-in 120ms steps(3,end) both,fx-dot 1.2s 120ms ease-in-out infinite alternate}
+.night-msg{animation:fx-in 180ms linear both}
+.fx-head-1{position:relative}
+.fx-head-1::after{content:"";position:absolute;inset:-4px -8px;background:var(--void);transform-origin:100% 50%;animation:fx-unveil 360ms 200ms steps(5,end) both;pointer-events:none}
+.dock-card .crack{animation:fx-in 180ms steps(3,end) both}
+.ln{transition:transform 280ms var(--ease-ink),opacity 120ms linear}
+.ln.is-blood{transition:transform var(--t-line) var(--ease-cut),opacity 120ms linear}
+.ln.is-on.is-lock{height:1px;transform:translate(var(--x),var(--y)) rotate(var(--ang)) scale(1,2);transition-duration:60ms}
+.seat.is-voted::after{animation:fx-seal 120ms steps(3,end) both}
+.fan.fx-fold{opacity:0;transition:opacity 240ms var(--ease-press)}
+.fan.fx-fold .card{transform:rotate(0deg);transition:transform 240ms var(--ease-press)}
+html[data-perf=lite] .fan.fx-fold{transition-duration:180ms}
+html[data-perf=lite] .fan.fx-fold .card{transform:rotate(var(--r,0deg));transition:none}
+@media(prefers-reduced-motion:reduce){.fan.fx-fold{transition-duration:160ms}.fan.fx-fold .card{transform:rotate(var(--r,0deg));transition:none}}
+@keyframes fx-rise2{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes nd-in{from{scale:1.4}to{scale:1}}
+@keyframes fx-unveil{to{transform:scaleX(0)}}
+@keyframes fx-seal{from{scale:1.3;opacity:0}to{scale:1;opacity:1}}
+html[data-perf=lite] .night-dot.is-now,html[data-perf=lite] .night-msg,html[data-perf=lite] .seat.is-voted::after,html[data-perf=lite] .dock-card .crack{animation:none}
+html[data-perf=lite] .fx-head-1::after{display:none}
+html[data-perf=lite] .check-card{animation-duration:160ms;animation-delay:0s}
+html[data-perf=lite] .ln,html[data-perf=lite] .ln.is-blood,html[data-perf=lite] .ln.is-on.is-lock{transition-duration:120ms;transition-timing-function:linear}
+@media(prefers-reduced-motion:reduce){
+  .night-dot.is-now,.night-msg,.seat.is-voted::after,.dock-card .crack{animation:none}
+  .fx-head-1::after{display:none}
+  .check-card{animation:none}
+  .ln,.ln.is-blood,.ln.is-on.is-lock{transition:none}
+  .ln.is-on.is-lock{transform:translate(var(--x),var(--y)) rotate(var(--ang)) scale(1,2)}
+}

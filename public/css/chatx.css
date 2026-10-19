@@ -1,0 +1,19 @@
+/* chatx.css — F1 답글 UI (FEATURES_SPEC 3.3). stamp.js 가 chatx.js 의 __CHATX_CSS__ 에 내장한다. 움직이는 속성은 opacity 만. */
+.chat-form{flex-wrap:wrap}
+.chat-form .in{flex:1 1 0;width:auto;min-width:0}
+.chat-send{flex:0 0 auto}
+.chat-re{flex:1 0 100%;display:flex;align-items:center;gap:8px;font-size:var(--fs-small);color:var(--smoke)}
+.chat-re-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-re-t .nm{color:var(--bone-dim);margin-right:4px}
+.chat-re-x{min-height:36px;padding:0 8px;font-size:var(--fs-small);font-weight:600;color:var(--bone-dim)}
+.chat-form:not([data-re]) .chat-re{display:none}
+.msg{position:relative;isolation:isolate}
+.msg.is-sel{outline:1px solid var(--ash);outline-offset:2px}
+.msg-act{display:inline-block;vertical-align:middle;margin-left:8px;min-height:32px;padding:0 10px;font-size:var(--fs-small);font-weight:600;color:var(--bone-hi);border:var(--hair);background:var(--char)}
+.msg-act[hidden]{display:none}
+.msg-q{cursor:pointer}
+.msg.is-hit::before{content:"";position:absolute;inset:0 -8px;background:var(--blood-deep);opacity:0;animation:cx-hit 1.2s ease-out both;pointer-events:none;z-index:-1}
+@keyframes cx-hit{15%{opacity:.35}to{opacity:0}}
+@media(prefers-reduced-motion:reduce){.msg.is-hit::before{animation:none;opacity:.35}}
+html[data-perf=lite] .msg.is-hit::before{animation:none;opacity:.35}
+body[data-chat=off] .msg-act{display:none}

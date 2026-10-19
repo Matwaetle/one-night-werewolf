@@ -2,9 +2,9 @@
    마크업은 ART.card()가 만든다(§4.5). 토큰(--ink 등)은 base.css :root. */
 
 :root{
-  --cw-xs:40px; --cw-sm:72px; --cw-md:128px; --cw-xl:min(64vw,300px);
+  --cw-seat:26px; --cw-xs:40px; --cw-sm:72px; --cw-hero:96px; --cw-md:128px; --cw-xl:min(64vw,300px);
 }
-@media (min-width:600px){ :root{ --cw-sm:88px; --cw-md:156px; } }
+@media (min-width:600px){ :root{ --cw-seat:40px; --cw-sm:88px; --cw-hero:128px; --cw-md:156px; } }
 
 /* 크기: :where()로 특이도 0 — 문맥(독 44px, 제단 52px 등)이 쉽게 덮어쓴다 */
 :where(.card){ --cw:var(--cw-sm); }
@@ -12,7 +12,6 @@
 :where(.card[data-size="sm"]){ --cw:var(--cw-sm); }
 :where(.card[data-size="md"]){ --cw:var(--cw-md); }
 :where(.card[data-size="xl"]){ --cw:var(--cw-xl); }
-@media (max-width:399px){ .card.altar-card{ --cw:52px; } }
 
 .card{
   position:relative; display:block; flex:none; box-sizing:border-box;
@@ -221,6 +220,7 @@ html[data-img~="back"] .card-back::after{ opacity:1; }
 .card.is-dim{ opacity:.35; }
 .card.is-selectable::before{ animation:card-pulse 1.6s ease-in-out infinite alternate; }
 @keyframes card-pulse{ from{opacity:.3} to{opacity:.9} }
+html[data-perf=lite] .card.is-selectable::before{ animation:none; opacity:.6; }
 .card.is-selectable{ cursor:pointer; }
 
 .card.is-selected{
@@ -294,6 +294,7 @@ html[data-img~="back"] .card-back::after{ opacity:1; }
   .card:not([data-flat="1"])[data-face="1"] .card-front{ opacity:1; }
   .card:not([data-flat="1"])[data-face="1"] .card-back{ opacity:0; }
   .card.is-flip::after{ animation:none; }
+  .card.is-selectable::before{ animation:none; opacity:.6; }
   .card.is-selectable::before{ animation:none; opacity:.6; }
   .card-art,.card-back::after{ transition:none; }
 }

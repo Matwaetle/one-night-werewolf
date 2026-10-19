@@ -6,6 +6,43 @@ const path = require('path');
 const { io } = require('socket.io-client');
 const TS = require(path.join(__dirname, '..', 'public/strings.js'));
 if (TS.fmt('${a:이/가}', { a: { t: '민수', h: '<b>민수</b>' } }) !== '<span class="nw"><b>민수</b>가</span>' || TS.fmt('${a:이/가}', { a: '민수' }) !== '민수가') { console.error('FMT assertion failed'); process.exit(1); }
+
+// ---- 정적 빌드 검사 (FEATURES_SPEC 10.1 G4): 서버를 띄우기 전에 메모리 빌드로 확인한다 ----
+{
+  const fs = require('fs');
+  const sf = (m) => { console.error('SMOKE FAIL:', m); process.exit(1); };
+  const B = require(path.join(__dirname, '..', 'tools/stamp.js')).build({ memory: true, quiet: true });
+  const text = (re) => { const k = [...B.files.keys()].find((u) => re.test(u)); return k ? B.files.get(k).body.toString('utf8') : null; };
+  const game = text(/^\/a\/game\.[0-9a-f]+\.js$/), replay = text(/^\/a\/replay\.[0-9a-f]+\.js$/);
+  const chatx = text(/^\/a\/chatx\.[0-9a-f]+\.js$/), audio = text(/^\/a\/audio\.[0-9a-f]+\.js$/), fxj = text(/^\/a\/fx\.[0-9a-f]+\.js$/);
+  for (const [n, c] of [['game.js', game], ['replay.js', replay], ['chatx.js', chatx], ['audio.js', audio], ['fx.js', fxj]]) {
+    if (c == null) sf('빌드에 ' + n + ' 없음');
+    try { new Function(c); } catch (e) { sf(n + ' 구문 오류: ' + e.message); }
+  }
+  const html = B.files.get('/index.html').body.toString('utf8');
+  if (/__CHATX_JS__|__AUDIO_JS__/.test(html)) sf('index.html 에 CHATX/AUDIO 토큰이 남음');
+  if (!/chatx:'\/a\/chatx\.[0-9a-f]+\.js'/.test(html) || !/audio:'\/a\/audio\.[0-9a-f]+\.js'/.test(html)) sf('ASSETS.chatx/audio 가 치환되지 않음');
+  // strings.js 표식이 있으면: 서버 전용 문장은 game.js 에 없고, replay 전용 문장은 replay.js 에만 있다
+  const src = fs.readFileSync(path.join(__dirname, '..', 'public/strings.js'), 'utf8');
+  const plain = (v) => JSON.stringify(v).slice(1, -1) === v && !/['`]/.test(v);   // 따옴표·역슬래시·줄바꿈이 없는 문장만 비교(최소화가 따옴표를 바꿀 수 있음)
+  const lit = (v) => JSON.stringify(v).slice(1, -1);
+  if (/@client:drop-start/.test(src)) {
+    const m = Object.values(TS.msg).find((v) => typeof v === 'string' && v.length > 6 && plain(v));
+    if (m && game.includes(lit(m))) sf('game.js 에 T.msg 문장이 남아 있음: ' + m);
+  }
+  if (/@client:replay-start/.test(src)) {
+    const only = Object.entries(TS.replay).find(([k, v]) => !['why', 'self', 'ui'].includes(k) && typeof v === 'string' && v.trim().length > 6 && plain(v));
+    if (only) {
+      if (game.includes(lit(only[1]))) sf('game.js 에 replay 전용 문장이 남아 있음: ' + only[0]);
+      if (!replay.includes(lit(only[1]))) sf('replay.js 에 옮겨 온 문장이 없음: ' + only[0]);
+    }
+  }
+  // 정적 검사: 밤에 다른 사람 좌석을 흔드는 tremble 호출 금지, rustle 은 onAck 에 연결하지 않는다
+  const app = fs.readFileSync(path.join(__dirname, '..', 'public/js/app.js'), 'utf8');
+  if (/fx\(\s*['"]tremble['"]/.test(app)) sf("app.js 가 fx('tremble') 를 부른다 (FEATURES_SPEC 7.2 하드 규칙)");
+  const ack = app.match(/function onAck\b[\s\S]*?\n  \}\n/);
+  if (ack && /rustle/.test(ack[0])) sf('onAck 에 rustle 연결 (밤 정보 누설)');
+}
 const PORT = process.env.SMOKE_PORT || '3931';
 const URL = `http://localhost:${PORT}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

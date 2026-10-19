@@ -120,6 +120,10 @@
       leaveTown: '방 나가기',
       voiceOn: '음성 켜기',
       voiceOff: '음성 끄기',
+      chatOff: '채팅 끄기',
+      chatOn: '채팅 켜기',
+      bgmOn: '배경음악 켜기',
+      bgmOff: '배경음악 끄기',
       asleep: '대기 중',
       close: '닫기',
       replay: '리플레이 보기',
@@ -186,22 +190,17 @@
     body: {
       minutes: '분', dec: '한 장 빼기', inc: '한 장 더하기', markPack: '동료', markOwner: '늑대인간', markBro: '동료',
       // 홈
-      namePh: '닉네임',
       codePh: '방 코드',
       joinCode: '${code} 방 참가하기',
       needName: '닉네임을 입력해 주세요.',
       needCode: '방 코드 4자리를 입력해 주세요.',
       coldWake: '서버 연결 중… ${s}초',
-      coldNote: '서버를 준비하고 있습니다. 최대 1분 정도 걸릴 수 있습니다.',
       // 대기실
-      signLabel: '방 코드',
-      signTop: '방 코드 ${code}',
       copied: '초대 링크를 복사했습니다.',
       copyTitle: '초대 링크',
       copyHint: '이 링크를 공유하면 바로 참가할 수 있습니다.',
       fire: '참가자 ${n}/10',
       waitMore: '${need}명이 더 필요합니다.',
-      chief: '방장',
       me: '나',
       away: '연결 끊김',
       kickAsk: '${n:을/를} 강퇴할까요?',
@@ -220,17 +219,27 @@
       holdHint: '카드를 길게 눌러 확인하세요.',
       keepAwake: '화면이 꺼지지 않도록 해 주세요.',
       peekFirst: '처음 받은 카드',
-      peekLast: '마지막으로 확인한 카드',
+      chatOffToast: '채팅을 껐습니다.',
+      chatOnToast: '채팅을 켰습니다.',
+      whoCard: '${n}의 카드',
+      whoMine: '당신의 카드',
+      whoNew: '당신의 새 카드',
+      whoNow: '지금 당신의 카드',
+      whoCopy: '이제 당신은 이 역할입니다.',
+      whoFrom: '${n}에게서 가져온 카드',
+      whoWoke: '새벽에 다시 확인한 카드',
+      whoCopied: '${n}의 카드를 따라 했습니다.',
+      bgmOnToast: '배경음악을 켰습니다.',
+      bgmOffToast: '배경음악을 껐습니다.',
+      bgmVol: '배경음악 음량',
+      bgmLv: ['작게', '보통', '크게'],
       dockHint: '내 카드 보기',
-      dockCoach: '왼쪽 아래 카드를 누르면 밤에 확인한 정보를 다시 볼 수 있습니다.',
+      dockCoach: '왼쪽 아래 카드로 밤에 본 정보를 다시 볼 수 있습니다.',
       heroDead: '${n} · 처형',
+      heroDeadMe: '당신 · 처형',
       heroKey: '${n}의 카드',
-      holdShort: '길게 눌러 확정하세요.',
-      holdCap: '길게 눌러 확정',
-      holdNm: '${n} · 길게 눌러 확정',
       voted: '투표함: ${n}',
       // 밤
-      nightFalls: '밤이 되었습니다. 모두 눈을 감으세요.',
       closeEyes: '눈을 감고 차례를 기다려 주세요.',
       wake: '${role}의 차례입니다.',
       doneClose: '행동을 마쳤습니다. 눈을 감으세요.',
@@ -249,7 +258,6 @@
       drunkSub: '가운데 카드 한 장을 선택하세요. 내 카드와 바뀌며 새 카드는 볼 수 없습니다.',
       insomniac: '불면증환자의 차례입니다.',
       insomniacSub: '자신의 카드를 다시 확인하세요.',
-      pickStealBtn: '역할 복사하기 ${n}',
       lookCount: '${n}/2',
       seenNothing: '밤에 확인한 정보가 없습니다.',
       sleeping: '눈을 감고 차례를 기다리는 중입니다.',
@@ -257,20 +265,14 @@
       coverHint: '누르면 카드를 덮습니다.',
       awakeTab: '● 당신의 차례',
       ackFail: '전송하지 못했습니다. 다시 시도해 주세요.',
-      autoPicked: '(시간 초과로 자동 선택)',
       // 낮
       dawn: '아침이 되었습니다.',
       dayAsk: '토론하세요.',
-      readyNote: '모두 준비하면 바로 투표가 시작됩니다.',
-      firstCard: '처음 받은 카드',
       deckAll: '카드 구성 (가운데 카드 3장 포함)',
       raised: '투표 준비 ${r}/${n} · 모두 준비하면 바로 투표합니다.',
-      raisedBadge: '준비 완료',
       // 투표
       pickExec: '처형할 사람을 누른 뒤 아래 버튼을 길게 눌러 투표하세요. 끝나기 전까지 바꿀 수 있습니다.',
       myVote: '내 투표: ${n}',
-      noVote: '아직 투표하지 않았습니다.',
-      voteCount: '투표 ${n}/${t}',
       voteRule: '2표 이상 받은 사람이 없으면 아무도 처형되지 않습니다. 동점이면 모두 처형됩니다.',
       execLine: '${names:이/가} 처형되었습니다.',
       noBlood: '아무도 처형되지 않았습니다.',
@@ -282,10 +284,6 @@
       execCard: '${n}의 카드는 ${r} 카드였습니다.',
       // 결과
       cols: { name: '이름', first: '처음 카드', last: '최종 카드', vote: '투표', votes: '득표', end: '결과' },
-      altarWord: '가운데 카드',
-      altarFirst: '처음: ${r}',
-      noNight: '이번 밤에는 아무도 행동하지 않았습니다.',
-      journeyStay: '밤새 바뀌지 않았습니다.',
       waitChiefNext: '방장 대기 중',
       // 시스템
       error: '오류가 발생했습니다. 다시 시도해 주세요.',
@@ -294,7 +292,6 @@
       roomLost: '방이 사라졌습니다. 서버가 다시 시작되었을 수 있습니다.',
       voiceOnToast: '음성 안내를 켰습니다.',
       voiceOffToast: '음성 안내를 껐습니다.',
-      nightNoChat: '밤에는 채팅할 수 없습니다.',
       newVersion: '새 버전으로 업데이트합니다.',
       // 규칙 모달
       law: [
@@ -311,16 +308,9 @@
       ],
       // index.html 전역
       docTitle: '한밤의 늑대인간',
-      docDesc: '3~10명이 함께하는 온라인 한밤의 늑대인간입니다. 단 한 번의 투표로 늑대인간을 찾아내세요.',
       // aria
-      ariaSend: '보내기',
       ariaClose: '닫기',
       ariaMenu: '메뉴',
-      ariaPrev: '이전 장면 보기',
-      ariaNext: '다음 장면 보기',
-      ariaFast: '2배속으로 보기',
-      ariaNormal: '1배속으로 보기',
-      ariaRuler: '재생 위치',
     },
 
     narr: {
@@ -335,9 +325,20 @@
       placeholder: '메시지를 입력하세요',
       send: '보내기',
       locked: '밤에는 채팅할 수 없습니다.',
+      // @client:chatx-start
+      reply: '답글 달기',
+      replyAria: '${n}의 메시지에 답글 달기',
+      replyCancel: '취소하기',
+      replyBar: '${n}의 메시지에 답글을 씁니다.',
+      // @client:chatx-end
+      jump: '${n}의 원래 메시지로 이동하기',
+      gone: '원래 메시지를 찾을 수 없습니다. 오래된 메시지는 지워졌을 수 있습니다.',
+      reGone: '원래 메시지가 지워져 답글 없이 보냈습니다.',
+      offNote: '채팅을 꺼 두었습니다. 알림 메시지만 표시됩니다. 오른쪽 위 메뉴에서 다시 켤 수 있습니다.',
     },
 
     // 서버 메시지 (§10.7). 이름은 평문. 이름 뒤 조사는 ${n:이/가} 형태.
+    // @client:drop-start
     msg: {
       newChief: '${n:이/가} 방장이 되었습니다.',
       left: '${n:이/가} 방을 나갔습니다.',
@@ -373,6 +374,8 @@
       endLine: '결과: ${verdict}',
       needName: '닉네임을 입력해 주세요.',
       badRequest: '잘못된 요청입니다.',
+      chatFast: '메시지를 너무 빨리 보내고 있습니다. 잠시 뒤 다시 보내 주세요.',
+      chatNight: '밤에는 채팅할 수 없습니다.',
       townOpened: '${name:이/가} 방을 만들었습니다.',
       noTown: '존재하지 않는 방입니다. 방 코드를 확인해 주세요.',
       cannotReturn: '이 방에는 다시 참가할 수 없습니다.',
@@ -384,6 +387,7 @@
       notVoteTime: '지금은 투표 시간이 아닙니다.',
       noSelfVote: '자신에게는 투표할 수 없습니다.',
     },
+    // @client:drop-end
 
     // 가운데 카드 이름 (슬롯 n, n+1, n+2)
     altar: ['가운데 카드 1', '가운데 카드 2', '가운데 카드 3'],
@@ -393,6 +397,7 @@
     //  ${a} ${b} ${c} ${t} = 이름(클라이언트가 {t,h} 객체로 넘김), ${P} ${Q} = T.altar 값,
     //  ${r} ${r2} ${rb} ${rc} ${f} = 역할명(effRole), ${team} = TEAM_NAME, ${list} = 클라이언트가 합친 나열, ${n} = 수.
     replay: {
+      // @client:replay-start
       hunt_rule_join: ' ', // 아래 줄 끝에 이어 붙일 때의 구분
       sep: ', ',           // 이름·역할 나열
       dot: ' · ',          // 득표 등 나열
@@ -468,6 +473,7 @@
         rule: '사냥꾼이 죽으면 그가 투표한 사람도 함께 죽습니다.',
         title: { both: '사냥꾼 ${a}', last: '사냥꾼 카드를 가진 ${a}', copy: '도플갱어(사냥꾼) ${a}' },
       },
+      // @client:replay-end
       why: {
         wolf_died: '${list:은/는} 늑대인간이었습니다.',
         tanner_too: '무두장이 ${t}도 처형되어 함께 승리했습니다.',
@@ -489,38 +495,44 @@
         win: '${team:으로/로} 승리했습니다.',
         lose: '${team:으로/로} 패배했습니다.',
       },
+      // @client:replay-start
       cause: {
         robbed: '${role} ${a:이/가} 당신의 카드를 가져갔습니다. 당신은 이제 ${r}입니다.',
         swapped: '${role} ${a:이/가} 당신의 카드를 ${t}의 카드와 바꿨습니다. 당신은 이제 ${r}입니다.',
         rob: '당신은 ${t}의 카드를 가져왔습니다. 당신은 이제 ${r}입니다.',
         drunk: '당신은 자신의 카드를 ${P:과/와} 바꿨습니다. 당신은 이제 ${r}입니다.',
       },
+      // @client:replay-end
       ui: {
-        hop: { start: '처음', robSelf: '${a:이/가} 훔쳐 옴', robTarget: '${a:이/가} 가져감', swap: '${a:이/가} 바꿈', drunkSelf: '${a:이/가} 가운데 카드와 바꿈', drunkCenter: '${a:이/가} 자기 카드와 바꿈' },
-        journeySep: ' · ',
         hudCenter: '밤의 기록',
         altarShort: ['가운데 1', '가운데 2', '가운데 3'],
+        resume: '계속하기',
+        prev: '이전 장면 보기',
+        fast: '2배속으로 보기',
+        board: '전체 기록',
+        happened: '밤에 일어난 일',
+        link: '리플레이 보기',
+        unknown: '알 수 없음',
+      },
+      // @client:replay-start
+      uiR: {
+        hop: { start: '처음', robSelf: '${a:이/가} 훔쳐 옴', robTarget: '${a:이/가} 가져감', swap: '${a:이/가} 바꿈', drunkSelf: '${a:이/가} 가운데 카드와 바꿈', drunkCenter: '${a:이/가} 자기 카드와 바꿈' },
+        journeySep: ' · ',
         hudSkip: '건너뛰기',
         pause: '멈추기',
-        resume: '계속하기',
         restart: '처음부터 보기',
         tapResume: '눌러서 계속하기',
         pos: '${act} ${i}/${n}',
-        prev: '이전 장면 보기',
         next: '다음 장면 보기',
-        fast: '2배속으로 보기',
         normal: '1배속으로 보기',
         x1: '×1',
         x2: '×2',
         acts: { pro: '시작', night: '밤', dawn: '새벽', vote: '투표', verdict: '결과' },
         ruler: '재생 위치',
-        board: '전체 기록',
-        happened: '밤에 일어난 일',
-        link: '리플레이 보기',
         journey: '알고 있던 카드',
         stayed: '밤새 바뀌지 않았습니다.',
-        unknown: '알 수 없음',
       },
+      // @client:replay-end
     },
 
     // ---------- 도구 ----------

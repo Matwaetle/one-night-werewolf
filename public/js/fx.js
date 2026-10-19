@@ -7,7 +7,12 @@
   var rm = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
   var canAnim = typeof Element !== 'undefined' && !!Element.prototype.animate;
 
+  var TT = { tap: 60, ui: 180, enter: 360, flip: 520, lid: 500, phase: 1100, gap: 90, deal: 360, stamp: 140, line: 250, trem: 120 };
+  var E = { press: 'cubic-bezier(.7,0,.3,1)', out: 'cubic-bezier(.2,.7,.1,1)', ink: 'steps(5,end)', cut: 'steps(6,end)' };
+  var dealEnd = null;
   function $(s) { return d.querySelector(s); }
+  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function rect(e) { var r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width }; }
   function lite() { return de.getAttribute('data-perf') === 'lite'; }
   function calm() { return rm.matches; }            // 흔들림·섬광·맥동 끔, 페이드만
   function isNight() { return d.body && d.body.dataset.phase === 'night'; }
@@ -19,7 +24,10 @@
     return a;
   }
   function run(el, kf, o, done) {                    // animate 없으면 끝 상태만 적용하고 done 호출
-    if (!canAnim || !el) { if (done) later(done, 0); return null; }
+    if (!canAnim || !el || live.length >= 6) {          // 동시 6개 초과면 끝 상태만
+      if (el && kf && o && (o.fill === 'forwards' || o.fill === 'both')) { var k = kf[kf.length - 1]; for (var p in k) if (p === 'transform' || p === 'opacity') el.style[p] = k[p]; }
+      if (done) later(done, 0); return null;
+    }
     el.style.willChange = 'transform,opacity';
     var a = track(el.animate(kf, o), function () { el.style.willChange = ''; if (done) done(); });
     return a;
@@ -109,7 +117,7 @@
       var key = (roleId || '') + '|' + (label || '');
       if (el._k !== key) {
         el.innerHTML = ART.card(roleId || null, { size: 'xl', face: roleId ? 1 : 0, cls: 'fx-peekcard' }) +
-          (label ? '<p class="peek-label">' + String(label).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</p>' : '');
+          (label ? '<p class="peek-label">' + (typeof label === 'object' ? '<b class="peek-who">' + esc(label[0]) + '</b>' + (label[1] ? '<span>' + esc(label[1]) + '</span>' : '') : esc(label)) + '</p>' : '');
         el._k = key;
         if (ART.mark) ART.mark(el);
       }
@@ -129,6 +137,7 @@
     /* ---------- 두 카드 교차 이동. 복제본이 #fx 위에서 움직이고 원본은 숨는다. Promise ---------- */
     swap: function (elA, elB) {
       if (!elA || !elB) return Promise.resolve();
+      if (!lite() && !calm() && canAnim && !d.hidden && !elA._tr) { elA._tr = 1; return FX.tremble([elA, elB]).then(function () { return FX.swap(elA, elB); }).then(function () { elA._tr = 0; }); }   // 내 화면 두 카드만 떨고 난 뒤 교차
       var fx = $('#fx'), ra = elA.getBoundingClientRect(), rb = elB.getBoundingClientRect();
       if (!fx || !canAnim || lite() || calm()) {       // lite·reduced: 이동 없이 바뀐 두 카드만 opacity .3→1
         return Promise.all([elA, elB].map(function (e) {
@@ -156,6 +165,83 @@
       }));
     },
 
+    /* ---------- 떨림: translateX(±2px) 회당 60ms. 규칙: 밤에 다른 사람 좌석에는 절대 부르지 않는다
+       (잠든 사람 화면에서 좌석이 흔들리면 교환 위치가 드러난다). 밤의 정보 없는 흔들림은 rustle만 쓴다.
+       내 화면의 두 카드(swap)와 결과 리플레이에서만 쓴다. ---------- */
+    tremble: function (els, n) {
+      els = [].concat(els || []).filter(Boolean); n = n || 2;
+      if (!els.length || lite() || calm() || !canAnim || d.hidden) return Promise.resolve();
+      var kf = [{ translate: '0 0' }], i;
+      for (i = 0; i < n * 2; i++) kf.push({ translate: (i % 2 ? -2 : 2) + 'px 0' });
+      kf.push({ translate: '0 0' });
+      return Promise.all(els.map(function (e) {
+        return new Promise(function (res) { run(e, kf, { duration: TT.trem * n, easing: 'linear' }, res); });
+      }));
+    },
+
+    /* ---------- 도장: host 안에 <i class="fx-stamp">. 끝 상태(도장이 찍혀 있음)는 어느 등급에서나 남는다 ---------- */
+    stamp: function (host, text, kind) {
+      if (!host) return Promise.resolve();
+      var old = host.querySelector('.fx-stamp'); if (old) old.remove();
+      if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+      var el = d.createElement('i'); el.className = 'fx-stamp'; el.setAttribute('data-k', kind === 'paper' ? 'paper' : 'blood'); el.textContent = text;
+      host.appendChild(el);
+      if (calm() || !canAnim || d.hidden) return Promise.resolve();
+      var soft = lite();
+      return new Promise(function (res) {
+        run(el, soft ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, scale: 1.6 }, { opacity: 1, scale: 1 }], { duration: soft ? 120 : TT.stamp, easing: soft ? 'linear' : E.cut }, res);
+      });
+    },
+
+    /* ---------- 처형: card scaleX 1→0 → mid()로 앞면(처형 상태) 교체 → 0→1 → 도장 + 흔들림 + 섬광 + 진동.
+       quiet이면 도장만(여러 명 처형 시 두 번째부터) ---------- */
+    execute: function (card, slot, mid, quiet) {
+      var fin = function () { if (mid) { try { mid(); } catch (e) {} } return slot ? FX.stamp(slot, (window.T && T.stamp && T.stamp.dead) || '', 'blood') : Promise.resolve(); };
+      var hit = function () { if (quiet) return; FX.shake(6, 4); FX.flash('blood', 120); if (!calm()) FX.buzz(12); };
+      if (!card || !canAnim || calm() || d.hidden) { var p = fin(); hit(); return p; }
+      if (lite()) {
+        return new Promise(function (res) { if (mid) { try { mid(); } catch (e) {} } run(card, [{ opacity: 0.3 }, { opacity: 1 }], { duration: 160 }, res); })
+          .then(function () { var p = slot ? FX.stamp(slot, (window.T && T.stamp && T.stamp.dead) || '', 'blood') : 0; hit(); return p; });
+      }
+      return new Promise(function (res) { run(card, [{ scale: '1 1' }, { scale: '0 1' }], { duration: 130, easing: E.press, fill: 'forwards' }, res); })
+        .then(function () {
+          if (mid) { try { mid(); } catch (e) {} }
+          return new Promise(function (res) { run(card, [{ scale: '0 1' }, { scale: '1 1' }], { duration: 130, easing: E.out }, res); });
+        }).then(function () { var p = slot ? FX.stamp(slot, (window.T && T.stamp && T.stamp.dead) || '', 'blood') : 0; hit(); return p; });
+    },
+
+    /* ---------- 배분: 덱 팬을 접고, 뒷면 복제본을 좌석 토큰 옆 → 제단 3자리로 날린다. 복제본은 끝에 지운다 ---------- */
+    deal: function (o) {
+      var fan = $('.fan'), fl = $('#fx'), key = o && o.id != null ? 'deal:' + o.id : 0;
+      if (key && played[key]) return Promise.resolve();
+      if (key) played[key] = 1;
+      if (!fan || d.hidden || !canAnim) return Promise.resolve();
+      var soft = lite() || calm(), ms = lite() ? 180 : calm() ? 160 : 240;
+      fan.classList.add('fx-fold');
+      if (soft || !fl) return wait(ms);
+      var seats = [].slice.call(d.querySelectorAll('#stage .seat')), N = seats.length, me = Math.max(0, seats.findIndex(function (e) { return e.classList.contains('is-me'); })), tg = [], i;
+      for (i = 1; i <= N; i++) { var st = seats[(me + i) % N], tk = st.querySelector('.seat-token'), c = st.querySelector(':scope>.card'), r = tk.getBoundingClientRect(), side = st.dataset.side || (r.left + r.width / 2 < d.documentElement.clientWidth / 2 ? 'l' : 'r'), w = c ? c.getBoundingClientRect().width : (innerWidth < 600 ? 26 : 40); tg.push({ x: r.left + r.width / 2 + (side === 'r' ? -1 : 1) * (r.width / 2 + 6 + w / 2), y: r.top + r.height / 2, w: w }); }
+      [].slice.call(d.querySelectorAll('.altar .card')).forEach(function (c) { tg.push(rect(c)); });
+      var f0 = rect(fan), ghosts = [], t0 = TT.deal - 120;
+      dealEnd = function () { ghosts.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); }); ghosts = []; dealEnd = null; };
+      var flights = tg.map(function (t, k) {
+        return new Promise(function (res) {
+          later(function () {
+            var g = d.createElement('div'); g.innerHTML = typeof ART !== 'undefined' ? ART.card(null, { size: 'xs', face: 0, cls: 'fx-ghost' }) : '';
+            g = g.firstChild; if (!g) return res();
+            g.style.setProperty('--cw', t.w + 'px'); g.style.left = (f0.x - t.w / 2) + 'px'; g.style.top = (f0.y - t.w * .7) + 'px';
+            g.insertAdjacentHTML('beforeend', '<i class="fx-ink"></i>'); fl.appendChild(g); ghosts.push(g);
+            var rot = (k % 2 ? 4 : -4);
+            var kf = [{ transform: 'translate(0,0) rotate(' + rot + 'deg)' }, { transform: 'translate(' + (t.x - f0.x) + 'px,' + (t.y - f0.y) + 'px) rotate(0deg)' }],
+              ink = function (ok) { if (ok) run(g.lastChild, [{ opacity: 0.5 }, { opacity: 0 }], { duration: 60 }, res); else res(); };
+            if (canAnim) track(g.animate(kf, { duration: TT.deal, easing: E.press, fill: 'forwards' }), function () { ink(1); });   // 전역 6개 상한을 우회
+            else { g.style.transform = kf[1].transform; ink(0); }
+          }, ms + k * TT.gap);
+        });
+      });
+      return Promise.all(flights).then(function () { if (dealEnd) dealEnd(); });
+    },
+
     /* ---------- 진동: 밤엔 무시. navigator.vibrate는 여기서만 부른다 ---------- */
     buzz: function (pattern) {
       if (isNight()) return;
@@ -167,7 +253,7 @@
       timers.splice(0).forEach(clearTimeout);
       live.slice().forEach(function (a) { try { a.finish(); } catch (e) { try { a.cancel(); } catch (e2) {} } });
       live.length = 0;
-      FX.unpeek();
+      FX.unpeek(); if (dealEnd) dealEnd();
       var l = d.querySelectorAll('#fx .lid'), i;
       for (i = 0; i < l.length; i++) l[i].style.transition = '';
     },

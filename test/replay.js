@@ -131,6 +131,8 @@ try {
   assert(!/confirm\(|alert\(|navigator\.vibrate|rotateY|preserve-3d|stroke-dashoffset|backdrop-filter|mix-blend-mode|clip-path\s*:[^;]*transition/.test(js + css), 'forbidden construct');
   assert(!/(?<![\w-])border-radius/.test(css), 'border-radius in replay.css');
   assert(!/https?:\/\//.test(js.replace(/xmlns|www\.w3\.org/g, '')), 'third-party url');
+  assert(/b\.dead && F && F\.execute/.test(js) && /else if \(b\.dead && F && !S\.lite && F\.shake\)/.test(js), 'execute beat must fall back when F.execute is missing');
+  assert(/function skip\(\) \{ if \(S\) \{ S\.tok\+\+; stop\(\);[^}]*done\(\)/.test(js) && js.includes('S.tolled'), 'skip must toll once and finish');
   const kf = [...css.matchAll(/@keyframes[^{]+\{([\s\S]*?\})\s*\}/g)].map((m) => m[1]).join(' ');
   assert(!/(?<![-\w])(left|top|width|height|margin|padding|color|background|border|filter|clip-path)\s*:/.test(kf), 'keyframes animate non-transform/opacity property');
   for (const m of css.matchAll(/transition\s*:\s*([^;}]+)/g)) assert(/^(opacity|transform|translate|scale|rotate)\b/.test(m[1].trim()) || /^(none|calc)/.test(m[1].trim()), 'transition on other property: ' + m[1]);
