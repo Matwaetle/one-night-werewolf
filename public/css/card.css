@@ -143,20 +143,13 @@
 .card[data-team="tanner"] .card-name{
   background:var(--sepia); color:var(--bone-hi);
   box-shadow:inset 0 -1px 0 0 var(--sepia);
-  background-image:repeating-linear-gradient(90deg,var(--bone-hi) 0 4px,transparent 4px 7px);
-  background-size:100% 1px; background-repeat:repeat-x; background-position:0 calc(100% - 1px);
-  background-color:var(--sepia);
 }
 .card[data-team="wolf"] .card-tm{ color:var(--bone-hi); }
 
 /* sm: 이름 body 13px, 리본 아래로 칩 자리 확보 */
-.card[data-size="sm"] .card-name{
-  left:0; right:0; clip-path:none;
-  font:400 12px/1 var(--f-display); letter-spacing:0;
-}
 .card[data-long="1"] .card-name{ font-size:clamp(8px,calc(var(--cw)*.13),12px); letter-spacing:0; }
-.card[data-size="sm"] .card-name{ top:69%; height:16%; z-index:4; line-height:1; padding-top:1px; font-size:clamp(9px,calc(var(--cw)*.14),12px); }
-.card[data-long="1"][data-size="sm"] .card-name{ font-size:clamp(8px,calc(var(--cw)*.12),11px); letter-spacing:0; }
+.card[data-size="sm"] .card-name{ left:0; right:0; clip-path:none; top:69%; height:16%; z-index:4; padding-top:1px; font:400 clamp(11px,calc(var(--cw)*.14),12px)/1 var(--f-display); letter-spacing:0; }
+.card[data-long="1"][data-size="sm"] .card-name{ font-size:clamp(10px,calc(var(--cw)*.12),11px); letter-spacing:0; }
 .card[data-size="sm"] .card-sg{ width:14px; height:14px; bottom:1%; }
 .card[data-size="sm"] .card-sg svg{ width:12px; height:12px; }
 .card[data-size="sm"] .card-tm{ width:11px; height:11px; min-width:0; right:4%; top:3%; padding:0; }
@@ -285,9 +278,6 @@ html[data-perf=lite] .card.is-selectable::before{ animation:none; opacity:.6; }
 }
 @media (max-width:599px){ .card.is-original{ display:none; } }
 
-/* 덱 빌더 0장 */
-.card.is-zero{ opacity:.35; }
-
 /* ---------- flat:1 (리플레이): 3D 없음, 한 면만 ---------- */
 .card[data-flat="1"]{ perspective:none; }
 .card[data-flat="1"] .card-in{ transform:none; transform-style:flat; transition:none; }
@@ -313,5 +303,4 @@ html[data-perf="lite"] .card:not([data-flat="1"]) .card-back{ opacity:1; transit
 html[data-perf="lite"] .card:not([data-flat="1"])[data-face="1"] .card-front{ opacity:1; }
 html[data-perf="lite"] .card:not([data-flat="1"])[data-face="1"] .card-back{ opacity:0; }
 html[data-perf="lite"] .card.is-flip::after{ animation:none; }
-html[data-perf="lite"] .card.is-selectable::before{ animation:none; opacity:.6; }
 body.paused .card::before,body.paused .card::after{ animation-play-state:paused; }

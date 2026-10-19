@@ -165,9 +165,9 @@
     keys.forEach(function (k) {
       var name = k.slice(2);
       if (k.charAt(0) === 's') {
-        var u = staticUrl(name);
+        var u = urls[k] || staticUrl(name);   // 미리 받은 Image 주소와 CSS url() 이 글자 그대로 같아야 캐시가 맞는다
         css += RULES[name] ? RULES[name](JSON.stringify(u)) : name.indexOf('verdict-') === 0 ? '.verdict[data-team=' + name.slice(8) + ']::before{background-image:url(' + JSON.stringify(u) + ')}' : '';
-        if (have.indexOf(name) < 0) have.push(name);
+        if (/^(back|backS|grain|home)$/.test(name) && have.indexOf(name) < 0) have.push(name);   // data-img 는 이 넷만 CSS 가 읽는다: 나머지가 오면 문서 전체 스타일 재계산이 된다
         if (name === 'home') hh = 1;
       }
     });
@@ -217,7 +217,6 @@
       load(k, u, front);
     });
   };
-  ART.cancel = function () { queue.forEach(function (j) { delete pending[j.key]; j.resolve(false); }); queue = []; };
 
   // 덱 확정 뒤 idle 선로딩. deck = {role:count} 또는 [role…]
   ART.prefetchDeck = function (deck) {
@@ -228,14 +227,6 @@
       list.forEach(function (id) { var u = roleUrl(id, true); if (u) load('r:' + id, u, false); });
     };
     if (root.requestIdleCallback) root.requestIdleCallback(run, { timeout: 3000 }); else setTimeout(run, 200);
-  };
-
-  // decode 완료 또는 1500ms. 아트가 없는 역할은 즉시 resolve
-  ART.ready = function (id) {
-    var u = roleUrl(id);
-    if (!u) return Promise.resolve();
-    var p = load('r:' + id, u, true).then(function () {});
-    return Promise.race([p, new Promise(function (r) { setTimeout(r, 1500); })]);
   };
 
   // root 안의 .card에 로드된 아트면 data-art="1" 즉시 부여 (md/xl은 --art도 설정)

@@ -9,7 +9,7 @@
   const pname = (id) => { const p = (X.S && X.S.players.find((x) => x.id === id)) || (X.R && X.R.players.find((x) => x.id === id)); return p ? p.name : '?'; };
   const yieldTask = (fn) => { if (W.scheduler && scheduler.yield) scheduler.yield().then(fn); else setTimeout(fn, 0); };   // 긴 작업을 쪼개 프레임 사이에 그림이 나가게 한다
   const enh = () => X.idle(enhance, 500);
-  function ensure() { const { S, R } = X; if (S && S.phase === 'result' && R && !$('.board')._d) { RESULT.draw(); X.sched(); } }
+  function ensure() { const { S, R } = X; if (S && S.phase === 'result' && R && !$('.board')._d) { RESULT.draw(); } }
   function enhance() {
     const { S, R } = X;
     if (X.rs !== 2 || !R || !R.night || !$('.board')._d || $('.board .rec-path')) return;
@@ -21,13 +21,15 @@
     ui.wait = 0; if (R) LS.set('result:' + R.gameId, '1');
     X.rclose(); ensure(); $('.board').hidden = false; fx('lidsOpen', 400); sched();
   }
-  function end() {
-    const { S, ui, fx, sched, geo, relayout } = X;
+  function end() {   // 보드 공개는 한 프레임, 배치(sched)와 좌석 다시 놓기는 각각 다음 작업으로 (한 작업에 몰면 멈춘다)
+    const { ui, fx, sched, geo, relayout } = X;
     ui.rpk = (ui.rpk || 0) + 1;
     X.rclose(); body.removeAttribute('data-replay');
-    if (S && S.phase === 'result') { ensure(); $('.board').hidden = false; if (mq('(max-width:599px)')) $('#stage').classList.add('is-fold'); }   // 닫기와 보드 공개는 한 프레임에
-    fx('lidsOpen', 200); sched();
-    requestAnimationFrame(() => setTimeout(() => { geo.h = 0; relayout(); X.idle(enhance, 300); }, 0));   // 좌석 다시 놓기는 다음 작업으로, 기록 보강은 한가할 때로 미룬다 (한 작업에 몰면 멈춘다)
+    requestAnimationFrame(() => {
+      const S = X.S; if (S && S.phase === 'result') { ensure(); $('.board').hidden = false; if (mq('(max-width:599px)')) $('#stage').classList.add('is-fold'); }
+      fx('lidsOpen', 200);
+      setTimeout(() => { sched(); setTimeout(() => { geo.h = 0; relayout(); X.idle(enhance, 300); }, 0); }, 0);
+    });
   }
   function play(auto, start) {   // 세 작업으로 나눈다: 눈꺼풀 -> 좌석 자리 -> 리플레이 열기 (한 작업에 몰면 1초 넘게 멈춘다)
     const { R, LS, ui, fx, sched, geo, placeSeats } = X;
@@ -193,15 +195,15 @@
       const rows = R.players.map((p, i) => [p, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]);
       const n = R.players.length, mob = mq('(max-width:599px)');
       const effOf = (q) => (q.final === 'doppelganger' && R.doppelCopy ? R.doppelCopy : q.effective), heroes = [];
-      const hero = (q, c, l) => { const e = effOf(q), d = q.original === 'doppelganger' && e !== 'doppelganger'; heroes.push([d ? 'doppelganger' : e, c, l, q.name + (d ? ' ' + fmt(TB.doppelArrow, { r: ROLES[e].name }) : '')]); };   // 도플갱어는 처음 받은 카드로 그리고 이름 옆에 복사한 역할을 적는다
+      const hero = (q, c, l, z) => { const e = effOf(q), d = q.original === 'doppelganger' && e !== 'doppelganger'; heroes.push([d ? 'doppelganger' : e, c, l, q.name + (d ? ' ' + fmt(TB.doppelArrow, { r: ROLES[e].name }) : ''), z]); };   // 도플갱어는 처음 받은 카드로 그리고 이름 옆에 복사한 역할을 적는다
       vdeaths.forEach((d) => { const q = R.players[d.s]; if (heroes.length < 2) hero(q, 'is-dead', q.id === S.me ? TB.heroDeadMe : TB.heroDead); });
       const keyW = R.why.find((w) => /^(wolf_lived|tanner_blocked|minion_|tanner_too)/.test(w[0]) && (w[1] || []).some((i) => !execSet[i]));
-      if (keyW && heroes.length < 2) { const i = keyW[1].find((x) => !execSet[x]), q = R.players[i]; hero(q, '', q.id === S.me ? TB.whoMine : keyW[0] === 'wolf_lived' ? TB.heroWolf : TB.heroKey); }
+      if (keyW) keyW[1].filter((x) => !execSet[x]).slice(0, keyW[0] === 'wolf_lived' ? 2 : 1).forEach((i) => { const q = R.players[i], w = keyW[0] === 'wolf_lived'; if (heroes.length < 2) hero(q, '', q.id === S.me ? TB.whoMine : w ? TB.heroWolf : TB.heroKey, w && q.id !== S.me); });
       if (ART.want && heroes.length) ART.want(heroes.map((h) => h[0]));
-      const heroH = heroes.length ? '<div class="verdict-cards">' + heroes.map((h) => '<figure>' + ART.card(h[0], { size: 'md', face: 1, cls: h[1] }) + '<figcaption>' + (h[2].includes('${n}') ? '' : '<span class="vc-l">' + esc(h[2]) + '</span>') + (h[2] === TB.whoMine ? '' : '<b class="vc-n nm">' + esc(h[3]) + '</b>') + '</figcaption></figure>').join('') + '</div>' : '';
+      const heroH = heroes.length ? '<div class="verdict-cards">' + heroes.map((h) => '<figure>' + ART.card(h[0], { size: 'md', face: 1, cls: h[1] }) + '<figcaption>' + (h[2].includes('${n}') || h[4] || (moved && h[2] === TB.whoMine) ? '' : '<span class="vc-l">' + esc(h[2]) + '</span>') + (h[2] === TB.whoMine && !moved ? '' : '<b class="vc-n nm">' + esc(h[3]) + '</b>') + '</figcaption></figure>').join('') + '</div>' : '';
       bd.innerHTML = '<div class="verdict" data-team="' + vk[1] + '"><p class="verdict-line">' + esc(T.verdict[vk[0]]) + '</p>' +
         (mp ? '<p class="verdict-me"><span class="rec-stamp' + (mp.win ? ' is-win' : '') + '" aria-label="' + esc(mp.win ? TB.youWin : TB.youLose) + '">' + esc(mp.win ? T.stamp.win : T.stamp.lose) + '</span>' + (moved ? '<span class="vm-t">' + esc(fmt(TB.teamMoved, { from: ROLES[mp.original].name, team: TEAM_NAME[ROLES[fr].team] })) + '</span>' : '') + '</p>' : '') + heroH +
-        (vote.length || !R.why.some((w) => w[0] === 'no_death' || w[0] === 'wolf_lived') ? '<p class="verdict-why">' + (vote.length ? fmt(TB.execLine, { names: names(vote) }) : TB.noBlood) + '</p>' : '') +
+        '<p class="verdict-why">' + (vote.length ? fmt(TB.execLine, { names: names(vote) }) : R.players.every((p) => !p.vote) ? RP.vote.allNone : TB.noBlood) + '</p>' +
         execCards.map((l) => '<p class="verdict-why">' + l + '</p>').join('') +
         whyL.map((l) => '<p class="verdict-why">' + l + '</p>').join('') +
         hunts.map((d) => '<p class="verdict-why">' + fmt(TB.hunterLine, { a: NM(R.players[d.h].name), b: NM(R.players[d.s].name) }) + '</p>').join('') +

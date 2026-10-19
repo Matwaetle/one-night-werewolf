@@ -65,7 +65,14 @@ function minCss(src) {
     parts[k] = parts[k]
       .replace(/\s+/g, ' ')
       .replace(/ ?([{};,>~]) ?/g, '$1')
+      .replace(/ ?\+ ?/g, (m, off, str) => {   // 결합자 '+' 만 붙인다. 괄호 안(calc 등)의 + 는 공백이 필수라 그대로 둔다
+        let d = 0;
+        for (let q = 0; q < off; q++) { const ch = str[q]; if (ch === '(') d++; else if (ch === ')') d--; }
+        return d > 0 ? m : '+';
+      })
       .replace(/: /g, ':')
+      .replace(/ !important/g, '!important')
+      .replace(/(^|[^\d.])0\.(\d)/g, '$1.$2')
       .replace(/;}/g, '}');
   }
   return parts.join('').trim();
@@ -320,7 +327,13 @@ function build(opts = {}) {
     const m = pl(hm.m, '(max-width:700px)'), d = pl(hm.d, '(min-width:701px)');
     rawTok('__PRELOAD_KEY_M__', m); rawTok('__PRELOAD_KEY_D__', d); rawTok('__PRELOAD_KEY__', m + d);
   }
+  {   // 홈 키아트 URL: art.js staticUrl('home') 과 같은 값(manifest 는 위 fix() 에서 '/a/<이름>' 이 되어 있다). 없으면 '' — 인라인 가드가 프리로드를 건너뛴다
+    const hm = manifest.home, ok = (u) => (typeof u === 'string' && /^[\w\/.-]+$/.test(u) ? u : '');
+    const kd = hm && typeof hm === 'object' ? hm.d || hm.m : hm, km = hm && typeof hm === 'object' ? hm.m || hm.d : manifest.homeM || hm;
+    rawTok('__KEY_M__', ok(km)); rawTok('__KEY_D__', ok(kd));
+  }
   rawTok('__SOCKET_URL__', socketUrl);
+  if (socketUrl) html = html.replace(/(<link [^>]*rel=["']?preconnect["']?[^>]*>)/, (m) => m + '<link rel="dns-prefetch" href="' + socketUrl + '">');
   if (!socketUrl) html = html.replace(/<link\b[^>]*rel=["']?preconnect["']?[^>]*href=["']{2}[^>]*>\s*|<link\b[^>]*href=["']{2}[^>]*rel=["']?preconnect["']?[^>]*>\s*/g, '');
   rawTok('__VER__', ver);
   const left = html.match(/__[A-Z][A-Z0-9_]*__/g);

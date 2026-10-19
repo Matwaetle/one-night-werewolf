@@ -102,7 +102,7 @@ const imgRules = [
   ['지평선', /^horizon\./, 35], ['판결 배경', /^verdict-/, 35], ['그레인', /^grain\./, 4],
 ];
 let bigs = [];
-const imgTotals = { atlas: 0, back: 0, horizon: 0, grain: 0, key: 0 };
+const imgTotals = { atlas: 0, back: 0, horizon: 0, grain: 0, key: 0, keyM: 0 };
 for (const [label, re, lim] of imgRules) {
   const fs_ = opt(label, re);
   for (const f of fs_) {
@@ -114,6 +114,7 @@ for (const [label, re, lim] of imgRules) {
     if (label === '지평선') imgTotals.horizon = s;
     if (label === '그레인') imgTotals.grain = s;
     if (/키아트 데스크톱/.test(label)) imgTotals.key = s;
+    if (/키아트 모바일/.test(label)) imgTotals.keyM = s;
   }
 }
 const bonfire = imgTotals.atlas + imgTotals.back + imgTotals.horizon + imgTotals.grain;
@@ -129,8 +130,8 @@ if (bonfire) row('모닥불 추가 (아틀라스+뒷면+지평선+그레인)', b
   const full = bigs.reduce((s, x) => s + x, 0);
   const vMax = Math.max(0, ...find(/^verdict-/).map(size));
   const backS = find(/^back-s\./).reduce((s, f) => s + size(f), 0);
-  const fullEst = row('캐시 없이 한 판 전체 (추정, 최대 판)', critical + later + imgTotals.key + bonfire + full + vMax + backS, 900 * KB,
-    `[큰 아트 전부 ${(full / KB).toFixed(0)} + 판결 ${(vMax / KB).toFixed(0)} + back-s ${(backS / KB).toFixed(0)}]`);
+  const fullEst = row('캐시 없이 한 판 전체 (추정, 최대 판)', critical + later + imgTotals.key + imgTotals.keyM + bonfire + full + vMax + backS, 900 * KB,
+    `[key-d+key-m ${((imgTotals.key + imgTotals.keyM) / KB).toFixed(0)} + 큰 아트 전부 ${(full / KB).toFixed(0)} + 판결 ${(vMax / KB).toFixed(0)} + back-s ${(backS / KB).toFixed(0)}]`);
   // 실측(review/metrics.json)이 있으면 추정의 1.15배를 넘지 않는지 본다
   try {
     const mp = path.join(ROOT, 'review/metrics.json');
@@ -150,6 +151,7 @@ if (bonfire) row('모닥불 추가 (아틀라스+뒷면+지평선+그레인)', b
         // 추정 대비 1.15배 초과는 art.js 수정 재측정 전까지 경고만 한다
         const rl = fullEst * 1.15;
         rows.push(`${real <= rl && !invalid ? 'OK  ' : 'WARN'} ${'실측/추정 비율 (<=1.15)'.padEnd(40)} ${(real / KB).toFixed(1)}KB / ${(rl / KB).toFixed(1)}KB${inv}`);
+        info('  (실측은 캐시를 끈 상한값)', '재방문·SW 캐시 적중 시 실제 전송량은 이보다 작다. 추정은 key-d 와 key-m 을 모두 센다 (실측 한 번에는 뷰포트에 맞는 하나만 받는다)');
         const ws = g?.wsBytes;
         if (typeof ws === 'number') {
           const wl = 64 * KB, wok = ws <= wl;

@@ -47,15 +47,9 @@ self.addEventListener('fetch', (e) => {
     e.respondWith((async () => {
       const c = await caches.open(SHELL);
       const net = fetch('/', { cache: 'no-cache' }).then((res) => { if (res.ok) c.put('/', res.clone()); return res; });
-      const hit = () => c.match('/');
-      try {
-        const res = await Promise.race([net, new Promise((_, rej) => setTimeout(rej, 2500))]);
-        return res;
-      } catch (_) {
-        const h = await hit();
-        if (h) { e.waitUntil(net.catch(() => {})); return h; }
-        return net;
-      }
+      const h = await c.match('/');
+      if (h) { e.waitUntil(net.catch(() => {})); return h; }
+      return net;
     })());
     return;
   }

@@ -926,7 +926,7 @@ io.on('connection', (socket) => {
     tokAt = t;
     if (tok < 1) {
       const cb = a[a.length - 1];
-      if (typeof cb === 'function') { try { cb({ ok: false, error: M(ev === 'chat' ? 'chatFast' : 'slowDown') }); } catch (e) { /* ignore */ } }
+      if (typeof cb === 'function') { try { cb(ev === 'chat' ? { ok: false, error: M('chatFast'), code: 'fast' } : { ok: false, error: M('slowDown') }); } catch (e) { /* ignore */ } }
       return;
     }
     tok -= 1;
@@ -1171,7 +1171,7 @@ io.on('connection', (socket) => {
     const { text, re, cid } = obj(d);
     const { room, pid } = ctx();
     if (!room) return reply(cb, { ok: false, error: M('noGame') });
-    if (room.phase === 'night') return reply(cb, { ok: false, error: M('chatNight') });
+    if (room.phase === 'night') return reply(cb, { ok: false, error: M('chatNight'), code: 'night' });
     if (typeof text !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
     const t = Array.from(clean(text)).slice(0, 300).join('');
     if (!t) return reply(cb, { ok: false, error: M('badRequest') });
@@ -1179,7 +1179,7 @@ io.on('connection', (socket) => {
     const cidOk = typeof cid === 'string' && cid.length <= 24;
     if (cidOk && p && p.cids && p.cids.has(cid)) return reply(cb, { ok: true });
     const now = Date.now();
-    if (p && p.lastChat && now - p.lastChat < 400) return reply(cb, { ok: false, error: M('chatFast') });
+    if (p && p.lastChat && now - p.lastChat < 400) return reply(cb, { ok: false, error: M('chatFast'), code: 'fast' });
     if (p) p.lastChat = now;
     if (p && cidOk) {
       if (!p.cids) p.cids = new Set();

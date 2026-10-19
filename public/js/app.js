@@ -185,7 +185,7 @@
       resend();
       if (s.prompt && (!p || !p.prompt || p.prompt.key !== s.prompt.key)) { ui.sel = []; ui.selC = []; ui.busy = 0; }
       const pr = s.prompt;   // 불면증환자: 지금 카드를 큰 카드로 한 번만 보여 준다
-      if (pr && pr.type === 'info' && pr.reveal && !pr.done && !ui.dn['rv' + pr.key]) { ui.dn['rv' + pr.key] = 1; pr.reveal.forEach((r) => ui.reveals.push({ k: 'p', id: r.id, self: 'now', role: r.role })); ART.want(pr.reveal.map((r) => r.role)); }
+      if (pr && pr.type === 'info' && pr.reveal && !pr.done && !ui.dn['rv' + pr.key]) { ui.dn['rv' + pr.key] = 1; ui.reveals.push(...pr.reveal.map((r) => ({ k: 'p', id: r.id, self: 'now', role: r.role }))); ART.want(pr.reveal.map((r) => r.role)); }
     } catch (e) { console.error(e); } finally { sched(); }
   });
   sock.on('chatHistory', (m, code) => {
@@ -528,7 +528,7 @@
       };
       for (const k in f) el.classList.toggle(k, !!f[k]);
       const tok = $('.seat-token', el);
-      tok.setAttribute('aria-pressed', f['is-target'] ? 'true' : 'false');
+      tok.setAttribute('aria-pressed', !!f['is-target']);
       if (isHost() && S.phase === 'lobby' && p.id !== S.me) tok.dataset.lp = '1'; else delete tok.dataset.lp;
       { const sn = $('.seat-name', el), nm = f['is-off'] ? TB.away : short(p.name), eff = p.final === 'doppelganger' && R && R.doppelCopy ? R.doppelCopy : p.final;
         if (body.dataset.phase === 'result' && ROLES[eff]) set(sn, 'innerHTML', esc(nm) + '<i class="seat-role">' + esc(ROLES[eff].name) + '</i>'); else set(sn, 'textContent', nm); }
@@ -631,7 +631,7 @@
         '<p class="check-t1">' + esc(TB.yourCard) + '</p><p class="check-team" hidden></p><p class="check-desc" hidden></p><p class="check-t2">' + esc(TB.holdHint) + '</p><p class="check-t2 check-priv">' + esc(TB.checkBand) + '</p><i class="check-bar"></i></div>';
     }
     const n = S.steps.length - 1, rn = ROLES[S.stepRole] ? ROLES[S.stepRole].name : '';
-    const dots = '<div class="night-track">' + Array.from({ length: n }, (_, i) => (i + 1 === S.stepIdx ? '<i class="night-dot is-now" role="img" aria-label="' + esc(rn) + '"></i>' : '<i class="night-dot' + (i + 1 < S.stepIdx ? ' is-past' : '') + '"></i>')).join('') + (rn ? '<span class="night-pos">' + S.stepIdx + ' / ' + n + ' · ' + esc(rn) + '</span>' : '') + '</div>';
+    const dots = '<div class="night-track">' + Array.from({ length: n }, (_, i) => '<i class="night-dot' + (i + 1 === S.stepIdx ? ' is-now" role="img" aria-label="' + esc(rn) + '"' : i + 1 < S.stepIdx ? ' is-past"' : '"') + '></i>').join('') + (rn ? '<span class="night-pos">' + S.stepIdx + ' / ' + n + ' · ' + esc(rn) + '</span>' : '') + '</div>';
     return m === 'sleep' ? dots + '<p class="night-nar" data-t="' + esc(fmt(TB.wake, { role: rn })) + '"></p><p class="night-msg">' + esc(T.phase.closeEyes || TB.closeEyes) + '</p>' : dots;
   }
   function afterNight(V) {
@@ -657,7 +657,7 @@
   function paintBand(V) {
     const b = $('.band'), q = $('.band-q', b), r = $('.band-rule', b);
     set($('.band-text', b), 'textContent', V.band);
-    q.hidden = !V.rule; q.setAttribute('aria-expanded', ui.rule ? 'true' : 'false'); r.hidden = !(V.rule && ui.rule);
+    q.hidden = !V.rule; q.setAttribute('aria-expanded', !!ui.rule); r.hidden = !(V.rule && ui.rule);
     const bh = V.mode === 'result', bc = b.hidden !== bh; b.hidden = bh;
     const day = V.mode === 'day' && !unknown(), l = day ? lastSeen() : null, sn = $('.day-seen', b), oth = [];   // 낮: 밤에 본 것 한 줄 (내 카드 · 다른 사람/가운데 카드, 첫 판에는 바뀌었을 수 있다는 안내를 덧붙인다)
     if (day) (S.myLog || []).forEach((it) => (it.reveal || []).forEach((r) => {
@@ -687,7 +687,7 @@
   }
   function paintDock(V) {
     const d = $('#dock'), card = $('.dock-card', d), alt = $('.dock-alt'), btn = $('.btn-main', d), bdg = $('.dock-badge', d), off = !!ui.off;
-    const cr = S.phase === 'day' || S.phase === 'vote', ck = V.card === 0 && S.myCard ? (unknown() ? 'u' : 'b') + (cr ? 'c' : '') + (isPeeked() ? '' : 'h') : 'v';
+    const cr = (S.phase === 'day' || S.phase === 'vote') && !(S.myCard === 'insomniac' && (lastSeen() || {}).who === 0), ck = V.card === 0 && S.myCard ? (unknown() ? 'u' : 'b') + (cr ? 'c' : '') + (isPeeked() ? '' : 'h') : 'v';
     if (card._k !== ck && !press) {
       card._k = ck; card.style.visibility = ck === 'v' ? 'hidden' : '';
       card.setAttribute('aria-label', ck === 'v' ? '' : cr ? TB.daySwapHint : TB.yourCard + ' ' + TB.holdHint);
@@ -696,18 +696,18 @@
       ART.mark(card);
     }
     alt.hidden = !V.alt; set(alt, 'textContent', V.alt ? V.alt.t : ''); alt.dataset.act = V.alt ? V.alt.act : '';
-    alt.setAttribute('aria-disabled', off ? 'true' : 'false');
+    alt.setAttribute('aria-disabled', off);
     const b = V.btn;
     const stt = $('.dock-status', d); if (stt) { set(stt, 'textContent', V.status || ''); stt.hidden = !V.status; }
     btn.hidden = !!b.hide; set($('.lbl', btn), 'textContent', b.lbl || '');
     const nm = $('.nm', btn); set(nm, 'textContent', b.nm || ''); nm.hidden = !b.nm;
     btn.dataset.act = b.act || '';
-    if (b.hold) { btn.dataset.hold = b.hold; if (V.mode !== 'vote') btn.dataset.cap = $('#hold-hint').textContent; else delete btn.dataset.cap; btn.setAttribute('aria-describedby', 'hold-hint'); } else { delete btn.dataset.hold; delete btn.dataset.cap; btn.removeAttribute('aria-describedby'); }
-    btn.setAttribute('aria-disabled', b.dis || off ? 'true' : 'false');
+    delete btn.dataset.cap; if (b.hold) { btn.dataset.hold = b.hold; if (V.mode !== 'vote') btn.dataset.cap = $('#hold-hint').textContent; btn.setAttribute('aria-describedby', 'hold-hint'); } else { delete btn.dataset.hold; btn.removeAttribute('aria-describedby'); }
+    btn.setAttribute('aria-disabled', !!(b.dis || off));
     if (!press || press.el !== btn) btn.classList.remove('is-holding');
     set($('.bd', bdg), 'textContent', ui.unread > 0 ? String(ui.unread) : '');
     bdg.classList.toggle('is-new', !ui.unread && !!ui.logNew);
-    bdg.setAttribute('aria-label', S.phase === 'night' ? T.chat.locked : chatOff ? T.chat.log : T.chat.log + ' / ' + T.chat.title); bdg.setAttribute('aria-disabled', S.phase === 'night' ? 'true' : 'false');
+    const nt = S.phase === 'night'; bdg.setAttribute('aria-label', nt ? T.chat.locked : chatOff ? T.chat.log : T.chat.log + ' / ' + T.chat.title); bdg.setAttribute('aria-disabled', nt);
   }
 
   // ---------- 시트 (속삭임 · 기록 · 이번 밤의 패) ----------
@@ -788,7 +788,8 @@
     send('chat', re ? { text: t, re, cid } : { text: t, cid }, (r) => {
       if (!p.isConnected) return;
       if (r && r.ok !== false) { p.className = 'msg'; if (r.reDropped) toast(T.chat.reGone); return; }
-      p.className = 'msg is-failed'; p.insertAdjacentHTML('beforeend', '<button class="msg-rs" type="button" data-act="resend">' + esc(TBT.resend) + '</button>');
+      if (r && (r.code === 'night' || S.phase === 'night')) { const i = $('#chatInput'); p.remove(); if (i && !i.value) i.value = t; return; }
+      p.className = 'msg is-failed'; if (!r || r.code === 'fast') p.insertAdjacentHTML('beforeend', '<button class="msg-rs" type="button" data-act="resend">' + esc(TBT.resend) + '</button>');
     });
   }
   function addChat(m, quiet) {
@@ -831,7 +832,7 @@
     const ck = chatShown() ? 'chat' : '';   // 채팅이 보이게 된 순간: 최신 메시지로 (위로 올려 읽던 중이면 그 자리로)
     if (ck !== ui.ck) { ui.ck = ck; if (ck) { if (ui.stick) toEnd(); else $('.sheet-body').scrollTop = ui.chatTop; } }
     if (night && ui.h && !desk()) setSheet(0);
-    sh.setAttribute('aria-hidden', ui.h || desk() ? 'false' : 'true');
+    sh.setAttribute('aria-hidden', !(ui.h || desk()));
     if (ui.h || desk()) { if (ui.tab === 'log') rr('log'); else if (ui.tab === 'deck') { if (resState === 2) W.RESULT.deck(); else loadResult(); } }
   }
   // ---------- 모달 · 메뉴 · 법도 ----------

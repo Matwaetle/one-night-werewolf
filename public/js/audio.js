@@ -137,6 +137,14 @@
   S.scene = wrap(function (nm, o) {
     o = o || {}; want = [nm, o];
     if (!en || !mst) return;
+    if (!lt && L()) {                                      // 세션 중 lite 로 바뀌면: 컴프레서·에코를 빼고 곧장 출력, 밤 종소리 타이머 중단
+      lt = 1;
+      try { mst.disconnect(); mst.connect(ctx.destination); } catch (e) { /* 무시 */ }
+      try { cp && cp.disconnect(); } catch (e) { /* 무시 */ }
+      try { ech && ech.disconnect(); } catch (e) { /* 무시 */ }
+      ech = 0;
+      if (cur && cur.nm === 'night') cur.e = [];
+    }
     if (cur && cur.nm === nm) { cur.o = o; return; }
     var t = ctx.currentTime, s = { nm: nm, o: o, b: g(0, dk), n: [], e: [] }, old = cur;
     s.b.gain.setTargetAtTime(1, t, 0.8);

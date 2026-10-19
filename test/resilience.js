@@ -10,6 +10,7 @@ const URL = `http://localhost:${PORT}`;
 const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
   env: { ...process.env, PORT, TIME_SCALE: '0.05', NODE_ENV: 'test', STATIC_ORIGIN: 'http://localhost:1' }, stdio: 'ignore',
 });
+process.on('exit', () => { try { srv.kill(); } catch (e) { /* ignore */ } });
 const socks = [];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const conn = () => new Promise((res, rej) => {

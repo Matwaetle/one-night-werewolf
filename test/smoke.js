@@ -51,6 +51,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
   env: { ...process.env, PORT, TIME_SCALE: '0.05', NODE_ENV: 'test' }, stdio: 'ignore',
 });
+process.on('exit', () => { try { srv.kill(); } catch (e) { /* ignore */ } });
 const fail = (m) => { console.error('SMOKE FAIL:', m); srv.kill(); process.exit(1); };
 const timer = setTimeout(() => fail('시간 초과'), 60000);
 

@@ -938,3 +938,25 @@
 | T.btn.judgeNow | 바로 투표 시작하기 |
 | T.phase.awake | 눈을 뜨세요. |
 | T.body.waitMore | 시작하려면 ${need}명이 더 필요합니다. |
+
+## Final fixes: server+strings (latest, supersedes earlier rows)
+
+| Key | Final |
+|---|---|
+| T.body.dockMaybe | 바뀌었을 수도 |
+| T.replay.note.wake | 카드가 바뀌었어도 처음 역할대로 깨어났습니다. |
+| T.replay.cause.robbed | ${role} ${a:이/가} 내 카드를 가져가고 ${r} 카드를 남겼습니다. |
+| T.replay.cause.swapped | ${role} ${a:이/가} 내 자리의 카드를 ${t}의 ${r} 카드와 바꿨습니다. |
+| T.replay.vote.topNone | 아무도 투표하지 않았습니다. |
+| T.replay.self.end / diff / blind | 용어를 '마지막 카드'에서 '최종 카드'로 통일 |
+| T.body.pickExec | 처형할 사람을 고르고 투표하기를 길게 누르세요. |
+| T.body.deckNote | 카드는 인원수보다 3장 많아야 합니다. 남는 3장은 가운데에 놓입니다. |
+| T.body.teamMoved | 밤사이 카드가 바뀌어 ${team:이/가} 되었습니다. |
+| T.replay.why.wolf_lived_you | 늑대인간 카드를 가진 나는 끝까지 정체를 들키지 않았습니다. |
+| chat error code | night / fast (서버 응답 code 필드) |
+| T.body.troublemakerSub | 바꿀 플레이어 두 명을 선택하세요. 바뀐 카드는 볼 수 없습니다. |
+| T.body.robberSub | 훔칠 플레이어를 선택하세요. 훔친 카드는 바로 봅니다. |
+| T.body.doppelSub | 복사할 플레이어를 선택하세요. 그 사람의 역할이 됩니다. |
+| T.body.voteRule | 2표 이상 받은 사람이 없으면 아무도 처형되지 않고, 동점이면 모두 처형됩니다. |
+| T.body.raised | 준비 ${r}/${n} · 모두 준비하면 투표합니다. |
+| T.body.masonWarn | 프리메이슨은 2장을 함께 넣어야 합니다. |
