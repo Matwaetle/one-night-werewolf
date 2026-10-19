@@ -81,8 +81,8 @@ body[data-conn=off] .hud-mid{opacity:.5}
 .band-text{flex:0 1 auto;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;white-space:pre-line}
 .band-bar{position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--bone-dim);transform-origin:0 50%}
 #dock{position:fixed;z-index:2;left:0;right:var(--drawer);bottom:0;height:var(--dock-h);padding:0 8px var(--sab);display:grid;grid-template-columns:56px 1fr 48px;gap:8px;align-items:center;background:rgba(21,18,15,.96);border-top:var(--hair)}
-.dock-card{--cw:44px;position:relative;width:44px;height:62px;align-self:start;justify-self:center;margin-top:2px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-.dock-hint{position:absolute;left:50%;bottom:-13px;transform:translateX(-50%);font-size:11px;line-height:1;color:var(--smoke);white-space:nowrap;pointer-events:none}
+.dock-card{--cw:34px;position:relative;width:56px;height:auto;display:flex;flex-direction:column;align-items:center;gap:2px;align-self:start;justify-self:center;margin-top:4px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.dock-hint{position:static;transform:none;margin:0;font-size:11px;line-height:1.1;color:var(--bone-dim);white-space:nowrap;pointer-events:none}
 .dock-act{position:relative;align-self:stretch;display:flex;flex-direction:column;justify-content:center}
 .dock-act .btn-main{width:100%;min-height:52px}
 .dock-alt,.home-alt,.home-law{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;font-size:var(--fs-small);font-weight:600;color:var(--bone-dim);text-decoration:underline;text-underline-offset:3px}
@@ -110,12 +110,15 @@ body[data-phase=lobby] #dock{grid-template-columns:48px 1fr 48px}
 .btn-main[data-cap] .lbl{font-size:16px;line-height:1.15}
 .btn-main[data-cap] .nm{line-height:1.15}
 .btn-main[aria-disabled=true]{background:var(--char);color:var(--bone-dim);box-shadow:inset 0 0 0 1px var(--ash),4px 4px 0 #000}
+.btn-main[aria-disabled=true]{opacity:.8;box-shadow:inset 0 0 0 1px var(--bone-dim),4px 4px 0 #000}
+.dock-status{margin:0;text-align:center;font-size:var(--fs-small);color:var(--smoke)}
+.nw{white-space:nowrap}
 .is-nudge{animation:nudge 160ms linear}
 .rp-again{display:flex;margin:12px 16px 0;width:calc(100% - 32px);min-height:44px}
 .check-team{font:600 var(--fs-small)/1.3 var(--f-body);letter-spacing:.12em;color:var(--blood-hot)}
 .check-desc{max-width:30em;margin:0 auto;padding:0 16px;font:var(--fs-body)/1.55 var(--f-serif);color:var(--bone)}
 .hold{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-.hold-fill{position:absolute;inset:0;background:var(--blood-hot);transform:scaleX(0);transform-origin:0 50%;transition:transform var(--t-ui) var(--ease-out);pointer-events:none}
+.hold-fill{position:absolute;inset:0;background:var(--clot);transform:scaleX(0);transform-origin:0 50%;transition:transform var(--t-ui) var(--ease-out);pointer-events:none}
 .hold.is-holding .hold-fill{transform:scaleX(1);transition:transform var(--hold-ms,var(--t-hold)) linear}
 .hold[data-hold="1200"]{--hold-ms:var(--t-hold-x)}
 .hold.is-full .hold-fill{transform:scaleX(1);transition:none}
@@ -180,6 +183,8 @@ body[data-phase=home] #sheet{display:none}
   #sheet,#sheet[data-h]{top:var(--hud-h);bottom:0;left:auto;width:320px;height:auto;transform:none;visibility:visible;border-top:0;border-left:var(--hair)}
 }
 
+@media(max-width:1023px){#sheet::before{content:'';position:fixed;inset:0;z-index:-1;background:rgba(5,4,3,.8);opacity:0;pointer-events:none;transition:opacity var(--t-ui)}#sheet[data-h="1"]::before,#sheet[data-h="2"]::before{opacity:1}}
+
 /* 카드 구성: 서랍 폭에 맞춰 열 수를 줄인다 (screens.css 의 4열/6열 규칙보다 우선) */
 #sheet .deck-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 8px}
 #sheet .deck-dec,#sheet .deck-inc{width:40px;height:44px}
@@ -202,15 +207,15 @@ body[data-phase=home] #sheet{display:none}
 .menu-item.is-danger{border-left:3px solid var(--blood)}
 
 /* ---------- 토스트 (z 60) · 연결 띠 (z 50) · #fx (z 30) ---------- */
-#toast{position:fixed;z-index:60;top:calc(var(--sat) + 8px);left:0;right:0;width:fit-content;max-width:92vw;margin:0 auto;padding:10px 16px;background:var(--char);border-left:3px solid var(--ash);color:var(--bone-hi);font-size:14px;line-height:1.4;box-shadow:var(--shadow-hard);pointer-events:none}
+#toast{position:fixed;z-index:60;top:calc(var(--hud-h) + 8px);left:0;right:0;width:fit-content;max-width:92vw;margin:0 auto;padding:10px 16px;background:var(--char);border-left:3px solid var(--ash);color:var(--bone-hi);font-size:14px;line-height:1.4;box-shadow:var(--shadow-hard);pointer-events:none}
 #toast[data-kind=danger]{border-left-color:var(--blood)}
 #toast:not([hidden]){animation:toast 180ms steps(4) both}
 #conn{position:fixed;z-index:50;top:0;left:0;right:0;padding:calc(6px + var(--sat)) 16px 6px;text-align:center;background:var(--char);border-bottom:3px solid var(--blood);color:var(--bone-hi);font-size:var(--fs-small);font-weight:600}
 #conn[data-state=back]{border-bottom-color:var(--ash)}
 #fx{position:fixed;inset:0;z-index:30;pointer-events:none}
-.lid{position:absolute;left:0;right:0;height:50vh;background:#000;transform:scaleY(0)}
-.lid-t{top:0;transform-origin:50% 0;background:linear-gradient(#000 82%,rgba(0,0,0,0))}
-.lid-b{bottom:0;transform-origin:50% 100%;background:linear-gradient(rgba(0,0,0,0),#000 18%)}
+.lid{position:absolute;left:0;right:0;height:calc((100% - var(--hud-h) - var(--dock-h))/2);background:#000;transform:scaleY(0)}
+.lid-t{top:var(--hud-h);transform-origin:50% 0;background:linear-gradient(#000 82%,rgba(0,0,0,0))}
+.lid-b{bottom:var(--dock-h);transform-origin:50% 100%;background:linear-gradient(rgba(0,0,0,0),#000 18%)}
 .flash{position:absolute;inset:0;opacity:0;background:var(--blood-hot)}
 .flash[data-c=paper]{background:var(--bone)}
 .peek{position:fixed;z-index:35;top:14vh;left:50%;transform:translateX(-50%);display:none}

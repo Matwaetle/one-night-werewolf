@@ -64,6 +64,7 @@
       else { plain = html = String(v); }
       if (!pair) return html;
       const out = josa(plain, pair); // plain + 조사 (또는 plain + ' —')
+      if (typeof v === 'object') return '<span class="nw">' + html + out.slice(plain.length) + '</span>';
       return html + out.slice(plain.length);
     });
   }
@@ -220,7 +221,10 @@
       keepAwake: '화면이 꺼지지 않도록 해 주세요.',
       peekFirst: '처음 받은 카드',
       peekLast: '마지막으로 확인한 카드',
-      dockHint: '눌러 보기',
+      dockHint: '내 카드 보기',
+      dockCoach: '왼쪽 아래 카드를 누르면 밤에 확인한 정보를 다시 볼 수 있습니다.',
+      heroDead: '${n} · 처형',
+      heroKey: '${n}의 카드',
       holdShort: '길게 눌러 확정하세요.',
       holdCap: '길게 눌러 확정',
       holdNm: '${n} · 길게 눌러 확정',
@@ -248,7 +252,7 @@
       pickStealBtn: '역할 복사하기 ${n}',
       lookCount: '${n}/2',
       seenNothing: '밤에 확인한 정보가 없습니다.',
-      sleeping: '대기 중',
+      sleeping: '눈을 감고 차례를 기다리는 중입니다.',
       blurHint: '눌러서 확인하세요.',
       coverHint: '누르면 카드를 덮습니다.',
       awakeTab: '● 당신의 차례',
@@ -256,14 +260,14 @@
       autoPicked: '(시간 초과로 자동 선택)',
       // 낮
       dawn: '아침이 되었습니다.',
-      dayAsk: '토론하세요. 밤사이 카드가 바뀌었을 수 있습니다.',
+      dayAsk: '토론하세요.',
       readyNote: '모두 준비하면 바로 투표가 시작됩니다.',
       firstCard: '처음 받은 카드',
       deckAll: '카드 구성 (가운데 카드 3장 포함)',
       raised: '투표 준비 ${r}/${n} · 모두 준비하면 바로 투표합니다.',
       raisedBadge: '준비 완료',
       // 투표
-      pickExec: '처형할 사람에게 투표하세요. 끝나기 전까지 바꿀 수 있습니다.',
+      pickExec: '처형할 사람을 누른 뒤 아래 버튼을 길게 눌러 투표하세요. 끝나기 전까지 바꿀 수 있습니다.',
       myVote: '내 투표: ${n}',
       noVote: '아직 투표하지 않았습니다.',
       voteCount: '투표 ${n}/${t}',
@@ -275,7 +279,7 @@
       votedFor: '${n}에게 투표했습니다. 다른 사람을 눌러 바꿀 수 있습니다.',
       votedBtn: '투표 완료',
       checkBand: '다른 사람에게 보이지 않게 확인하세요.',
-      execCard: '처형된 ${n}의 카드는 ${r} 카드였습니다.',
+      execCard: '${n}의 카드는 ${r} 카드였습니다.',
       // 결과
       cols: { name: '이름', first: '처음 카드', last: '최종 카드', vote: '투표', votes: '득표', end: '결과' },
       altarWord: '가운데 카드',
@@ -392,7 +396,7 @@
       hunt_rule_join: ' ', // 아래 줄 끝에 이어 붙일 때의 구분
       sep: ', ',           // 이름·역할 나열
       dot: ' · ',          // 득표 등 나열
-      you: '나',
+      you: '당신',
       doppel: '도플갱어',
       doppelOf: '도플갱어 ${a}',   // 나열 시 이름 앞 칭호
       copyOf: '도플갱어(${r})',
@@ -429,13 +433,13 @@
         auto:  { top: '${role} ${a:은/는} 제한 시간 안에 행동하지 않았습니다.' },
       },
       other: {
-        at:   '다른 늑대인간 카드는 ${where}에 있었습니다.',
+        at:   '남은 늑대인간 카드는 ${where}에 있었습니다.',
         hand: '${t}의 자리',
         none: '늑대인간 카드는 이 한 장뿐이었습니다.',
       },
       swap: {
-        robber:       { top: '${role} ${a:이/가} ${t}의 카드를 훔쳤습니다.', bot: '${a:은/는} ${r:이/가}, ${t:은/는} ${r2:이/가} 되었습니다.' },
-        troublemaker: { top: '${role} ${a:이/가} ${b:과/와} ${c}의 카드를 서로 바꿨습니다.', bot: '${b:은/는} ${rc:이/가}, ${c:은/는} ${rb:이/가} 되었습니다.' },
+        robber:       { top: '${role} ${a:이/가} ${t}의 카드를 훔쳤습니다.', bot: '${a:은/는} ${t}의 ${r} 카드를 가져갔고, ${t:은/는} ${a}의 ${r2} 카드를 받았습니다.' },
+        troublemaker: { top: '${role} ${a:이/가} ${b:과/와} ${c}의 카드를 서로 바꿨습니다.', bot: '이제 ${b:은/는} ${rc} 카드를, ${c:은/는} ${rb} 카드를 가지고 있습니다.' },
         drunk:        { top: '${role} ${a:이/가} 자신의 카드를 ${P:과/와} 바꿨습니다.', bot: '받은 카드는 ${r}입니다. ${a:은/는} 확인하지 못했습니다.' },
       },
       auto: '(시간 초과)',  // 위 줄 끝에 ' ' 로 이어 붙인다
@@ -444,7 +448,7 @@
         top: '아침이 되었습니다. 최종 카드 배치입니다.',
         bot: '바뀐 카드: ${n}장',
         botNone: '바뀐 카드가 없습니다.',
-        seat: { top: '${a}: ${from} → ${to}', bot: '이제 ${team}입니다.' },
+        seat: { top: '${a:은/는} 이제 ${to} 카드를 가지고 있습니다.', bot: '처음 카드는 ${from} 카드였습니다. 팀이 ${team:으로/로} 바뀌었습니다.', botSame: '처음 카드는 ${from} 카드였습니다. 팀은 그대로 ${team}입니다.' },
       },
       vote: {
         top: '모두 동시에 투표했습니다.',
@@ -454,7 +458,7 @@
         one: '2표 이상 받은 사람이 없어 아무도 처형되지 않았습니다.',
         none: '${a:은/는} 투표하지 않았습니다.',
       },
-      exec: { top: '${list:이/가} 처형되었습니다.', bot: '카드: ${r}', botMany: '${list}', item: '${t}: ${r}' },
+      exec: { card: '${t}의 카드는 ${r} 카드였습니다.', top: '${list:이/가} 처형되었습니다.', bot: '카드: ${r}', botMany: '${list}', item: '${t}: ${r}' },
       nodeath: { top: '아무도 처형되지 않았습니다.' },
       hunt: {
         top: '${h}의 능력으로 ${t}도 함께 죽었습니다.',
@@ -485,7 +489,15 @@
         win: '${team:으로/로} 승리했습니다.',
         lose: '${team:으로/로} 패배했습니다.',
       },
+      cause: {
+        robbed: '${role} ${a:이/가} 당신의 카드를 가져갔습니다. 당신은 이제 ${r}입니다.',
+        swapped: '${role} ${a:이/가} 당신의 카드를 ${t}의 카드와 바꿨습니다. 당신은 이제 ${r}입니다.',
+        rob: '당신은 ${t}의 카드를 가져왔습니다. 당신은 이제 ${r}입니다.',
+        drunk: '당신은 자신의 카드를 ${P:과/와} 바꿨습니다. 당신은 이제 ${r}입니다.',
+      },
       ui: {
+        hop: { start: '처음', robSelf: '${a:이/가} 훔쳐 옴', robTarget: '${a:이/가} 가져감', swap: '${a:이/가} 바꿈', drunkSelf: '${a:이/가} 가운데 카드와 바꿈', drunkCenter: '${a:이/가} 자기 카드와 바꿈' },
+        journeySep: ' · ',
         hudCenter: '밤의 기록',
         altarShort: ['가운데 1', '가운데 2', '가운데 3'],
         hudSkip: '건너뛰기',

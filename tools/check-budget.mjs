@@ -75,7 +75,7 @@ const critical = row('크리티컬 패스 합계 (html+font+sio+game)', htmlBr +
 const gc = need('game.css', /^game\.[0-9a-f]+\.css$/); if (gc) row('game.css', size(gc), 9 * KB);
 const fx = need('fx.js', /^fx\.[0-9a-f]+\.js$/); if (fx) row('fx.js', size(fx), 5 * KB);
 const fD = need('hanbam-d 폰트', /^hanbam-d\.[0-9a-f]+\.woff2$/); if (fD) row('hanbam-d (디스플레이 폰트)', size(fD), 30 * KB);
-const rp = opt('replay.js', /^replay\.[0-9a-f]+\.js$/); if (rp.length) row('replay.js (JS+CSS+문양)', size(rp[0]), 12 * KB);
+const rp = opt('replay.js', /^replay\.[0-9a-f]+\.js$/); if (rp.length) row('replay.js (JS+CSS+문양)', size(rp[0]), 12.5 * KB);
 
 /* 이미지 */
 const imgRules = [

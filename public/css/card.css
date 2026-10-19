@@ -156,6 +156,8 @@
   font:600 clamp(9px,calc(var(--cw)*.15),13px)/1 var(--f-body); letter-spacing:-.02em;
 }
 .card[data-long="1"] .card-name{ font-size:clamp(8px,calc(var(--cw)*.13),12px); letter-spacing:-.04em; }
+.card[data-size="sm"] .card-name{ top:69%; height:16%; z-index:4; line-height:1; padding-top:1px; font-size:clamp(9px,calc(var(--cw)*.14),12px); }
+.card[data-long="1"][data-size="sm"] .card-name{ font-size:clamp(8px,calc(var(--cw)*.12),11px); letter-spacing:-.05em; }
 .card[data-size="sm"] .card-sg{ width:14px; height:14px; bottom:1%; }
 .card[data-size="sm"] .card-sg svg{ width:12px; height:12px; }
 .card[data-size="sm"] .card-tm{ width:11px; height:11px; min-width:0; right:4%; top:3%; padding:0; }
@@ -262,7 +264,7 @@ html[data-img~="back"] .card-back::after{ opacity:1; }
   color:var(--bone-hi); fill:none; stroke:currentColor; stroke-width:1.5; stroke-linejoin:miter;
   background:rgba(13,11,9,.6); padding:1px;
 }
-.card[data-size="sm"].is-swapped .card-sw{ top:calc(74% - 14px); }
+.card[data-size="sm"].is-swapped .card-sw{ top:calc(69% - 14px); }
 .card[data-size="md"].is-swapped .card-sw{ top:calc(80% - var(--cw)*.13); }
 .card[data-size="xs"].is-swapped .card-sw{ display:none; }
 

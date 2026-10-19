@@ -4,6 +4,7 @@ const fs = require('fs'), path = require('path'), assert = require('assert');
 const ROOT = path.join(__dirname, '..');
 const REPLAY = require(path.join(ROOT, 'public/js/replay.js'));
 const T = require(path.join(ROOT, 'public/strings.js'));
+const ROLES = require(path.join(ROOT, 'public/roles.js')).ROLES;
 const dir = path.join(__dirname, 'fixtures');
 const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /^night-.*.json$/.test(f)) : [];
 if (!files.length) { console.error('no test/fixtures/night-*.json (run npm test first)'); process.exit(1); }
@@ -61,6 +62,16 @@ function check(name, fx) {
   // verdict self line
   if (me_ >= 0) assert(strip(last.l3).trim().length > 5, name + ': self line');
   if (me_ >= 0) assert(strip(last.l3).includes('당신') && !strip(last.l3).includes('소속입니다'), name + ': self line wording: ' + strip(last.l3));
+  if (me_ >= 0) {
+    const nm = (e) => e.mv && e.mv.some((m) => m[1] === me_);
+    const want = N.ev.filter(nm).length, got = strip(last.l3).split('당신은 이제').length - 1;
+    assert.strictEqual(got, want, name + ': cause sentences in self line ' + got + ' != ' + want + ': ' + strip(last.l3));
+    for (const b of bs) if (b.act === 'seat') {
+      const same = ROLES[B.effRole(b.s)].team === R.players[b.s].team;
+      if (same) assert(!strip(b.l2).includes('바뀌었습니다'), name + ': team did not change but seat beat says so: ' + strip(b.l2));
+    }
+    if (R.deaths.some((d) => d.by === 'vote')) assert(strip(last.l2).includes('카드는'), name + ': verdict l2 lacks execution card: ' + strip(last.l2));
+  }
   // slots by result.players only (SPEC 13.11-8)
   assert.deepStrictEqual(REPLAY.slotIds(R), R.players.map((p) => p.id));
   return B;
@@ -114,6 +125,8 @@ must('max-bytes', (fx, B) => { assert(B.beats.length <= 40); });
 // hard-rule greps on the shipped sources
 const js = fs.readFileSync(path.join(ROOT, 'public/js/replay.js'), 'utf8'), css = fs.readFileSync(path.join(ROOT, 'public/css/replay.css'), 'utf8');
 try {
+  assert(!js.includes("'is-h', !k"), 'scene() must not toggle caption is-h from k');
+  assert(!js.includes('RL[x.st].ord'), 'journey hops must not use RL[x.st].ord');
   assert(!EMOJI.test(js) && !EMOJI.test(css), 'emoji in replay.js/css');
   assert(!/confirm\(|alert\(|navigator\.vibrate|rotateY|preserve-3d|stroke-dashoffset|backdrop-filter|mix-blend-mode|clip-path\s*:[^;]*transition/.test(js + css), 'forbidden construct');
   assert(!/(?<![\w-])border-radius/.test(css), 'border-radius in replay.css');

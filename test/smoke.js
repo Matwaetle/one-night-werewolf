@@ -4,6 +4,8 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const { io } = require('socket.io-client');
+const TS = require(path.join(__dirname, '..', 'public/strings.js'));
+if (TS.fmt('${a:이/가}', { a: { t: '민수', h: '<b>민수</b>' } }) !== '<span class="nw"><b>민수</b>가</span>' || TS.fmt('${a:이/가}', { a: '민수' }) !== '민수가') { console.error('FMT assertion failed'); process.exit(1); }
 const PORT = process.env.SMOKE_PORT || '3931';
 const URL = `http://localhost:${PORT}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
