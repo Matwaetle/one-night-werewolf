@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   var W = window, D = document, S = W.SND = W.SND || { q: [] }, T = W.T, R = Math.random;
-  var ctx, cp, mst, dk, bt, ech, nb, cur, tm, want, dkv = {};
+  var ctx, cp, mst, dk, bt, ech, nb, cur, tm, want, lt, dkv = {};
   var Pr = function (p) { if (p && p.catch) p.catch(function () {}); };
   var ls = function (k, v) { try { if (v == null) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { /* 무시 */ } };
   var en = ls('ww_bgm') !== '0';                       // 기본 켜짐(OWNER). 첫 제스처가 있어야 소리가 난다.
@@ -44,7 +44,7 @@
   }
   function ev(s, t, f) { s.e.push({ t: t, f: f }); }
   function pn(s, t, a, lo, hi) {                           // 드문 퉁김(화음 한 음 + 한 옥타브 위)
-    var k = L() ? 1.5 : 1;
+    var k = lt ? 1.5 : 1;
     ev(s, t + 3, function (x) {
       var f = a[R() * a.length | 0];
       tn('sine', f, x, 0.04, 2.5, s.b, 0.005, 0, 0, 1); tn('triangle', f * 2, x, 0.02, 2.5, s.b, 0.005, 0, 0, 1);
@@ -60,9 +60,9 @@
     } else if (nm === 'night') {
       w = ly(b, ['n', 0, 'bandpass', 500, 0.8, 0.04, 'f', 0.11, 300], n); lf(0.023, 0.02, w[1].gain, n);
       ly(b, ['sawtooth', 36.7, 'lowpass', 140, 2, 0.06], n); ly(b, ['sine', 73.4, 0, 0, 0, 0.03], n);
-      if (!L()) ev(s, t + 8, function (z) { tn('sine', 77.8, z, 0.015, 12, b, 6); return 20; });
+      if (!lt) ev(s, t + 8, function (z) { tn('sine', 77.8, z, 0.015, 12, b, 6); return 20; });
     } else if (nm === 'day') {
-      if (!L()) ly(b, ['n', 0, 'bandpass', 1200, 1, 0.015], n);
+      if (!lt) ly(b, ['n', 0, 'bandpass', 1200, 1, 0.015], n);
       ly(b, ['sine', 110, 0, 0, 0, 0.03, 'g', 0.2, 0.009], n); ly(b, ['sine', 164.8, 0, 0, 0, 0.02, 'g', 0.2, 0.006], n);
       pn(s, t, [293.7, 349.2, 440, 493.9], 9, 15);
       ev(s, t, function (z) {                              // ends 30초 전부터 1초마다 맥박
@@ -94,8 +94,7 @@
   function tick() {
     if (!cur || ctx.state !== 'running') return;
     var n = ctx.currentTime;
-    if (cp && L()) { try { mst.disconnect(); mst.connect(ctx.destination); cp.disconnect(); if (ech) ech.disconnect(); } catch (e) { /* 무시 */ } cp = ech = null;
-      cur.n.forEach(function (o) { if (o.lfo) try { o.stop(); } catch (e) { /* 무시 */ } }); }
+    if (!cur.e.some(function (e) { return e.t < n + 60; })) { clearInterval(tm); tm = 0; return; }   // 예약 없음: 타이머 정지
     cur.e.forEach(function (e) { if (e.t < n) e.t = n; while (e.t < n + 1.2) e.t += Math.max(0.05, e.f(e.t)); });
   }
   
@@ -105,10 +104,10 @@
     ctx.onstatechange = function () { var z = ctx.state; if (z === 'running') gl(0); else if (en && (z === 'suspended' || z === 'interrupted')) gl(1); };
     if (ctx.state === 'running') gl(0);
     var c, i, d, fb;
-    if (L()) c = g(0.8, ctx.destination);                  // lite: 컴프레서 생략
+    if (lt = L()) c = g(0.8, ctx.destination);                  // lite: 컴프레서 생략
     else { c = cp = ctx.createDynamicsCompressor(); c.threshold.value = -24; c.knee.value = 12; c.ratio.value = 4; c.attack.value = 0.01; c.release.value = 0.3; c.connect(ctx.destination); }
     mst = g(0, c); dk = g(1, mst); bt = g(1, dk);
-    if (!L()) {                                            // 에코: Delay 0.38s -> 피드백 0.35 -> lowpass 1800Hz
+    if (!lt) {                                             // 에코: Delay 0.38s -> 피드백 0.35 -> lowpass 1800Hz
       d = ctx.createDelay(1); d.delayTime.value = 0.38;
       fb = g(0.35, d); d.connect(fb); d.connect(fl('lowpass', 1800, 1, dk)); ech = g(1, d);
     }
@@ -143,11 +142,12 @@
     s.b.gain.setTargetAtTime(1, t, 0.8);
     if (old) { old.b.gain.setTargetAtTime(0, t, nm === 'result' ? 1 : 0.8); old.n.forEach(function (x) { try { x.stop(t + 3); } catch (e) { /* 무시 */ } }); if (old.n[0]) old.n[0].onended = function () { old.b.disconnect(); }; }
     cur = s; build(nm, o, s);
+    if (!tm) tm = setInterval(tick, 250);
   });
   S.toll = wrap(function (dead, at) {
     if (!en || !mst) return;
     var t = Math.max(ctx.currentTime + 0.02, at || 0), h = g(0.15, dead ? bt : fl('lowpass', 600, 0.7, bt));
-    P.slice(0, L() ? 5 : 8).forEach(function (p) { tn('sine', 110 * p[0], t, p[1], 6 / Math.pow(p[0], 0.6), h, 0.003); });
+    P.slice(0, lt ? 5 : 8).forEach(function (p) { tn('sine', 110 * p[0], t, p[1], 6 / Math.pow(p[0], 0.6), h, 0.003); });
     bn(t, 0.02, 'highpass', 3000, 1, 0.1, 0.002);
   });
   S.sting = wrap(function (nm) {

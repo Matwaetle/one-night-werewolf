@@ -46,7 +46,7 @@
       yieldTask(() => {
         if (!ok()) return;
         try {
-          REPLAY.open(X.R, X.S.me, { autoplay: auto, start: start || 0, mount: { main: $('#main'), dock: $('#dock'), hud: $('#hud') }, onDone: end });
+          REPLAY.open(X.R, X.S.me, { autoplay: auto, start: start || 0, mount: { main: $('#main'), dock: $('#dock'), hud: $('#hud') }, onDone: end, onVerdict: () => X.idle(ensure) });
           fx('lidsOpen', 400);
         } catch (e) { console.error(e); end(); }
       });
@@ -55,7 +55,7 @@
   function start(first) {
     const { S, R, LS, ui, fx, snd, later } = X;
     const wn = R.winners, tm = ['village', 'wolf', 'tanner'].find((x) => wn.indexOf(x) >= 0), c = R.center, rl = [];   // 결말 뒷배경과, 리플레이가 보여 줄 역할 그림만 받는다 (덱 전체가 아니다)
-    if (tm) ART.warm(['verdict-' + tm]);
+    if (tm) ART.warm(['verdict-' + tm], { front: 1 });
     R.players.forEach((p) => rl.push(p.final, p.original));
     const want = () => { if (X.R === R && D.documentElement.dataset.net !== 'slow') ART.want(Array.from(new Set(rl.concat(c.final, c.original, R.doppelCopy || []))).filter((x) => x && !ART.has(x)), { low: 1 }); };
     if (R.night && W.REPLAY) X.idle(() => { try { REPLAY.get(R, S.me); } catch (e) { /* 무시 */ } }, 800);   // 리플레이 계산을 한가할 때 미리
@@ -71,9 +71,9 @@
     later(2000, timeUp);
   }
   function law() {
-    const end = '<ul>' + TB.lawEnd.map((x) => '<li><b>' + esc(x.h) + '</b> ' + esc(x.t) + '</li>').join('') + '</ul>';
+    const L = TB.law || [], end = '<ul>' + (TB.lawEnd || []).map((x) => '<li><b>' + esc(x.h) + '</b> ' + esc(x.t) + '</li>').join('') + '</ul>';
     X.openModal('<h2 class="modal-title">' + esc(TH.law) + '</h2><div class="law-grid"><ol class="law-list">' +
-      TB.law.map((x, i) => '<li class="law-row"><b>' + esc(x.h) + '</b>' + esc(x.t) + (i === TB.law.length - 1 ? end : '') + '</li>').join('') +
+      L.map((x, i) => '<li class="law-row"><b>' + esc(x.h) + '</b>' + esc(x.t) + (i === L.length - 1 ? end : '') + '</li>').join('') +
       '</ol><div><h3 class="law-sub">' + esc(TH.lawOrder) + '</h3><div class="law-roles">' +
       ROLE_ORDER.map((r) => '<div class="law-role">' + ART.card(r, { size: 'sm', face: 1 }) + '<div><b>' + esc(ROLES[r].name) + '</b><span>' + esc(ROLES[r].desc) + '</span></div></div>').join('') + '</div></div></div>', 'law', TH.law);
   }
@@ -168,7 +168,7 @@
 
       const bd = $('.board'), vk = verdictKey();
       const mp = me ? R.players[mi] : null, fr = mp && (mp.final === 'doppelganger' && R.doppelCopy ? R.doppelCopy : mp.final), moved = mp && ROLES[mp.original].team !== ROLES[fr].team;
-      if (ART.warm && vk[1] !== 'none') ART.warm(['verdict-' + vk[1]]);
+      if (ART.warm && vk[1] !== 'none') ART.warm(['verdict-' + vk[1]], { front: 1 });
       const vdeaths = R.deaths.filter((d) => d.by === 'vote'), vote = vdeaths.map((d) => R.players[d.s].name);
       const execSet = {}, execCards = vdeaths.map((d) => { const q = R.players[d.s]; execSet[d.s] = 1; return fmt(TB.execCard, { n: NM(q.name), r: ROLES[q.final === 'doppelganger' && R.doppelCopy ? R.doppelCopy : q.effective].name }); });
       const used = {}, whyL = [];
@@ -193,13 +193,14 @@
       const rows = R.players.map((p, i) => [p, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]);
       const n = R.players.length, mob = mq('(max-width:599px)');
       const effOf = (q) => (q.final === 'doppelganger' && R.doppelCopy ? R.doppelCopy : q.effective), heroes = [];
-      vdeaths.forEach((d) => { const q = R.players[d.s]; if (heroes.length < 2) heroes.push([effOf(q), 'is-dead', q.id === S.me ? TB.heroDeadMe : TB.heroDead, q.name]); });
+      const hero = (q, c, l) => { const e = effOf(q), d = q.original === 'doppelganger' && e !== 'doppelganger'; heroes.push([d ? 'doppelganger' : e, c, l, q.name + (d ? ' ' + fmt(TB.doppelArrow, { r: ROLES[e].name }) : '')]); };   // 도플갱어는 처음 받은 카드로 그리고 이름 옆에 복사한 역할을 적는다
+      vdeaths.forEach((d) => { const q = R.players[d.s]; if (heroes.length < 2) hero(q, 'is-dead', q.id === S.me ? TB.heroDeadMe : TB.heroDead); });
       const keyW = R.why.find((w) => /^(wolf_lived|tanner_blocked|minion_|tanner_too)/.test(w[0]) && (w[1] || []).some((i) => !execSet[i]));
-      if (keyW && heroes.length < 2) { const i = keyW[1].find((x) => !execSet[x]), q = R.players[i]; heroes.push([effOf(q), '', q.id === S.me ? TB.whoMine : keyW[0] === 'wolf_lived' ? TB.heroWolf : TB.heroKey, q.name]); }
+      if (keyW && heroes.length < 2) { const i = keyW[1].find((x) => !execSet[x]), q = R.players[i]; hero(q, '', q.id === S.me ? TB.whoMine : keyW[0] === 'wolf_lived' ? TB.heroWolf : TB.heroKey); }
       if (ART.want && heroes.length) ART.want(heroes.map((h) => h[0]));
-      const heroH = heroes.length ? '<div class="verdict-cards">' + heroes.map((h) => '<figure>' + ART.card(h[0], { size: 'md', face: 1, cls: h[1] }) + '<figcaption>' + fmt(h[2] || '', { n: NM(h[3]) }) + '</figcaption></figure>').join('') + '</div>' : '';
+      const heroH = heroes.length ? '<div class="verdict-cards">' + heroes.map((h) => '<figure>' + ART.card(h[0], { size: 'md', face: 1, cls: h[1] }) + '<figcaption>' + (h[2].includes('${n}') ? '' : '<span class="vc-l">' + esc(h[2]) + '</span>') + (h[2] === TB.whoMine ? '' : '<b class="vc-n nm">' + esc(h[3]) + '</b>') + '</figcaption></figure>').join('') + '</div>' : '';
       bd.innerHTML = '<div class="verdict" data-team="' + vk[1] + '"><p class="verdict-line">' + esc(T.verdict[vk[0]]) + '</p>' +
-        (mp ? '<p class="verdict-me"><span class="rec-stamp' + (mp.win ? ' is-win' : '') + '">' + esc(mp.win ? TB.youWin : TB.youLose) + '</span>' + (moved ? '<span class="vm-t">' + esc(fmt(TB.teamMoved, { from: ROLES[mp.original].name, team: TEAM_NAME[ROLES[fr].team] })) + '</span>' : '') + '</p>' : '') + heroH +
+        (mp ? '<p class="verdict-me"><span class="rec-stamp' + (mp.win ? ' is-win' : '') + '" aria-label="' + esc(mp.win ? TB.youWin : TB.youLose) + '">' + esc(mp.win ? T.stamp.win : T.stamp.lose) + '</span>' + (moved ? '<span class="vm-t">' + esc(fmt(TB.teamMoved, { from: ROLES[mp.original].name, team: TEAM_NAME[ROLES[fr].team] })) + '</span>' : '') + '</p>' : '') + heroH +
         (vote.length || !R.why.some((w) => w[0] === 'no_death' || w[0] === 'wolf_lived') ? '<p class="verdict-why">' + (vote.length ? fmt(TB.execLine, { names: names(vote) }) : TB.noBlood) + '</p>' : '') +
         execCards.map((l) => '<p class="verdict-why">' + l + '</p>').join('') +
         whyL.map((l) => '<p class="verdict-why">' + l + '</p>').join('') +

@@ -199,7 +199,6 @@ html[data-img~="backS"] .card:is([data-size="xs"],[data-size="sm"]) .card-back::
   background-size:10px 10px,10px 10px,10px 10px,10px 10px,auto;
   background-position:left var(--fo) top var(--fo),right var(--fo) top var(--fo),left var(--fo) bottom var(--fo),right var(--fo) bottom var(--fo),0 0;
   background-repeat:no-repeat,no-repeat,no-repeat,no-repeat,repeat;
-  outline:1px solid var(--ink); outline-offset:-6px;
 }
 /* md/xl/sm 뒷면: 뼈색 바깥 띠 + 잉크 판 + 안쪽 괘선, 늑대 머리는 새겨진 틀 안의 문장 */
 .card:is([data-size="sm"],[data-size="md"],[data-size="xl"]) .card-back{

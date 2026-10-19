@@ -398,9 +398,9 @@
 
 | 위치 | 현재 | 새 문구 | 메모 |
 |---|---|---|---|
-| T.altar[0] | 왼쪽 제단 | 가운데 카드 1 | 주정뱅이 버튼 nm, 밤 메시지 ${pos}, 리플레이 ${P}/${Q}, 결과 보드에 쓰입니다 |
-| T.altar[1] | 가운데 제단 | 가운데 카드 2 | |
-| T.altar[2] | 오른쪽 제단 | 가운데 카드 3 | |
+| T.altar[0] | 왼쪽 제단 | 가운데 1번 카드 | 주정뱅이 버튼 nm, 밤 메시지 ${pos}, 리플레이 ${P}/${Q}, 결과 보드에 쓰입니다 |
+| T.altar[1] | 가운데 제단 | 가운데 2번 카드 | |
+| T.altar[2] | 오른쪽 제단 | 가운데 3번 카드 | |
 
 ### 3.19 T.replay — 공용·자막
 
@@ -890,3 +890,32 @@
 | T.replay.why.no_death | 처형된 사람이 없고 늑대인간도 없어 마을 팀이 승리했습니다. | |
 | T.replay.uiR.stayed | 바뀌지 않음 | |
 | T.replay.uiR.hop.drunkCenter | 주정뱅이 ${a:이/가} 가져감 | |
+
+## 최종 정리 (strings.js와 일치)
+
+화면에서 본인을 가리킬 때는 "당신" 대신 "나/내"를 씁니다. 은/는, 을/를, 와/과, 의는 "나"에 그대로 맞고, 이/가는 "내가"여야 하므로 이/가 자리에는 "나"를 넣지 않습니다.
+
+| 키 | 문구 | 비고 |
+|---|---|---|
+| T.altar | 가운데 1번 카드 / 가운데 2번 카드 / 가운데 3번 카드 | "가운데 3번 카드와 바꿨습니다". altarShort(가운데 1)는 그대로 |
+| T.replay.uiR.hop.drunkCenter | ${a:이/가} 가져감 | a에 이미 역할 이름이 붙어 있어 "주정뱅이"를 중복하지 않습니다 |
+| T.replay.you | 나 | 도장, 좌석, 리플레이 이름 자리 |
+| T.body.lone / T.msg.packAlone | 늑대인간은 나 혼자입니다. | |
+| T.msg.nowCard | 내 현재 카드는 ${r}입니다. | |
+| T.msg.copied | ${t}의 카드는 ${r}입니다. 이제 나는 ${r}입니다. | |
+| T.msg.drunkSwapped | ${pos:과/와} 내 카드를 바꿨습니다. 새 카드는 볼 수 없습니다. | |
+| T.replay.why.wolf_lived_you | 늑대인간인 나는 끝까지 정체를 숨겼습니다. | |
+| T.replay.why.wolf_died_you | 늑대인간인 내가 처형되었습니다. | |
+| T.replay.why.tanner_blocked | 무두장이 ${t}의 처형으로 늑대인간 팀은 승리하지 못했습니다. | 이/가를 쓰면 "나가"가 되어 의로 바꿨습니다 |
+| T.replay.why.no_wolf_tanner | 무두장이 ${t}의 처형으로 무두장이만 승리했습니다. | 위와 같음 |
+| T.replay.self.doppel | 내 도플갱어 카드는 ${r:을/를} 복사했습니다. | |
+| T.replay.cause.robbed | ${role} ${a:이/가} 내 카드를 가져갔습니다. | |
+| T.replay.cause.swapped | ${role} ${a:이/가} 내 카드를 ${t}의 카드와 바꿨습니다. | |
+| T.body.yourCard | 내 카드를 확인하세요. | |
+| T.body.dayTalk | 준비가 되면 투표 준비하기를 눌러 주세요. | 버튼 btn.ready = 투표 준비하기 |
+| T.body.raised | 준비 ${r}/${n} · 모두 준비하면 투표가 시작됩니다. | |
+| T.body.pickExec | 처형할 사람을 고른 뒤 투표하기 버튼을 길게 누르세요. | |
+| T.body.heroWolf | 살아남은 늑대인간 | 이름은 result.js가 별도 줄로 붙입니다 |
+| T.body.heroKey | 승부를 가른 카드 | 위와 같음 |
+| T.replay.vote.allNone | 모두 투표하지 않아 아무도 처형되지 않았습니다. | 아무도 투표하지 않았을 때. 표가 있었지만 2표 이상이 없으면 vote.one |
+| T.body.leftAway | 자리를 오래 비워 방에서 나왔습니다. | 대기실에서 오래 자리를 비워 제외된 뒤 다시 들어올 때 cannotReturn 대신 표시 |

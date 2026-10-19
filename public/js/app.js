@@ -155,10 +155,10 @@
     };
     const retry = () => { ui.rjN = (ui.rjN || 0) + 1; sock.disconnect(); setTimeout(() => { if (!ui.replaced) sock.connect(); }, Math.min(30000, 1000 * 2 ** ui.rjN)); };
     if (code) {
-      sock.timeout(5000).emit('join', { code, playerId: playerId(), rejoin: true }, (err, r) => {
+      sock.timeout(5000).emit('join', { code, playerId: playerId(), rejoin: true, name: LS.get('ww_name') || undefined }, (err, r) => {
         if (err) return retry();
         ui.rjN = 0;
-        if (r && r.ok) { back(); run(); } else if (r && (r.code === 'noTown' || r.code === 'cannotReturn')) { back(); LS.del('ww_room'); toHome(); toast(TB.roomLost, 'danger'); run(); } else retry();
+        if (r && r.ok) { back(); run(); } else if (r && (r.code === 'noTown' || r.code === 'cannotReturn')) { back(); LS.del('ww_room'); toHome(); toast(r.code === 'noTown' ? TB.roomLost : TB.leftAway, 'danger'); run(); } else retry();
       });
     } else { back(); run(); }
   });
@@ -200,7 +200,7 @@
   sock.on('kicked', () => { LS.del('ww_room'); toHome(); toast(TB.kicked, 'danger'); });
 
   const rclose = () => { try { W.REPLAY && REPLAY.close(); } catch (e) { /* 무시 */ } $$('.msg[data-kind=end][hidden]').forEach((e) => { e.hidden = false; }); };
-  W.addEventListener('unhandledrejection', (e) => { console.error(e.reason); if (body.dataset.replay) { rclose(); body.removeAttribute('data-replay'); sched(); } });
+  W.addEventListener('unhandledrejection', (e) => { console.error(e.reason); if (body.dataset.replay && /\/replay\./.test(String(e.reason && e.reason.stack || ''))) { rclose(); body.removeAttribute('data-replay'); sched(); } });
   function toHome() {
     S = null; R = null; ui.seatKey = ''; closeModal(); if (ui.shell) closeSheet();
     rclose();
@@ -421,8 +421,7 @@
   // ---------- HUD · 타이머 ----------
   function paintHud(V) {
     const sg = $('.hud-sign');
-    const rs = S.phase === 'result', k = S.code + rs;
-    if (sg._c !== k) { sg._c = k; sg.innerHTML = (rs ? '<small>' + esc(TB.roomCodeLbl) + '</small>' : '') + esc(S.code); sg.setAttribute('aria-label', TH.sign + ' ' + S.code); }
+    if (sg._c !== S.code) { sg._c = S.code; sg.textContent = S.code; sg.setAttribute('aria-label', TH.sign + ' ' + S.code); }
     set($('.hud-phase'), 'textContent', body.dataset.replay ? T.replay.ui.hudCenter : V.hudPhase);
   }
   function deadline(mode) {
@@ -749,7 +748,7 @@
   const push = (k) => { try { history.pushState({ ww: k }, ''); return k; } catch (e) { return 0; } }, back = () => { skipPop++; try { history.back(); } catch (e) { skipPop--; } };
   function setSheet(h) {
     if (S && S.phase === 'night' && !desk()) h = 0;
-    if (h > 0 && !ui.h) ui.deckTop = 1;
+    if (h > 0 && !ui.h) { ui.deckTop = 1; ui.shT = Date.now(); }
     ui.h = h; $('#sheet').dataset.h = String(h);
     if (h > 0) { ui.unread = 0; if (ui.tab === 'log') ui.logNew = 0; if (!ui.opener) ui.opener = D.activeElement; loadChatx(); } else if (ui.opener) { try { ui.opener.focus(); } catch (e) { /* 무시 */ } ui.opener = null; }
     if (h > 0 && !desk()) body.dataset.sheet = '1'; else delete body.dataset.sheet;
@@ -770,8 +769,9 @@
   }
   const chatShown = () => ui.tab === 'chat' && !!(ui.h || desk());
   function toEnd() {   // 가장 최신 메시지로: 시트가 올라오는 동안 높이가 바뀌므로 몇 번 더 맞춘다
-    const sb = $('.sheet-body'), go = () => { if (sb && chatShown() && ui.stick) sb.scrollTop = sb.scrollHeight; };
-    go(); requestAnimationFrame(go); clearTimeout(toEnd.t); toEnd.t = setTimeout(go, 380);
+    const go = () => { const sb = $('.sheet-body'); if (sb && chatShown() && ui.stick) sb.scrollTop = sb.scrollHeight; };
+    if (!toEnd.f) toEnd.f = requestAnimationFrame(() => { toEnd.f = 0; go(); });
+    if (Date.now() - ui.shT < 400) { clearTimeout(toEnd.t); toEnd.t = setTimeout(go, 380); }
   }
   const cq = (c) => '.msg[data-cid="' + CSS.escape(c) + '"]';
   function chatSend(t, re, cid) {   // 보낸 즉시 흐린 줄로 보이고, 서버가 되돌려 준 같은 글이 오면 바뀐다. 실패하면 다시 보내기 버튼 (입력창은 건드리지 않는다)
@@ -856,6 +856,8 @@
     const ni = $('#nameInput'), ci = $('#codeInput');
     ni.value = LS.get('ww_name') || '';
     [['#createBtn', 'primary'], ['#joinBtn', 'join'], ['#otherLink', 'other'], ['#lawLink', 'law']].forEach((x) => { $(x[0]).dataset.act = x[1]; });
+    ni.addEventListener('focus', ping, { once: true });
+    D.addEventListener('visibilitychange', () => { if (!D.hidden && !sock.connected) ping(); });
     ci.addEventListener('input', () => { const v = ci.value.toUpperCase().replace(/[^A-Z]/g, ''); if (v !== ci.value) ci.value = v; });
     $('#homeForm').addEventListener('submit', (e) => { e.preventDefault(); primary(); });
     $('#homeForm').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); if (e.target === ci && ci.value.length === 4) ACT.join(); else primary(); } });
@@ -879,10 +881,11 @@
     $('#homeBoot').textContent = fmt(TB.coldWake, { s }); $('#homeBootSub').hidden = s < 3;
     setTimeout(bootTick, 1000);
   }
+  function ping() { try { fetch((W.SOCKET_URL || '') + '/healthz', { mode: 'no-cors', cache: 'no-store' }).catch(() => {}); } catch (e) { /* 무시 */ } }
   function poll(i) {
     if (sock.connected) return;
     if (!i) return setTimeout(() => poll(1), 1000);   // 첫 깨우기는 index.html 이 이미 보냈다
-    try { fetch((W.SOCKET_URL || '') + '/healthz', { mode: 'no-cors', cache: 'no-store' }).catch(() => {}); } catch (e) { /* 무시 */ }
+    ping();
     setTimeout(() => poll(i + 1), [1, 2, 4, 5][Math.min(i, 3)] * 1000);
   }
   const whenOnline = (fn) => { if (sock.connected) fn(); else ui.pending = fn; };
@@ -1007,7 +1010,7 @@
     bgm() {
       bgmOn = !bgmOn; LS.set('ww_bgm', bgmOn ? '1' : '0');
       if (bgmOn) {   // 소리를 내려면 이 클릭 안에서 동기적으로 컨텍스트를 만들어야 한다 (iOS 자동재생 규칙)
-        try { const C = W.AudioContext || W.webkitAudioContext; if (!W.SND.ctx && C) { try { W.SND.ctx = new C({ latencyHint: 'playback' }); } catch (e) { W.SND.ctx = new C(); } } W.SND.ctx.resume(); } catch (e) { /* 무시 */ }
+        try { const C = W.AudioContext || W.webkitAudioContext; if (!W.SND.ctx && C) { try { W.SND.ctx = new C({ latencyHint: 'playback' }); } catch (e) { W.SND.ctx = new C(); } } W.SND.ctx.resume().catch(() => {}); } catch (e) { /* 무시 */ }
         if (W.SND.on) W.SND.on(); else { W.SND.q = W.SND.q.filter((x) => x[0] !== 'on' && x[0] !== 'off'); W.SND.q.unshift(['on', []]); ldA(); }
         if (scNow) snd('scene', scNow, scO);
       } else if (W.SND.off) W.SND.off(); else (W.SND.q = W.SND.q.filter((x) => x[0] !== 'on')).push(['off', []]);
@@ -1040,7 +1043,7 @@
     ready() {
       if (!guard()) return;
       const me = S.players.find((p) => p.id === S.me);
-      if (me) { me.ready = !me.ready; sched(); sock.emit('ready', { ready: !!me.ready }); }
+      if (me) { const v = me.ready = !me.ready; sched(); send('ready', { ready: v }, (r) => { if (r && r.ok !== false) return; const m = S && S.players.find((p) => p.id === S.me); if (m && m.ready === v) { m.ready = !v; sched(); } }); }
     },
     again() { if (guard()) sock.emit('playAgain'); },
     replay() { rr('play', false); },

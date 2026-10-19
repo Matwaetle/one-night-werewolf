@@ -40,7 +40,7 @@
   function roleUrl(id, lite) {
     var m = ART.manifest || {};
     var bg = m.art || m.big, big = bg && bg[id], sm = m.lite && m.lite[id];
-    return url(lite && isSlow() ? (sm || big) : (big || sm));
+    return url(lite && /^(slow|mid)$/.test(attr('data-net')) ? (sm || big) : (big || sm));
   }
   function rurl(id) { return urls['r:' + id] || roleUrl(id); }   // 실제로 받은 주소 우선
   function staticUrl(name) {
@@ -155,10 +155,12 @@
     if (!el) { el = doc.createElement('style'); el.id = 'art-urls'; doc.head.appendChild(el); }
     return el;
   }
+  var hv, hh, hw = 0, ht = 0, hn = 0;
+  function wr() { clearTimeout(ht); ht = 0; hw = Date.now(); hn = hv.length; docEl.setAttribute('data-img', hv.join(' ')); if (hh) docEl.setAttribute('data-home-art', '1'); }
   function flush() {
     if (!tick) return;
     tick = 0;
-    var keys = Object.keys(got), have = (attr('data-img') || '').split(' ').filter(Boolean), n = have.length, css = '';
+    var keys = Object.keys(got), have = hv = hv || (attr('data-img') || '').split(' ').filter(Boolean), css = '';
     got = {};
     keys.forEach(function (k) {
       var name = k.slice(2);
@@ -166,11 +168,11 @@
         var u = staticUrl(name);
         css += RULES[name] ? RULES[name](JSON.stringify(u)) : name.indexOf('verdict-') === 0 ? '.verdict[data-team=' + name.slice(8) + ']::before{background-image:url(' + JSON.stringify(u) + ')}' : '';
         if (have.indexOf(name) < 0) have.push(name);
-        if (name === 'home') docEl.setAttribute('data-home-art', '1');
+        if (name === 'home') hh = 1;
       }
     });
     if (css) sheet().appendChild(doc.createTextNode(css));
-    if (have.length !== n) docEl.setAttribute('data-img', have.join(' '));
+    if (hv.length !== hn && (Date.now() - hw > 300 || !Object.keys(pending).some(function (k) { return k.charAt(0) === 's'; }))) wr(); else if (hv.length !== hn && !ht) ht = setTimeout(wr, 300);
     keys.forEach(function (k) {
       if (k.charAt(0) === 'r') ART.mark(doc, '.card[data-role="' + k.slice(2) + '"][data-art="0"]');
       else if (k === 's:atlas') ART.mark(doc, '.card[data-art="0"][data-size="xs"],.card[data-art="0"][data-size="sm"]');
@@ -179,13 +181,13 @@
 
   // ---------- 공개 API ----------
   // 모닥불 진입 때 W6이 호출: ART.warm() = back, atlas, horizon, grain (slow면 horizon 생략)
-  ART.warm = function (names) {
+  ART.warm = function (names, o) {
     names = names || ['backS', 'atlas', 'back', 'horizon', 'grain'];
     var out = [];
     names.forEach(function (n) {
       if (isSlow() && (n === 'horizon' || n === 'back')) return;
       var u = staticUrl(n);
-      if (u) out.push(load('s:' + n, u, false));
+      if (u) out.push(load('s:' + n, u, !!(o && o.front)));
     });
     return Promise.all(out).then(function () {});
   };

@@ -13,7 +13,7 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="/a/__FONT_T__">
 <link rel="preload" as="style" href="/a/__GAME_CSS__">
 <script>window.SOCKET_URL='__SOCKET_URL__'</script>
-<script>(function(){var d=document.documentElement,n=navigator,c=n.connection||{},q=c.saveData,r=(performance.getEntriesByType('navigation')[0]||{}).responseStart;d.dataset.perf=n.deviceMemory<=3||n.hardwareConcurrency<=4||q?'lite':'full';try{var pf=JSON.parse(localStorage.ww_perf);if(pf&&pf.v==='lite'&&Date.now()-pf.t<864e5)d.dataset.perf='lite'}catch(e){}d.dataset.net=q||/2g/.test(c.effectiveType||'')||c.downlink<.4||r>2500?'slow':'fast';try{fetch(SOCKET_URL+'/healthz',{mode:'no-cors',cache:'no-store'})}catch(e){}})()</script>
+<script>(function(){var d=document.documentElement,n=navigator,c=n.connection||{},q=c.saveData,r=(performance.getEntriesByType('navigation')[0]||{}).responseStart;d.dataset.perf=n.deviceMemory<=3||n.hardwareConcurrency<=4||q?'lite':'full';try{var pf=JSON.parse(localStorage.ww_perf);if(pf&&pf.v==='lite'&&Date.now()-pf.t<864e5)d.dataset.perf='lite'}catch(e){}d.dataset.net=q||/2g/.test(c.effectiveType||'')||c.downlink<.4||r>2500?'slow':c.effectiveType=='3g'||c.downlink<1.5?'mid':'fast';try{fetch(SOCKET_URL+'/healthz',{mode:'no-cors',cache:'no-store'})}catch(e){}})()</script>
 <style>
 @font-face{font-family:"Hanbam T";src:url(/a/__FONT_T__) format("woff2");font-display:swap}
 @font-face{font-family:"Hanbam";src:url(/a/__FONT_D__) format("woff2");font-display:swap}

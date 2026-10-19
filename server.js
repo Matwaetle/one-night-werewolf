@@ -25,9 +25,10 @@ const TM = {
   DROP_GRACE: 15000,   // 낮·투표 중 연결이 잠깐 끊긴 사람을 집계에서 빼기 전 기다리는 시간
 };
 for (const k of Object.keys(TM)) TM[k] = Math.max(50, Math.round(TM[k] * SCALE));
-const LOBBY_GRACE = 60000;        // 대기실에서 연결이 끊긴 플레이어를 내보내기까지
+const LOBBY_GRACE = 180000;       // 대기실에서 연결이 끊긴 플레이어를 내보내기까지
 const ROOM_TTL = 10 * 60000;      // 모두 나간 방을 지우기까지
 const HOST_GRACE = 20000;         // 방장 연결이 끊긴 뒤 방장을 넘기기까지
+const NET_SIM_MS = Number(process.env.NET_SIM_MS) || 0;   // 측정용: 응답·연결을 인위로 늦춘다 (기본 꺼짐)
 const DEV = process.env.NODE_ENV !== 'production';
 
 // 도플갱어가 따라 했을 때, 원래 역할 차례에 함께 깨어나는 역할
@@ -116,6 +117,11 @@ function loadStamp() {
   } catch (e) {
     console.warn('[static] stamp build failed, serving public/:', e.message);
   }
+}
+
+if (NET_SIM_MS > 0) {
+  app.use((q, s, n) => setTimeout(n, NET_SIM_MS));
+  io.use((sock, next) => setTimeout(next, NET_SIM_MS));
 }
 
 app.get('/healthz', (_req, res) => {
@@ -245,6 +251,19 @@ function removePlayer(room, id) {
   }
   ensureHost(room);
   autoDeck(room);
+}
+
+function armLeave(room, pid) {
+  const p = room.players.get(pid);
+  if (!p) return;
+  clearTimeout(p.leaveTimer);
+  p.leaveTimer = setTimeout(() => {
+    const q = room.players.get(pid);
+    if (rooms.get(room.code) === room && room.phase === 'lobby' && q && !q.connected) {
+      removePlayer(room, pid);
+      if (rooms.has(room.code)) broadcast(room);
+    }
+  }, LOBBY_GRACE);
 }
 
 function scheduleCleanup(room) {
@@ -899,6 +918,7 @@ io.on('connection', (socket) => {
     return { room, pid, isHost: room.hostId === pid };
   };
   const reply = (cb, v) => typeof cb === 'function' && cb(v);
+  const cbOf = (a, b) => (typeof a === 'function' ? a : b);   // 데이터 없이 ack 만 보내는 클라이언트도 허용
   let tok = 20, tokAt = Date.now();
   const on = (ev, fn) => socket.on(ev, (...a) => {
     const t = Date.now();
@@ -1002,7 +1022,7 @@ io.on('connection', (socket) => {
       reply(cb, { ok: true, code: room.code });
       return sendNow(room);
     }
-    if (rejoin) return reply(cb, { ok: false, code: 'cannotReturn', error: M('cannotReturn') });
+    if (rejoin && !(room.phase === 'lobby' && typeof name === 'string' && name)) return reply(cb, { ok: false, code: 'cannotReturn', error: M('cannotReturn') });
     if (typeof name !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
     name = cleanName(name);
     if (!name) return reply(cb, { ok: false, error: M('needName') });
@@ -1029,10 +1049,11 @@ io.on('connection', (socket) => {
     reply(cb, { ok: true });
   });
 
-  on('kick', (d) => {
+  on('kick', (d, cb0) => {
+    const cb = cbOf(d, cb0);
     const { id } = obj(d);
     const { room, pid, isHost } = ctx();
-    if (typeof id !== 'string' || !room || !isHost || room.phase !== 'lobby' || id === pid || !room.players.has(id)) return;
+    if (typeof id !== 'string' || !room || !isHost || room.phase !== 'lobby' || id === pid || !room.players.has(id)) return reply(cb, { ok: false, error: M('badRequest') });
     const p = room.players.get(id);
     if (p.socketId) {
       const s = io.sockets.sockets.get(p.socketId);
@@ -1040,33 +1061,40 @@ io.on('connection', (socket) => {
     }
     removePlayer(room, id);
     broadcast(room);
+    reply(cb, { ok: true });
   });
 
-  on('setDeck', (d) => {
+  on('setDeck', (d, cb0) => {
+    const cb = cbOf(d, cb0);
     const { role, count } = obj(d);
     const { room, isHost } = ctx();
-    if (!room || !isHost || room.phase !== 'lobby' || typeof role !== 'string' || !Object.prototype.hasOwnProperty.call(ROLES, role)) return;
+    if (!room || !isHost || room.phase !== 'lobby' || typeof role !== 'string' || !Object.prototype.hasOwnProperty.call(ROLES, role)) return reply(cb, { ok: false, error: M('badRequest') });
     const c = Math.max(0, Math.min(ROLES[role].max, Number(count) | 0));
     room.deck[role] = c;
     room.deckCustom = true;
     broadcast(room);
+    reply(cb, { ok: true });
   });
 
-  on('preset', () => {
+  on('preset', (d, cb0) => {
+    const cb = cbOf(d, cb0);
     const { room, isHost } = ctx();
-    if (!room || !isHost || room.phase !== 'lobby') return;
+    if (!room || !isHost || room.phase !== 'lobby') return reply(cb, { ok: false, error: M('badRequest') });
     room.deckCustom = false;
     autoDeck(room);
     broadcast(room);
+    reply(cb, { ok: true });
   });
 
-  on('setSettings', (d0) => {
+  on('setSettings', (d0, cb0) => {
+    const cb = cbOf(d0, cb0);
     const { dayTime } = obj(d0);
     const { room, isHost } = ctx();
-    if (!room || !isHost || room.phase !== 'lobby') return;
+    if (!room || !isHost || room.phase !== 'lobby') return reply(cb, { ok: false, error: M('badRequest') });
     const d = Number(dayTime);
     if ([60, 120, 180, 240, 300, 420, 600].includes(d)) room.settings.dayTime = d;
     broadcast(room);
+    reply(cb, { ok: true });
   });
 
   on('start', (_, cb) => {
@@ -1098,19 +1126,23 @@ io.on('connection', (socket) => {
     broadcast(room);
   });
 
-  on('ready', (d) => {
+  on('ready', (d, cb0) => {
+    const cb = cbOf(d, cb0);
     const { ready } = obj(d);
     const { room, pid } = ctx();
-    if (!room || room.phase !== 'day') return;
-    if (room.players.get(pid).ready === !!ready) return;
+    if (!room || room.phase !== 'day') return reply(cb, { ok: false, error: M('badRequest') });
+    if (room.players.get(pid).ready === !!ready) return reply(cb, { ok: true });
     room.players.get(pid).ready = !!ready;
+    reply(cb, { ok: true });
     broadcast(room);
     checkAllReady(room);
   });
 
-  on('forceVote', () => {
+  on('forceVote', (d, cb0) => {
+    const cb = cbOf(d, cb0);
     const { room, isHost } = ctx();
-    if (!room || !isHost || room.phase !== 'day') return;
+    if (!room || !isHost || room.phase !== 'day') return reply(cb, { ok: false, error: M('badRequest') });
+    reply(cb, { ok: true });
     startVote(room);
   });
 
@@ -1127,10 +1159,12 @@ io.on('connection', (socket) => {
     checkAllVoted(room);
   });
 
-  on('playAgain', () => {
+  on('playAgain', (d, cb0) => {
+    const cb = cbOf(d, cb0);
     const { room, isHost } = ctx();
-    if (!room || !isHost || room.phase !== 'result') return;
+    if (!room || !isHost || room.phase !== 'result') return reply(cb, { ok: false, error: M('badRequest') });
     backToLobby(room);
+    reply(cb, { ok: true });
   });
 
   on('chat', (d, cb) => {
@@ -1179,17 +1213,14 @@ io.on('connection', (socket) => {
       p.hostTimer = setTimeout(() => {
         if (rooms.get(room.code) === room && room.players.get(pid) && !room.players.get(pid).connected) {
           ensureHost(room);
+          const old = room.players.get(pid);
+          if (room.hostId !== pid && room.phase === 'lobby' && old && !old.connected) armLeave(room, pid);
           broadcast(room);
         }
       }, HOST_GRACE);
     }
     if (room.phase === 'lobby') {
-      p.leaveTimer = setTimeout(() => {
-        if (rooms.get(room.code) === room && room.phase === 'lobby' && room.players.get(pid) && !room.players.get(pid).connected) {
-          removePlayer(room, pid);
-          if (rooms.has(room.code)) broadcast(room);
-        }
-      }, LOBBY_GRACE);
+      if (pid !== room.hostId && connectedIds(room).length > 0) armLeave(room, pid);
     } else if (room.phase === 'day' || room.phase === 'vote') {
       // 유예 안에는 그대로 센다. 유예가 지나도 안 돌아오면 그때 다시 집계한다.
       const ph = room.phase;

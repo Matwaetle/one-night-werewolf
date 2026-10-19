@@ -72,14 +72,14 @@
       c.o(h + hold('leave', TBT.leave) + '</div>', 'menu-box', TB.ariaMenu);
     },
     probe: function (k) {   // 로비 · 첫 밤 4초 동안 긴 작업과 프레임을 재서 느린 기기는 lite 로 내린다
-      var n = 0, l = 0, mx = 0, po, fr = [], t0 = performance.now(), key = 'p' + k;
+      var n = 0, l = 0, po, fr = [], t0 = performance.now(), key = 'p' + k;
       if (de.dataset[key] || de.dataset.perf === 'lite' && !de.dataset.pf) return; de.dataset[key] = 1;
-      try { po = new PerformanceObserver(function (o) { o.getEntries().forEach(function (e) { n += e.duration; if (e.duration > mx) mx = e.duration; }); }); po.observe({ type: 'longtask' }); } catch (e) { /* 무시 */ }
+      try { po = new PerformanceObserver(function (o) { o.getEntries().forEach(function (e) { n += e.duration; }); }); po.observe({ type: 'longtask' }); } catch (e) { /* 무시 */ }
       requestAnimationFrame(function lap(t) {
         if (d.hidden) l = 0; else { if (l) fr.push(t - l); l = t; }
         if (t - t0 < 4000) return requestAnimationFrame(lap);
         fr.sort(function (x, y) { return x - y; }); if (po) po.disconnect();
-        if (n > 180 || mx > 150 || fr[fr.length * 0.9 | 0] > 34) { de.dataset.perf = 'lite'; if (!de.dataset.pf && !(mx > 150 || n > 250)) { de.dataset.pf = 1; return; } try { localStorage.setItem('ww_perf', JSON.stringify({ v: 'lite', t: Date.now() })); } catch (e) { /* 무시 */ } }
+        if (n > 180 || fr[fr.length * 0.9 | 0] > 34) { de.dataset.perf = 'lite'; if (!de.dataset.pf && n <= 250) { de.dataset.pf = 1; return; } try { localStorage.setItem('ww_perf', JSON.stringify({ v: 'lite', t: Date.now() })); } catch (e) { /* 무시 */ } }
       });
     },
     /* ---------- 눈꺼풀 ---------- */
