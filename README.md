@@ -50,16 +50,17 @@ cloudflared tunnel --url http://localhost:3000
 `https://xxxx.trycloudflare.com` 같은 주소가 나옵니다. 이 주소를 친구들에게 보내면 됩니다.
 (서버 PC를 끄면 접속이 끊깁니다.)
 
-### 3. 항상 켜져 있는 사이트로 배포 (무료)
+### 3. 항상 켜져 있는 사이트로 배포 (무료, 추천)
 
-[Render](https://render.com) 같은 Node.js 호스팅에 올리면 PC를 켜두지 않아도 됩니다.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Matwaetle/one-night-werewolf)
 
-1. 이 폴더를 GitHub 저장소에 올립니다.
-2. Render에서 **New → Web Service** → 저장소 선택
-3. Build Command: `npm install` / Start Command: `npm start`
-4. 배포가 끝나면 나오는 주소를 공유하면 끝!
+1. 위 버튼을 누르고 GitHub 계정으로 Render에 로그인합니다.
+2. **Deploy Blueprint**를 누르면 `render.yaml` 설정대로 자동으로 배포됩니다. (싱가포르 서버, 무료 요금제)
+3. 몇 분 뒤 `https://one-night-werewolf-xxxx.onrender.com` 같은 주소가 나옵니다. 친구들에게 공유하면 끝!
 
-(무료 요금제는 한동안 접속이 없으면 잠들어서 첫 접속이 30초쯤 걸릴 수 있습니다.)
+- GitHub에 새 코드를 올리면 자동으로 다시 배포됩니다.
+- 무료 요금제는 15분 동안 접속이 없으면 잠들어서, 다음 첫 접속이 30~60초 걸릴 수 있습니다. 게임하는 동안에는 잠들지 않습니다.
+- 서버가 다시 시작되면 열려 있던 방은 사라집니다.
 
 ## 게임 시간 조절
 
