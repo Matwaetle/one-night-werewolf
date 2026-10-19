@@ -67,8 +67,8 @@ function build(R, meId) {
       else by.forEach((x, j) => by.slice(j + 1).forEach((y) => tr(o, x, y, { kn: 1 })));
     } else if (k === 'peek') {
       o.focus = see.map((x) => ({ slot: x[1], role: eff(x[0]) }));
-      if (st === 'werewolf') { key = 'peek.werewolf' + (dop ? 'D' : ''); tr(o, s, t0, { kn: 1 }); }
-      else if (r === 'seer') { key = 'peek.seer' + (tg.length > 1 ? 2 : ''); tg.forEach((t) => tr(o, s, t)); }
+      if (st === 'werewolf') { key = 'peek.werewolf' + (dop ? 'D' : ''); tr(o, s, t0, { kn: 1, lk: 1 }); }
+      else if (r === 'seer') { key = 'peek.seer' + (tg.length > 1 ? 2 : ''); o.lit = tg.slice(); tg.forEach((t) => tr(o, s, t, { lk: 1 })); }
       else {
         const who = {}, dp = by.filter((z) => P[z].original === 'doppelganger'); let ch = 0;
         see.forEach((x) => { who[x[1]] = x[0]; if (eff(x[0]) !== eff(x[1])) ch = 1; });
@@ -80,6 +80,7 @@ function build(R, meId) {
       key = 'swap.' + r;
       if (r === 'robber') { o.focus = [{ slot: s, role: eff(c0) }]; tr(o, s, t0, { sw: 1 }); } else tr(o, r === 'drunk' ? s : t0, r === 'drunk' ? t0 : t1, { sw: 1 });
       o.mvs = e.mv.map((m) => ({ c: m[0], from: pre.indexOf(m[0]), to: m[1] }));
+      o.mvs.forEach((m) => { [m.from, m.to].forEach((x) => { if (o.lit.indexOf(x) < 0) o.lit.push(x); }); });
     } else {
       o.floor = e.auto ? 900 : 1100;
       if (r === 'werewolf' && !e.auto) { o.l1 = fm(RP.skip.werewolf[dop ? 'topD' : 'top'], V); o.l2 = other(null); }
@@ -154,8 +155,8 @@ function build(R, meId) {
     l3s = self = sa.join(' ');
   }
   const why = (R.why || []).filter((w) => !(w[0] === 'wolf_died' && (w[1] || []).length && w[1].every((x) => ex.includes(x))));
-  const wf = [].concat(...(R.why || []).map((w) => w[1] || [])).find((x) => !ex.includes(x));
-  const vfocus = ex.concat(wf == null ? [] : [wf]).slice(0, 2).map((x) => ({ slot: x, role: eff(E[x]), lbl: P[x].name, dead: ex.includes(x) }));
+  const wl = [].concat(...(R.why || []).map((w) => w[1] || [])).filter((x, k, a) => a.indexOf(x) === k && !ex.includes(x) && x >= 0 && x < n);
+  const vfocus = ex.concat(wl).slice(0, 2).map((x) => ({ slot: x, role: D[x] === 'doppelganger' ? 'doppelganger' : eff(E[x]), lbl: P[x].name + (ex.includes(x) ? '' : ' · ' + ((T.body && T.body.heroWolf) || '')), dead: ex.includes(x) }));
   const exl = ex.length ? fm(RP.exec.top, { list: names(ex) }) + ' ' + ex.map((t) => fm(RP.exec.card, { t: nm(t), r: cc(E[t]) })).join(' ') : nr || RP.nodeath.top;
   add('verdict', { pre: E, vfocus, vteam: vk === 'wolf' || vk === 'minion' ? 'wolf' : vk === 'tanner' ? 'tanner' : 'village', l1: T.verdict[vk], l2: [exl].concat(why.map(wy)).join(' '), l3: l3s, win: me >= 0 ? !!P[me].win : null, floor: 1500 });
 
@@ -195,8 +196,9 @@ function layout() {
   seats.forEach((e) => { const r = rd(e); tp = Math.min(tp, un(r.top - rc.top)); bt = Math.max(bt, un(r.bottom - rc.top)); });
   const lim = rc.height - (S.capMax || 0) - 56, T = Math.max(10, Math.min(tp, 28)), k = Math.min(1, (lim - T) / (bt - tp)), mv = bt > lim || tp < 10, ty = T - top - (tp - top) * k, q = (mv ? k : 1) / k0;
   const mx = (x) => ox + (x - ox) * q, my = (y) => top + (mv ? ty : 0) + (y - top - y0) * q;
+  let cw0 = 0; seats.forEach((se) => { const c = !cw0 && se.querySelector(':scope>.card:not(.is-original)'), w = c ? rd(c).width : 0; if (w) cw0 = w * q; });
   seats.forEach((se, i) => {
-    const r = rd(se.querySelector('.seat-token')), d = r.width * q, cx = mx(r.left + r.width / 2 - rc.left), cy = my(r.top + r.height / 2 - rc.top), c = se.querySelector(':scope>.card:not(.is-original)'), sr = c && rd(c), cs = sr && sr.width ? sr.width * q : nar ? 26 : 40, side = se.dataset.side || (cx < W / 2 ? 'l' : 'r');
+    const r = rd(se.querySelector('.seat-token')), d = r.width * q, cx = mx(r.left + r.width / 2 - rc.left), cy = my(r.top + r.height / 2 - rc.top), c = se.querySelector(':scope>.card:not(.is-original)'), sr = c && rd(c), cs = sr && sr.width ? sr.width * q : cw0 || (nar ? 26 : 40), side = se.dataset.side || (cx < W / 2 ? 'l' : 'r');
     SD[i] = side; SC[i] = cs / S.cw; TX[i] = cx; TY[i] = cy; S.TD[i] = d;
     if (sr && sr.width) { X[i] = mx(sr.left + sr.width / 2 - rc.left); Y[i] = my(sr.top + sr.height / 2 - rc.top); }
     else { X[i] = cx + (side === 'r' ? -1 : 1) * (d / 2 + 6 + cs / 2); Y[i] = cy; }
@@ -221,16 +223,18 @@ function layout() {
   requestAnimationFrame(() => requestAnimationFrame(() => fresh.forEach((e) => { e.style.transition = ''; })));
 }
 
-/* capMax-dependent labels only: no DOM reads (capMax is re-measured by the ResizeObserver) */
+/* capMax-dependent labels: widths/heights are read in one batch before any write; scene() re-runs this when tag text changed */
 function relabel() {
-  const n = S.n, lim = S.RH - S.capMax - 60 - S.l3r, W = S.W;
+  const n = S.n, lim = S.RH - S.capMax - 60 - S.l3r, W = S.W, tg = S.tags, ws = tg.map((e) => e.offsetWidth), hs = tg.map((e) => e.offsetHeight);
+  let at = 1e9, ab = -1e9, al = 1e9, ar = -1e9;
+  for (let j = n; j < n + 3; j++) { const hh = S.SC[j] * S.cw * .7, hw = S.SC[j] * S.cw / 2; at = Math.min(at, S.Y[j] - hh); ab = Math.max(ab, S.Y[j] + hh); al = Math.min(al, S.X[j] - hw); ar = Math.max(ar, S.X[j] + hw); }
   S.H = lim;
-  S.tags.forEach((e, i) => {
+  tg.forEach((e, i) => {
     let x = i < n ? S.TX[i] : S.X[i], y = S.TG[i], sd = 0;
-    if (i < n && y + 32 > lim) {
-      const d = S.TD[i], dir = S.SD[i] === 'r' ? 1 : -1, tx = S.TX[i] + dir * (d / 2 + 6);
-      y = lim - 32; if (y < S.TY[i] + d / 2 && (dir > 0 ? W - 8 - tx : tx - 8) >= 48) { sd = dir; x = tx; y = S.TY[i]; }
-    }
+    const w = ws[i], toSide = () => { const d = S.TD[i], dir = S.SD[i] === 'r' ? 1 : -1, tx = S.TX[i] + dir * (d / 2 + 6); if ((dir > 0 ? W - 8 - tx : tx - 8) >= 48) { sd = dir; x = tx; y = S.TY[i]; } };
+    if (i < n && y + 32 > lim) { y = lim - 32; if (y < S.TY[i] + S.TD[i] / 2) toSide(); }
+    if (!sd && w && W - w - 16 > 0) x = Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, x));
+    if (!sd && i < n && w && y < ab && y + hs[i] > at && x + w / 2 > al && x - w / 2 < ar) toSide();
     cls(e, 'rp-sr', sd > 0); cls(e, 'rp-sl', sd < 0); vset(e, x, y);
   });
 }
@@ -239,40 +243,41 @@ function relabel() {
 function scene(i, k) {
   const B = S.B.beats, b = B[i], a = b.act, n = S.n, act = k > 1, pos = S.pos = act ? b.post : b.pre, eff = S.B.effRole, dead = {}, ex = {}, sws = {}, inv = [], pv = B[i - 1];
   const night = a === 'night' && b.k !== 'quiet', cap = S.cap, ve = S.vd, dI = B.findIndex((x) => x.act === 'dawn');
-  let rel = null, lit = [], ring = [], g = null, on = 0;
+  let rel = null, lit = [], ring = [], g = null, on = 0, dz = 0;
   pos.forEach((c, s) => { inv[c] = s; });
   B.forEach((x, j) => { if (x.dead && (j < i || j === i && act)) x.dead.forEach((d) => { dead[d] = 1; if (x.ex) ex[d] = 1; }); });
   if (a === 'dawn' ? k > 2 : i > dI) B[dI].sw.forEach((x) => { sws[pos[x]] = 1; });
   if (night) {
     const src = k > 0 || b.k === 'idle' ? b : pv && pv.act === 'night' && pv.k !== 'quiet' ? pv : 0;
-    if (src) { rel = src.rel.concat(src.lit); g = src.gl; on = src.dark || g == null ? 0 : 1; if (k) { lit = b.k === 'swap' ? b.rel : b.lit; ring = b.by.concat(b.kk === 'minion' ? b.e.know || [] : []); } } else g = b.gl;
+    if (src) { rel = src.rel.concat(src.lit); g = src.gl; on = src.dark || g == null ? 0 : 1; if (k) { lit = b.k === 'swap' ? b.rel.concat(b.lit) : b.lit; ring = b.by.concat(b.kk === 'minion' ? b.e.know || [] : []); } } else g = b.gl;
   } else if (a === 'seat') rel = [b.s];
   [S.rp, ve].concat(S.focus).forEach((e) => { if (e._a !== a) { e._a = a; e.setAttribute('data-act', a); } }); cls(S.main, 'rp-v', a === 'verdict'); S.gOn = on; cls(S.glow, 'is-on', on); if (g != null) vset(S.glow, S.X[g], S.Y[g]);
   const cp = S.B.copyAs && (S.cdone < i || S.cdone === i && act);
   S.cards.forEach((el, c) => {
     const q = inv[c], cd = el._cd, co = el._co;
     const css = '--tx:' + S.X[q] + 'px;--ty:' + S.Y[q] + 'px;--s:' + S.SC[q] + ';--inv:' + 1 / S.SC[q]; if (el._c !== css) { el._c = css; el.style.cssText = css; if (S.q) { el.style.transition = 'none'; S.q.push(el); } } const z = q < n ? 'seat' : 'altar'; if (el._z !== z) { el._z = z; el.setAttribute('data-z', z); }
-    cls(el, 'is-f', a !== 'pro' || k); cls(el, 'rp-mv', 0); cls(el, 'rp-flip', 0); cls(el, 'rp-dim', rel && rel.indexOf(q) < 0); cls(el, 'rp-lit', lit.includes(q)); cls(el, 'rp-hunt', a === 'hunt' && k && c === pos[b.h]);
+    const mine = a === 'pro' && !k && c === S.me; cls(el, 'is-f', a !== 'pro' || k || mine); cls(el, 'rp-mv', 0); cls(el, 'rp-flip', 0); cls(el, 'rp-dim', rel && rel.indexOf(q) < 0 && !lit.includes(q)); cls(el, 'rp-lit', mine || lit.includes(q)); cls(el, 'rp-hunt', a === 'hunt' && k && c === pos[b.h]);
     cls(cd, 'is-swapped', sws[c]); cls(cd, 'is-dead', dead[q]); if (co) cls(co, 'is-on', cp);
   });
   const tagsOn = night || a === 'pro' || a === 'dawn' ? k : 1, sn = {};
   if (night) for (let j = 0; j <= i; j++) if (j < i || k) B[j].rel.concat(B[j].lit, B[j].by).forEach((x) => { sn[x] = 1; });
   S.tags.forEach((tg, q) => {
     const rv = tagsOn && (!night || rel.includes(q) || sn[q]), sh = (q < n || rv) && a !== 'verdict', nx = q < n && S.R.players[q].name;
-    cls(tg, 'is-on', sh); cls(tg, 'rp-dim', rel && rel.indexOf(q) < 0); cls(tg, 'is-dead', dead[q]);
-    if (sh) { let h; if (q < n) { const dc = S.R.night.deal[pos[q]], de = rn(S.R.players[q].original), cu = i < S.cdone || i === S.cdone && !act ? rn(dc) : S.B.cardName(pos[q]), no = dc === 'doppelganger' && de === rn(dc) && cu !== de ? rn(S.B.copyAs) : cu; h = '<i>' + esc(nx) + '</i>' + (rv ? '<b>' + esc(de !== no ? de + ' → ' + no : no) + '</b>' : ''); } else h = '<i>' + esc(UI.altarShort[q - n]) + '</i>'; if (tg._h !== h) { tg._h = h; tg.innerHTML = h; } }
+    cls(tg, 'is-on', sh); cls(tg, 'rp-dim', rel && rel.indexOf(q) < 0 && !lit.includes(q)); cls(tg, 'is-dead', dead[q]);
+    if (sh) { let h; if (q < n) { const dc = S.R.night.deal[pos[q]], de = rn(S.R.players[q].original), cu = i < S.cdone || i === S.cdone && !act ? rn(dc) : S.B.cardName(pos[q]), no = dc === 'doppelganger' && de === rn(dc) && cu !== de ? rn(S.B.copyAs) : cu; h = '<i>' + esc(nx) + '</i>' + (rv ? '<b>' + esc(de !== no ? de + ' → ' + no : no) + '</b>' : ''); } else h = '<i>' + esc(UI.altarShort[q - n]) + '</i>'; if (tg._h !== h) { tg._h = h; tg.innerHTML = h; dz = 1; } }
     if (q < n) { const rg = S.rings[q], ir = ring.includes(q); cls(rg, 'is-on', ir); cls(rg, 'is-eye', ir && b.dark); }
   });
   const votes = {};
   S.ln.forEach((l) => {
     const t = l.t, v = (i > t.b || i === t.b && k >= (t.s || 2)) && !(t.n && JUDGE[a]) && !(t.v && !DAY[a]) && a !== 'verdict' && a !== 'pro' && Number.isFinite(S.X[t.c]) && !(t.kn && i >= dI), now = t.n && i === t.b && act, e = l.e;
     cls(e, 'is-on', v); cls(e, 'is-now', now); cls(e, 'is-trace', v && i > t.b); cls(e, 'rp-hi', v && a === 'seat' && (t.a === b.s || t.c === b.s));
-    cls(e, 'is-blood', v && (t.bl || t.v && ex[t.t])); cls(e, 'is-thick', v && t.w); cls(e, 'is-know', t.kn);
+    cls(e, 'is-blood', v && (t.bl || t.v && ex[t.t])); cls(e, 'is-thick', v && t.w); cls(e, 'is-know', t.kn); cls(e, 'is-sw', v && t.sw); cls(e, 'is-look', v && t.lk);
     if (l.m) { cls(l.m, 'is-on', v && (now || DAY[a])); cls(l.m, 'is-tr', !now); }
     if (t.v && v) votes[t.t] = (votes[t.t] || 0) + 1;
   });
   S.vms.forEach((m, q) => { m.textContent = votes[q] || ''; cls(m, 'is-on', votes[q]); });
   const fl = a === 'verdict' ? b.vfocus : b.focus, vd = a === 'verdict'; let vy = 0;
+  if (vd && S.vfill) S.vfill();
   cls(ve, 'is-on', vd);
   if (vd) { if (S.veH == null) { S.veH = ve.offsetHeight; S.veT = ve.offsetTop; } const ch = (S.fcw || 128) * 1.4 + 34, lo = S.hudB + 16, t = lo + Math.max(0, (S.RH - 52 - lo - ch - S.veH) / 2); ve.style.translate = '0 ' + (t + ch - S.veT) + 'px'; vy = t + ch / 2 - 6; }
   S.focus.forEach((f, j) => {
@@ -294,9 +299,10 @@ function scene(i, k) {
   if (!k || k > 2) {
     if (k) capTxt(b);
     cap.st.textContent = b.stamp ? b.stamp === 'mine' ? UI.mine : T.stamp[b.stamp] : ''; cls(cap.st, 'is-on', k && b.stamp);
-    if (b.stamp && S.me >= 0) { const m = S.me, tr = 'calc(' + Math.max(56, Math.min(S.W - 56, S.TX[m])) + 'px - 50%) calc(' + (S.TY[m] - S.TD[m] / 2 - 6) + 'px - 100%)'; if (cap.st._t !== tr) { cap.st._t = tr; cap.st.style.translate = tr; } }
+    if (b.stamp && S.me >= 0) { const m = S.me, tr = 'calc(' + Math.max(56, Math.min(S.W - 56, S.TX[m])) + 'px - 50%) calc(' + (S.TY[m] - S.TD[m] / 2 - 14) + 'px - 100%)'; if (cap.st._t !== tr) { cap.st._t = tr; cap.st.style.translate = tr; } }
   }
   cls(cap.el, 'is-v', a === 'verdict'); cls(ve, 'is-w', vd && act);
+  if (dz) relabel();
 }
 const capTxt = (b) => { const c = S.cap; c.l1.firstChild.innerHTML = b.l1; c.l2.firstChild.innerHTML = b.l2; c.l3.firstChild.innerHTML = b.l3n || ''; };
 const hs = (v) => [S.cap.l1, S.cap.l2, S.cap.l3].forEach((e) => cls(e, 'is-h', v));
@@ -312,13 +318,14 @@ const snd = (m, v) => { try { root.SND.ctx && root.SND[m](v === 1 ? true : v ===
 const duck = (db) => { try { root.SND.ctx && root.SND.duck('rp', db); } catch {} };
 async function play(i) {
   if (!S || !S.rdy) return;
-  const my = ++S.tok, B = S.B.beats, b = B[i], a = b.act, F = root.FX, sq = S.i >= 0 && i === S.i + 1, f0 = () => { scene(i, 0); hs(a !== 'pro'); };
+  const my = ++S.tok, B = S.B.beats, b = B[i], a = b.act, F = root.FX, sq = S.i >= 0 && i === S.i + 1, f0 = () => { if (a === 'pro' && S.front) S.front(S.me); scene(i, 0); hs(a !== 'pro'); };
   stop(); S.i = i; const p0 = sq ? f0() : nt(f0); ui(); capGo(b);
   await p0; if (!S || my !== S.tok) return;
   if (a === 'pro') {
     S.fill();
     if (!S.lite) {
-      S.wave.forEach((sl, j) => { const e = S.cards[sl]; e.style.setProperty('--k', j); e.classList.add('rp-flip'); });
+      await new Promise((r) => requestAnimationFrame(r)); if (!S || my !== S.tok) return;
+      S.wave.forEach((sl, j) => { if (sl === S.me) return; const e = S.cards[sl]; e.style.setProperty('--k', j); e.classList.add('rp-flip'); });
       await wait(120 * S.wave.length + 400);
     }
     await nt(() => scene(i, 1)); if (!S || my !== S.tok) return;
@@ -411,7 +418,8 @@ function open(R, meId, o) {
   for (let i = 0; i < n + 3; i++) h += '<span class="rp-tag' + (i < n ? '' : ' rp-al') + '"></span>';
   h += '<div class="rp-focus"></div><div class="rp-focus"></div><div class="rp-vd verdict"><p class="rp-vl"><span></span><u class="rp-cv"></u></p><p class="rp-vw"></p><p class="rp-vs"></p><i class="rp-vst"></i><button class="btn-sub rp-rst">' + UI.restart + '</button></div>';
   h += '<div class="rp-cap" role="status"><p class="rp-l1"><span></span><u class="rp-cv"></u></p><p class="rp-l2"><span></span><u class="rp-cv"></u></p><p class="rp-l3"><span></span><u class="rp-cv"></u></p></div><i class="rp-stamp"></i><div class="rp-bar" role="slider" tabindex="0">';
-  B.beats.forEach((b, k) => { const f = !k || B.beats[k - 1].ga !== b.ga; h += '<i class="rp-tick' + (f ? ' is-first' : '') + (k === N - 1 ? ' is-end' : '') + (b.mv ? ' is-mv' : '') + (b.act === 'exec' || b.act === 'hunt' ? ' is-bl' : '') + '" style="--p:' + (k + .5) / N + '"' + (b.act === 'night' && b.rn ? ' data-r="' + b.rn.split(' ')[0] + '"' : '') + (f && b.ga !== 'pro' ? ' data-a="' + UI.acts[b.ga] + '"' : '') + '></i>'; });
+  const tl = (b) => UI.tickLbl ? fm(UI.tickLbl, { p: UI.acts[b.ga] || '', i: b.gi, r: b.act === 'night' && b.r ? rn(b.r) : '' }).replace(/\s*\u00b7\s*$/, '') : (b.l1 + '').replace(/<[^>]*>/g, '');
+  B.beats.forEach((b, k) => { const f = !k || B.beats[k - 1].ga !== b.ga; h += '<i class="rp-tick' + (f ? ' is-first' : '') + (k === N - 1 ? ' is-end' : '') + (b.mv ? ' is-mv' : '') + (b.act === 'exec' || b.act === 'hunt' ? ' is-bl' : '') + '" style="--p:' + (k + .5) / N + '"' + (b.act === 'night' && b.rn ? ' data-r="' + b.rn.split(' ')[0] + '"' : '') + (f && b.ga !== 'pro' ? ' data-a="' + UI.acts[b.ga] + '"' : '') + ' title="' + esc(tl(b)) + '" aria-label="' + esc(tl(b)) + '">' + (b.mv ? ico('rp-swap', 'rp-tm') : '') + '</i>'; });
   rp.innerHTML = h + '<i class="rp-prog"></i><button class="rp-rate"></button></div>'; main.appendChild(rp);
   const q = (c) => [...rp.querySelectorAll(c)], bar = S.bar = rp.querySelector('.rp-bar'), cp = rp.querySelector('.rp-cap'), ln = q('.rp-ln'), mks = q('.rp-mk');
   Object.assign(S, { glow: rp.querySelector('.rp-glow'), ld: rp.querySelector('.rp-ld'), lv: rp.querySelector('.rp-lv'), rings: q('.rp-ring'), vms: q('.rp-vm'), cards: q('.rp-card'), tags: q('.rp-tag'), focus: q('.rp-focus'), vd: rp.querySelector('.rp-vd'),
@@ -435,7 +443,7 @@ function open(R, meId, o) {
   on(rp, 'click', next); on(dk.querySelector('.rp-prev'), 'click', prev); on(dk.querySelector('.rp-nxt'), 'click', next); on(S.mainBtn, 'click', toggle); on(S.skipBtn, 'click', skip);
   on(rp.querySelector('.rp-rst'), 'click', (e) => { e.stopPropagation(); again(); });
   on(S.rateBtn, 'click', (e) => { e.stopPropagation(); rate(S.rate === 1 ? 2 : 1); });
-  on(bar, 'click', (e) => { e.stopPropagation(); if (e.target !== S.rateBtn) { const rc = bar.getBoundingClientRect(), cs = getComputedStyle(bar), pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0; seek(Math.max(0, Math.min(N - 1, Math.round((e.clientX - rc.left - pl) / (rc.width - pl - pr - 44) * N - .5)))); } });
+  on(bar, 'click', (e) => { e.stopPropagation(); if (e.target !== S.rateBtn) { const rc = bar.getBoundingClientRect(), cs = getComputedStyle(bar), pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0; seek(Math.max(0, Math.min(N - 1, Math.round((e.clientX - rc.left - pl) / (rc.width - pl - pr - 56) * N - .5)))); } });
   on(document, 'keydown', (e) => {
     const g = e.target && e.target.tagName, k = e.key; if (g === 'INPUT' || g === 'TEXTAREA') return;
     const f = { ArrowRight: next, ArrowLeft: prev, ' ': toggle, Home: () => seek(0), End: () => seek(N - 1), Escape: skip }[k];
@@ -443,15 +451,17 @@ function open(R, meId, o) {
   });
   on(document, 'visibilitychange', () => { if (document.hidden && S.run === 'play') toggle(); });
   const s1 = S, gd = (f) => () => { if (S === s1) try { f(); } catch { done(); } };
-  on(window, 'resize', () => { if (S.rdy) { if (S.run === 'play') toggle(); layout(); nt(() => scene(S.i, 3)); } });
+  let lw = innerWidth, lh = innerHeight, rq = 0;
+  on(window, 'resize', () => { if (rq) return; rq = requestAnimationFrame(() => { rq = 0; if (S !== s1 || !S.rdy) return; const w = innerWidth, h = innerHeight, dw = w !== lw; if (!dw && Math.abs(h - lh) < 120) return; lw = w; lh = h; if (dw && S.run === 'play') toggle(); layout(); nt(() => scene(S.i, 3)); }); });
   rate(innerWidth < 600 ? 2 : 1); duck(-9);
   const go = () => { if (S !== s1) return; if (o.paused) { S.run = 'pause'; S.i = o.start || 0; nt(() => scene(S.i, 3)); ui(); } else play(o.start || 0); };
-  const fr = {}, jobs = () => {
-    s1.filled = 1; const vb = B.beats[N - 1], ve = s1.vd;
-    return [...s1.cards.map((el, i) => () => { const f = el.querySelector('.rp-front'); f.innerHTML = fr[D[i]] = fr[D[i]] || card(D[i], { size: 'sm', face: 1, flat: 1 }); el._cd = f.firstChild; }), () => {
-      ve.setAttribute('data-team', vb.vteam); ve.children[0].firstChild.textContent = vb.l1; ve.children[1].innerHTML = vb.l2; ve.children[2].innerHTML = vb.l3; ve.children[3].textContent = vb.win == null ? '' : vb.win ? T.stamp.win : T.stamp.lose; ve.style.setProperty('--sd', vb.l3 ? 1760 + 70 * T.syl(vb.l3) : 960); s1.veH = null;
-    }, ...vb.vfocus.map((x) => () => fcard(x.role))];
-  }, fill = S.fill = () => { if (S === s1 && !s1.filled) jobs().forEach((j) => j()); };
+  const fr = {}, cardJob = (i) => () => { const el = s1.cards[i], f = el.querySelector('.rp-front'); if (el._cd) return; f.innerHTML = fr[D[i]] = fr[D[i]] || card(D[i], { size: 'sm', face: 1, flat: 1 }); el._cd = f.firstChild; };
+  const cjobs = () => { s1.filled = 1; return s1.cards.map((el, i) => cardJob(i)); };
+  let vdone = 0;
+  const vjob = () => { if (vdone) return; vdone = 1; const vb = B.beats[N - 1], ve = s1.vd; ve.setAttribute('data-team', vb.vteam); ve.children[0].firstChild.textContent = vb.l1; ve.children[1].innerHTML = vb.l2; ve.children[2].innerHTML = vb.l3; ve.children[3].textContent = vb.win == null ? '' : vb.win ? T.stamp.win : T.stamp.lose; ve.style.setProperty('--sd', vb.l3 ? 1760 + 70 * T.syl(vb.l3) : 960); s1.veH = null; };
+  const fill = S.fill = () => { if (S === s1 && !s1.filled) cjobs().forEach((j) => j()); };
+  S.vfill = () => { if (S === s1) vjob(); };
+  S.front = (i) => { if (S === s1 && i >= 0 && i < s1.cards.length) cardJob(i)(); };
   requestAnimationFrame(gd(() => {
     const lb = B.beats.reduce((x, y) => (y.l1 + y.l2 + (y.l3n || '')).length > (x.l1 + x.l2 + (x.l3n || '')).length ? y : x);
     capTxt(lb); S.capMax = cp.offsetHeight; capTxt({ l1: '', l2: '' });
@@ -462,7 +472,7 @@ function open(R, meId, o) {
       S.i = o.start || 0; if (o.start || o.paused) fill(); go();
       const fq = (f) => [...new Set([].concat(...B.beats.filter(f).map((x) => (x.vfocus || x.focus).map((y) => y.role))))];
       S.late = fq((x) => JUDGE[x.act]);
-      const js = s1.filled ? [] : jobs(); B.beats.forEach((x) => x.focus.forEach((y) => js.push(() => fcard(y.role))));
+      const js = s1.filled ? [] : cjobs(); js.push(vjob); B.beats[N - 1].vfocus.forEach((x) => js.push(() => fcard(x.role))); B.beats.forEach((x) => x.focus.forEach((y) => js.push(() => fcard(y.role))));
       const pump = (dl) => {
         if (S !== s1) return;
         do { if (js.length) js.shift()(); } while (js.length && (!dl || dl.timeRemaining() > 4));

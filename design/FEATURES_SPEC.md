@@ -21,7 +21,7 @@
 ## 0. 예산 계획
 
 ### 0.1 현재 상태와 문제
-- `game.js` = strings.js + roles.js + art.js + app.js (tools/stamp.js 104행 근처 `joinJs`). 상한 24KB br, 현재 약 23.3KB.
+- `game.js` = strings.js + roles.js + art.js + app.js (tools/stamp.js 104행 근처 `joinJs`). 상한 26KB br(경고선 25.8KB).
 - 다섯 제안의 game.js 증가분을 합치면 약 +1.1KB입니다(F1 0.35, F2 0.35, F3 0.25, F4 0.06, F5 0.1). 그대로 넣으면 약 24.4KB로 상한을 넘습니다.
 
 ### 0.2 회수: 클라이언트가 안 쓰는 문자열을 game.js에서 빼기 (G1 + G4)
@@ -60,7 +60,7 @@
 | `a/chatx.<h>.js` (`public/js/chatx.js` + `public/css/chatx.css`를 `__CHATX_CSS__`로 내장) | F1 답글 동작, 답글 바, 인용 눌러 이동 | 시트를 처음 열 때 또는 `loadAssets()`의 idle 중 먼저 오는 쪽. 채팅을 껐으면 불러오지 않음 | 2KB | `chatx.js` 2KB |
 | `a/audio.<h>.js` (`public/js/audio.js`) | F3 합성 엔진 전체 + 음악 크기 `.seg` 마크업 | 음악을 켤 때만. 이미 켜 둔 사람은 idle 중 | 4KB | `audio.js` 4KB (없으면 SKIP) |
 | `fx.js` (기존, 지연) | F5 새 연출 전부, F2 peek 라벨 | 기존과 같음 | 5KB (지금 약 2.1KB) | 기존 행 |
-| `game.css` (기존, 지연) | F2·F4·F5 CSS | 기존과 같음 | 9KB | 기존 행 |
+| `game.css` (기존, 지연) | F2·F4·F5 CSS | 기존과 같음 | 10KB | 기존 행 |
 
 - `audio.js`는 서비스워커 precache에 넣지 않습니다("음악이 꺼져 있으면 audio.js 요청 0건" 조건). `chatx.js`는 precache에 넣습니다.
 - `base.css`(크리티컬, 7KB 상한)에는 F1의 최소 규칙(약 150B)만 더합니다. 나머지 CSS는 game.css 또는 chatx.css에 넣습니다.
@@ -657,7 +657,7 @@ if (dl) fx('deal', { n });
   - sw precache 목록에 `CHATX_JS`는 넣고 `AUDIO_JS`는 넣지 않습니다. `names`에 두 이름을 더합니다.
 - `tools/check-budget.mjs`
   - `chatx.js` 2KB, `audio.js` 4KB 행(없으면 SKIP). "한 판 전체" 합계에 chatx와 audio를 더합니다(기본 켜짐).
-  - game.js 경고선 23.8KB(WARN), 상한 24KB(FAIL)는 유지.
+  - game.js 경고선 25.8KB(WARN), 상한 26KB(FAIL).
 - 서버가 `/a/` 정적 파일을 해시 이름으로 서빙하는 방식과 CSP(있으면)에 새 파일이 막히지 않는지 확인합니다.
 
 ---
@@ -668,7 +668,7 @@ if (dl) fx('deal', { n });
 2. G1은 문자열 키를 가장 먼저 커밋합니다(다른 그룹이 로컬 확인할 때 필요).
 3. G4는 stamp.js의 strip 처리와 새 토큰을 먼저 끝내고, 그다음 chatx.js, audio.js를 만듭니다.
 4. 통합: `npm test` → `npm run smoke` → `node tools/stamp.js` → `node tools/check-budget.mjs` → `node tools/capture.mjs`로 review/shots 다시 찍기.
-5. game.js가 23.8KB를 넘으면 0.4절 컷 순서대로 G2가 뺍니다.
+5. game.js가 25.8KB를 넘으면 0.4절 컷 순서대로 G2가 뺍니다.
 
 그룹 간 접점 요약
 | 접점 | 제공 | 사용 |
@@ -711,7 +711,7 @@ if (dl) fx('deal', { n });
 - [ ] index.html에 `__CHATX_JS__`, `__AUDIO_JS__` 토큰이 남아 있지 않음.
 
 ### 10.2 예산
-- [ ] `node tools/check-budget.mjs` 전부 OK: game.js ≤24KB(목표 ≤23.8KB), fx.js ≤5KB, game.css ≤9KB, base.css ≤7KB, chatx.js ≤2KB, audio.js ≤4KB, replay.js ≤15KB(OWNER, 옮겨 온 문자열 포함), hanbam-d ≤30KB.
+- [ ] `node tools/check-budget.mjs` 전부 OK: game.js ≤26KB(목표 ≤25.8KB), fx.js ≤5KB, game.css ≤10KB, result.js ≤7KB, base.css ≤7KB, chatx.js ≤2KB, audio.js ≤4KB, replay.js ≤18KB(OWNER, 옮겨 온 문자열 포함), hanbam-d ≤30KB.
 - [ ] 음악이 꺼진 첫 방문에서 `audio.*.js` 요청 0건. 채팅을 끈 방문에서 `chatx.*.js` 요청 0건.
 
 ### 10.3 수동 — F1

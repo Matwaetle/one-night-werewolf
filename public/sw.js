@@ -6,12 +6,14 @@ const PRE = __PRECACHE__;   // CORE 만 (스크립트·CSS·폰트). 이미지(I
 const SHELL = 'hb-' + VER;   // 버전별 셸 캐시
 const RT = 'hb-rt';          // /a/ 런타임 캐시 (해시 파일명이라 버전이 달라도 공유한다)
 const RT_MAX = 60;
+const LAZY = /\/a\/(replay|chatx)\./;
 
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const c = await caches.open(SHELL);
     // 하나가 실패해도 설치는 계속한다
-    await Promise.allSettled(PRE.map((u) => c.add(u)));
+    // replay · chatx 는 나중에 쓰는 보조 모듈이라 설치에서 빼고, 앱이 느린 망이 아니라고 알려 주면(postMessage {slow:0}) 그때 담는다
+    await Promise.allSettled(PRE.filter((u) => !LAZY.test(u)).map((u) => c.add(u)));
     // 이미 제어 중인 페이지가 있으면(= 업데이트) 알린다. 앱은 홈·모닥불·결말에서만 토스트를 띄운다.
     const cl = await self.clients.matchAll({ type: 'window' });
     if (cl.length) cl.forEach((w) => w.postMessage({ t: 'hb-update', ver: VER }));
@@ -21,6 +23,7 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('message', (e) => {
   if (e.data === 'skip' || (e.data && e.data.t === 'skip')) self.skipWaiting();
+  if (e.data && e.data.slow === 0) e.waitUntil(caches.open(SHELL).then((c) => Promise.allSettled(PRE.filter((u) => LAZY.test(u)).map((u) => c.match(u).then((h) => h || c.add(u))))));   // slow:1 이면 아무것도 하지 않는다
 });
 
 self.addEventListener('activate', (e) => {
@@ -46,10 +49,12 @@ self.addEventListener('fetch', (e) => {
     // network-first (2.5초 타임아웃): 느리거나 실패하면 캐시된 셸, 성공하면 캐시를 갱신
     e.respondWith((async () => {
       const c = await caches.open(SHELL);
-      const net = fetch('/', { cache: 'no-cache' }).then((res) => { if (res.ok) c.put('/', res.clone()); return res; });
+      const net = fetch(r).then((res) => { if (res.ok) c.put('/', res.clone()); return res; });
+      e.waitUntil(net.catch(() => {}));
+      const res = await Promise.race([net.catch(() => null), new Promise((ok) => setTimeout(ok, 2500))]);
+      if (res && res.ok) return res;
       const h = await c.match('/');
-      if (h) { e.waitUntil(net.catch(() => {})); return h; }
-      return net;
+      return h || net;
     })());
     return;
   }

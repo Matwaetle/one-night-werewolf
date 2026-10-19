@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T20:57:57.861Z",
+  "generatedAt": "2026-10-19T21:43:04.787Z",
   "conditions": {
     "serverTimeScale": 0.35,
     "browser": "Chrome/155.0.8059.82"
@@ -9,27 +9,27 @@
       "dataNet": "mid",
       "effectiveType": "3g",
       "keyArtRequestedWithin4s": true,
-      "formInteractiveMs": 772,
-      "socketReadyMs": 1103,
-      "firstContentfulPaintMs": 528,
+      "formInteractiveMs": 764,
+      "socketReadyMs": 1107,
+      "firstContentfulPaintMs": 524,
       "responseStartMs": 3,
       "beforeFormInteractive": {
         "requests": 12,
-        "httpBytes": 64900,
+        "httpBytes": 103154,
         "wsBytes": 0,
-        "bytes": 64900
+        "bytes": 103154
       },
       "beforeSocketReady": {
         "requests": 12,
-        "httpBytes": 102776,
+        "httpBytes": 141403,
         "wsBytes": 183,
-        "bytes": 102959
+        "bytes": 141586
       },
       "afterSettled4s": {
         "requests": 12,
-        "httpBytes": 140853,
+        "httpBytes": 141403,
         "wsBytes": 183,
-        "bytes": 141036
+        "bytes": 141586
       },
       "heaviestRequests": [
         {
@@ -38,13 +38,13 @@
           "type": "Image"
         },
         {
-          "url": "/a/game.f71b376f.js",
-          "bytes": 24870,
+          "url": "/a/game.674b688a.js",
+          "bytes": 24865,
           "type": "Script"
         },
         {
-          "url": "/a/hanbam-d.20a8a3bb.woff2",
-          "bytes": 20513,
+          "url": "/a/hanbam-d.b768a169.woff2",
+          "bytes": 20821,
           "type": "Font"
         },
         {
@@ -54,12 +54,12 @@
         },
         {
           "url": "/",
-          "bytes": 9559,
+          "bytes": 9736,
           "type": "Document"
         },
         {
-          "url": "/a/game.19c47462.css",
-          "bytes": 9524,
+          "url": "/a/game.c0d717b7.css",
+          "bytes": 9529,
           "type": "Stylesheet"
         },
         {
@@ -68,8 +68,8 @@
           "type": "Font"
         },
         {
-          "url": "/a/result.89db0184.js",
-          "bytes": 6439,
+          "url": "/a/result.a9140c96.js",
+          "bytes": 6461,
           "type": "Script"
         }
       ]
@@ -77,389 +77,369 @@
     "game": {
       "note": "홈 로드부터 결말 재현 종료까지 한 판 ",
       "total": {
-        "requests": 40,
-        "httpBytes": 858749,
-        "wsBytes": 32572,
-        "bytes": 891321
+        "requests": 39,
+        "httpBytes": 824211,
+        "wsBytes": 31799,
+        "bytes": 856010
       },
       "afterFirstHomeLoad": {
-        "requests": 28,
-        "bytes": 750285
+        "requests": 27,
+        "bytes": 714424
       },
       "byResourceType": {
-        "Document": 9559,
-        "Font": 27573,
-        "Stylesheet": 9524,
-        "Script": 72554,
+        "Document": 9736,
+        "Font": 27881,
+        "Stylesheet": 9529,
         "Fetch": 520,
-        "Image": 739019
+        "Script": 72625,
+        "Image": 703920
       },
-      "wsFrames": 71,
-      "durationSec": 108
+      "wsFrames": 74,
+      "durationSec": 128
     },
     "websocketThrottleNote": "Chrome CDP 네트워크 제한은 WebSocket 프레임에 적용되지 않는다. HTTP(문서/에셋/폴링)에만 지연·대역폭이 걸린다."
   },
   "cpu": {
     "cpuThrottle": 6,
     "nightTransitions": {
-      "seconds": 48.2,
-      "longTasks": 6,
-      "longTaskTotalMs": 656,
-      "longTaskMaxMs": 213,
+      "seconds": 49.8,
+      "longTasks": 8,
+      "longTaskTotalMs": 872,
+      "longTaskMaxMs": 244,
       "longTaskList": [
         {
-          "atMs": 1675,
-          "durMs": 213
+          "atMs": 1692,
+          "durMs": 210
         },
         {
-          "atMs": 4732,
-          "durMs": 159
+          "atMs": 2125,
+          "durMs": 88
         },
         {
-          "atMs": 16716,
-          "durMs": 67
+          "atMs": 4749,
+          "durMs": 244
         },
         {
-          "atMs": 32477,
-          "durMs": 74
+          "atMs": 8719,
+          "durMs": 61
         },
         {
-          "atMs": 48001,
-          "durMs": 67
+          "atMs": 14735,
+          "durMs": 51
         },
         {
-          "atMs": 48068,
-          "durMs": 76
+          "atMs": 41401,
+          "durMs": 56
+        },
+        {
+          "atMs": 49597,
+          "durMs": 78
+        },
+        {
+          "atMs": 49676,
+          "durMs": 84
         }
       ],
-      "fpsAvg": 140.1,
+      "fpsAvg": 139,
       "frameP95Ms": 7,
-      "framesOver50ms": 8
+      "framesOver50ms": 9
     },
     "replay": {
-      "seconds": 40.2,
-      "longTasks": 32,
-      "longTaskTotalMs": 3197,
-      "longTaskMaxMs": 304,
+      "seconds": 30.2,
+      "longTasks": 25,
+      "longTaskTotalMs": 2391,
+      "longTaskMaxMs": 286,
       "longTaskList": [
         {
-          "atMs": 418,
-          "durMs": 56
+          "atMs": 1455,
+          "durMs": 286
         },
         {
-          "atMs": 528,
-          "durMs": 67
+          "atMs": 1758,
+          "durMs": 96
         },
         {
-          "atMs": 602,
-          "durMs": 50
+          "atMs": 1860,
+          "durMs": 92
         },
         {
-          "atMs": 1484,
-          "durMs": 196
+          "atMs": 3423,
+          "durMs": 253
         },
         {
-          "atMs": 1699,
-          "durMs": 60
+          "atMs": 3702,
+          "durMs": 75
         },
         {
-          "atMs": 3305,
-          "durMs": 52
-        },
-        {
-          "atMs": 3370,
-          "durMs": 74
-        },
-        {
-          "atMs": 5616,
-          "durMs": 55
-        },
-        {
-          "atMs": 8766,
-          "durMs": 74
-        },
-        {
-          "atMs": 8847,
-          "durMs": 77
-        },
-        {
-          "atMs": 9047,
-          "durMs": 57
-        },
-        {
-          "atMs": 9228,
-          "durMs": 89
-        },
-        {
-          "atMs": 11401,
-          "durMs": 52
-        },
-        {
-          "atMs": 12804,
-          "durMs": 111
-        },
-        {
-          "atMs": 12932,
-          "durMs": 245
-        },
-        {
-          "atMs": 13337,
-          "durMs": 211
-        },
-        {
-          "atMs": 13597,
-          "durMs": 130
-        },
-        {
-          "atMs": 17955,
-          "durMs": 271
-        },
-        {
-          "atMs": 18336,
-          "durMs": 166
-        },
-        {
-          "atMs": 18520,
-          "durMs": 65
-        },
-        {
-          "atMs": 21646,
-          "durMs": 65
-        },
-        {
-          "atMs": 22815,
-          "durMs": 55
-        },
-        {
-          "atMs": 22918,
-          "durMs": 53
-        },
-        {
-          "atMs": 24562,
-          "durMs": 79
-        },
-        {
-          "atMs": 26096,
-          "durMs": 93
-        },
-        {
-          "atMs": 27431,
-          "durMs": 56
-        },
-        {
-          "atMs": 29815,
-          "durMs": 55
-        },
-        {
-          "atMs": 31127,
-          "durMs": 65
-        },
-        {
-          "atMs": 31249,
-          "durMs": 64
-        },
-        {
-          "atMs": 34404,
-          "durMs": 93
-        },
-        {
-          "atMs": 34549,
-          "durMs": 57
-        },
-        {
-          "atMs": 38433,
-          "durMs": 304
-        }
-      ],
-      "fpsAvg": 122.7,
-      "frameP95Ms": 7,
-      "framesOver50ms": 32
-    },
-    "wholeGame": {
-      "seconds": 115.5,
-      "longTasks": 49,
-      "longTaskTotalMs": 5376,
-      "longTaskMaxMs": 304,
-      "longTaskList": [
-        {
-          "atMs": 1675,
-          "durMs": 213
-        },
-        {
-          "atMs": 4732,
-          "durMs": 159
-        },
-        {
-          "atMs": 16716,
-          "durMs": 67
-        },
-        {
-          "atMs": 32477,
-          "durMs": 74
-        },
-        {
-          "atMs": 48001,
-          "durMs": 67
-        },
-        {
-          "atMs": 48068,
-          "durMs": 76
-        },
-        {
-          "atMs": 48652,
-          "durMs": 81
-        },
-        {
-          "atMs": 49364,
-          "durMs": 65
-        },
-        {
-          "atMs": 51411,
-          "durMs": 84
-        },
-        {
-          "atMs": 54594,
+          "atMs": 3781,
           "durMs": 71
         },
         {
-          "atMs": 72415,
-          "durMs": 123
+          "atMs": 3871,
+          "durMs": 178
         },
         {
-          "atMs": 72546,
-          "durMs": 154
-        },
-        {
-          "atMs": 72700,
-          "durMs": 187
-        },
-        {
-          "atMs": 72889,
-          "durMs": 259
-        },
-        {
-          "atMs": 73179,
-          "durMs": 247
-        },
-        {
-          "atMs": 73499,
-          "durMs": 169
-        },
-        {
-          "atMs": 74093,
-          "durMs": 56
-        },
-        {
-          "atMs": 74203,
-          "durMs": 67
-        },
-        {
-          "atMs": 74277,
-          "durMs": 50
-        },
-        {
-          "atMs": 75159,
-          "durMs": 196
-        },
-        {
-          "atMs": 75374,
-          "durMs": 60
-        },
-        {
-          "atMs": 76980,
-          "durMs": 52
-        },
-        {
-          "atMs": 77045,
-          "durMs": 74
-        },
-        {
-          "atMs": 79291,
-          "durMs": 55
-        },
-        {
-          "atMs": 82441,
-          "durMs": 74
-        },
-        {
-          "atMs": 82522,
+          "atMs": 4069,
           "durMs": 77
         },
         {
-          "atMs": 82722,
-          "durMs": 57
+          "atMs": 4184,
+          "durMs": 51
         },
         {
-          "atMs": 82903,
-          "durMs": 89
+          "atMs": 7743,
+          "durMs": 60
         },
         {
-          "atMs": 85076,
+          "atMs": 9425,
           "durMs": 52
         },
         {
-          "atMs": 86479,
-          "durMs": 111
+          "atMs": 11345,
+          "durMs": 63
         },
         {
-          "atMs": 86607,
-          "durMs": 245
+          "atMs": 11414,
+          "durMs": 63
         },
         {
-          "atMs": 87012,
-          "durMs": 211
+          "atMs": 12716,
+          "durMs": 54
         },
         {
-          "atMs": 87272,
-          "durMs": 130
+          "atMs": 12799,
+          "durMs": 51
         },
         {
-          "atMs": 91630,
-          "durMs": 271
+          "atMs": 17906,
+          "durMs": 68
         },
         {
-          "atMs": 92011,
-          "durMs": 166
+          "atMs": 19502,
+          "durMs": 69
         },
         {
-          "atMs": 92195,
+          "atMs": 19594,
           "durMs": 65
         },
         {
-          "atMs": 95321,
-          "durMs": 65
+          "atMs": 20939,
+          "durMs": 62
         },
         {
-          "atMs": 96490,
-          "durMs": 55
+          "atMs": 23463,
+          "durMs": 52
         },
         {
-          "atMs": 96593,
-          "durMs": 53
+          "atMs": 25914,
+          "durMs": 86
         },
         {
-          "atMs": 98237,
-          "durMs": 79
+          "atMs": 26000,
+          "durMs": 51
+        },
+        {
+          "atMs": 26069,
+          "durMs": 83
+        },
+        {
+          "atMs": 28554,
+          "durMs": 101
+        },
+        {
+          "atMs": 28664,
+          "durMs": 232
         }
       ],
-      "fpsAvg": 131.7,
+      "fpsAvg": 121.8,
+      "frameP95Ms": 8,
+      "framesOver50ms": 23
+    },
+    "wholeGame": {
+      "seconds": 106.6,
+      "longTasks": 44,
+      "longTaskTotalMs": 4369,
+      "longTaskMaxMs": 286,
+      "longTaskList": [
+        {
+          "atMs": 1692,
+          "durMs": 210
+        },
+        {
+          "atMs": 2125,
+          "durMs": 88
+        },
+        {
+          "atMs": 4749,
+          "durMs": 244
+        },
+        {
+          "atMs": 8719,
+          "durMs": 61
+        },
+        {
+          "atMs": 14735,
+          "durMs": 51
+        },
+        {
+          "atMs": 41401,
+          "durMs": 56
+        },
+        {
+          "atMs": 49597,
+          "durMs": 78
+        },
+        {
+          "atMs": 49676,
+          "durMs": 84
+        },
+        {
+          "atMs": 50275,
+          "durMs": 75
+        },
+        {
+          "atMs": 51081,
+          "durMs": 50
+        },
+        {
+          "atMs": 53076,
+          "durMs": 74
+        },
+        {
+          "atMs": 68113,
+          "durMs": 68
+        },
+        {
+          "atMs": 74092,
+          "durMs": 127
+        },
+        {
+          "atMs": 74225,
+          "durMs": 109
+        },
+        {
+          "atMs": 74335,
+          "durMs": 168
+        },
+        {
+          "atMs": 74504,
+          "durMs": 173
+        },
+        {
+          "atMs": 74681,
+          "durMs": 90
+        },
+        {
+          "atMs": 74809,
+          "durMs": 85
+        },
+        {
+          "atMs": 76352,
+          "durMs": 286
+        },
+        {
+          "atMs": 76655,
+          "durMs": 96
+        },
+        {
+          "atMs": 76757,
+          "durMs": 92
+        },
+        {
+          "atMs": 78320,
+          "durMs": 253
+        },
+        {
+          "atMs": 78599,
+          "durMs": 75
+        },
+        {
+          "atMs": 78678,
+          "durMs": 71
+        },
+        {
+          "atMs": 78768,
+          "durMs": 178
+        },
+        {
+          "atMs": 78966,
+          "durMs": 77
+        },
+        {
+          "atMs": 79081,
+          "durMs": 51
+        },
+        {
+          "atMs": 82640,
+          "durMs": 60
+        },
+        {
+          "atMs": 84322,
+          "durMs": 52
+        },
+        {
+          "atMs": 86242,
+          "durMs": 63
+        },
+        {
+          "atMs": 86311,
+          "durMs": 63
+        },
+        {
+          "atMs": 87613,
+          "durMs": 54
+        },
+        {
+          "atMs": 87696,
+          "durMs": 51
+        },
+        {
+          "atMs": 92803,
+          "durMs": 68
+        },
+        {
+          "atMs": 94399,
+          "durMs": 69
+        },
+        {
+          "atMs": 94490,
+          "durMs": 65
+        },
+        {
+          "atMs": 95836,
+          "durMs": 62
+        },
+        {
+          "atMs": 98360,
+          "durMs": 52
+        },
+        {
+          "atMs": 100811,
+          "durMs": 86
+        },
+        {
+          "atMs": 100897,
+          "durMs": 51
+        }
+      ],
+      "fpsAvg": 132.6,
       "frameP95Ms": 7,
-      "framesOver50ms": 51
+      "framesOver50ms": 41
     }
   },
   "consoleErrors": [],
   "notCaptured": [
-    "mobile-375x812: night-awake - Waiting for selector `.seat-token[data-pid=\"cap-mvfqb2ef-b1\"]` failed",
-    "mobile-375x812: night-asleep-2 - Waiting failed: 8000ms exceeded",
-    "mobile-375x812: vote - Waiting for selector `.seat-token[data-pid=\"cap-mvfqb2ef-b1\"]` failed",
-    "desktop-1280x800: night-awake - Waiting for selector `.seat-token[data-pid=\"cap-mvfqb2ef-b1\"]` failed",
-    "desktop-1280x800: vote - Waiting for selector `.seat-token[data-pid=\"cap-mvfqb2ef-b1\"]` failed",
-    "small-360x640: night-awake - Waiting for selector `.seat-token[data-pid=\"cap-mvfqb2ef-b1\"]` failed",
-    "small-360x640: vote - Waiting for selector `.seat-token[data-pid=\"cap-mvfqb2ef-b1\"]` failed",
-    "metrics-net: night-awake - Waiting for selector `.seat-token[data-pid=\"cap-mvfqb2ef-b1\"]` failed",
-    "metrics-net: vote - Waiting for selector `.seat-token[data-pid=\"cap-mvfqb2ef-b1\"]` failed",
-    "metrics-cpu: night-awake - Waiting for selector `.seat-token[data-pid=\"cap-mvfqb2ef-b1\"]` failed",
-    "metrics-cpu: vote - Waiting for selector `.seat-token[data-pid=\"cap-mvfqb2ef-b1\"]` failed"
+    "mobile-375x812: night-awake - Waiting for selector `.seat-token[data-pid=\"cap-mvfrx7be-b1\"]` failed",
+    "mobile-375x812: vote - Waiting for selector `.seat-token[data-pid=\"cap-mvfrx7be-b1\"]` failed",
+    "desktop-1280x800: night-awake - Waiting for selector `.seat-token[data-pid=\"cap-mvfrx7be-b1\"]` failed",
+    "desktop-1280x800: vote - Waiting for selector `.seat-token[data-pid=\"cap-mvfrx7be-b1\"]` failed",
+    "small-360x640: night-awake - Waiting for selector `.seat-token[data-pid=\"cap-mvfrx7be-b1\"]` failed",
+    "small-360x640: vote - Waiting for selector `.seat-token[data-pid=\"cap-mvfrx7be-b1\"]` failed",
+    "metrics-net: night-awake - Waiting for selector `.seat-token[data-pid=\"cap-mvfrx7be-b1\"]` failed",
+    "metrics-net: night-asleep-2 - Waiting failed: 8000ms exceeded",
+    "metrics-net: vote - Waiting for selector `.seat-token[data-pid=\"cap-mvfrx7be-b1\"]` failed",
+    "metrics-cpu: night-awake - Waiting for selector `.seat-token[data-pid=\"cap-mvfrx7be-b1\"]` failed",
+    "metrics-cpu: vote - Waiting for selector `.seat-token[data-pid=\"cap-mvfrx7be-b1\"]` failed"
   ],
-  "shotCount": 92
+  "shotCount": 90
 }

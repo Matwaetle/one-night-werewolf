@@ -22,6 +22,9 @@
 .rp-mk.is-on.is-tr{opacity:0}
 .rp[data-act=night] .rp-mk.is-on.is-tr{opacity:.35}
 .rp .ln.rp-hi{opacity:.5}
+.rp .ln.is-now:not(.is-know){height:2px}
+.rp .ln.is-sw{color:var(--bone-hi)}
+.rp .ln.is-look{color:var(--blood-hot)}
 .rp-ring{opacity:0;pointer-events:none;z-index:3;background:radial-gradient(circle,transparent calc(50% - 2px),var(--rc,var(--bone-hi)) calc(50% - 2px) 50%,transparent 50%)}
 .rp-ring.is-on{opacity:1}
 .rp-ring.is-eye{--rc:var(--blood-hot)}
@@ -34,10 +37,11 @@
 .is-f .rp-front{opacity:1}
 .is-f .rp-back{opacity:0}
 .rp-dim{opacity:.55}
-.rp-lit{z-index:4}.rp-lit>span{transform:scale(1.25)}
+.rp-lit{z-index:4}.rp-lit>span{transform:scale(1.15);outline:1px solid var(--bone-hi)}
+@media(min-width:1024px){.rp-card.rp-dim{opacity:.4}}
 .rp-hunt .card-sg{color:var(--blood-hot)}
 .rp-card .card-sw,.rp-card[data-z=seat] :is(.card-ord,.card-line){display:none}
-.rp-card[data-z=seat] .card-name{font-size:calc(10px*var(--inv,1))}
+.rp .rp-card[data-z=seat] .card .card-name{font-size:0;color:transparent}
 .rp-card:not([style]){opacity:0}
 .rp[data-act=pro] .rp-card{transition-property:opacity}
 .rp-card[data-z=seat]::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border:calc(1px*var(--inv,1)) solid var(--ink)}
@@ -55,7 +59,9 @@
 .rp-tag.rp-sl{transform:translate(var(--tx),var(--ty)) translate(-100%,-50%)}
 .rp-tag.is-on.rp-dim{opacity:.55;margin-top:4px}
 .rp-tag i{color:var(--bone-hi)}
-@media(max-width:599px){.rp-tag{max-width:120px}.rp-tag:is(.rp-sl,.rp-sr){max-width:calc(50vw - 40px)}}
+@media(max-width:599px){.rp-tag{max-width:min(46vw,176px)}.rp-tag b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rp-tag:is(.rp-sl,.rp-sr){max-width:calc(50vw - 24px)}}
+@media(min-width:900px){.rp{--cw-sm:clamp(72px,8vw,96px)}}
+@media(min-width:1024px){.rp .rp-tag{font-size:15px}}
 .rp[data-nw="0"] .rp-tag{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:0 4px;width:max-content;max-width:150px}
 .rp .rp-tag.rp-al{max-width:none;white-space:nowrap}
 .rp[data-nw="1"] .rp-tag.rp-al{max-width:calc(var(--acw,50px)*1.1);padding:1px 2px;font-size:11px;white-space:normal}

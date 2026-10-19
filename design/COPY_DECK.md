@@ -960,3 +960,20 @@
 | T.body.voteRule | 2표 이상 받은 사람이 없으면 아무도 처형되지 않고, 동점이면 모두 처형됩니다. |
 | T.body.raised | 준비 ${r}/${n} · 모두 준비하면 투표합니다. |
 | T.body.masonWarn | 프리메이슨은 2장을 함께 넣어야 합니다. |
+
+## 최종 정리 (결말 · 리플레이 문구 수정)
+| 키 | 문구 | 비고 |
+|---|---|---|
+| T.replay.note.wake | ${a:은/는} 카드가 바뀌었지만 처음 받은 ${r} 역할로 깨어났습니다. | a: 좌석 이름, r: 처음 받은 역할 |
+| T.replay.vote.allNone | 아무도 투표하지 않아 처형된 사람이 없습니다. | 리플레이와 결말 공통 |
+| T.replay.cause.robbed | ${role} ${a:이/가} 내 카드를 훔쳐 가고 자기 ${r} 카드를 남겼습니다. | |
+| T.replay.cause.swapped | ${role} ${a:이/가} 내 카드를 ${t}의 ${r} 카드와 바꿨습니다. | |
+| T.replay.cause.drunk | 그 뒤 나는 처음 역할대로 깨어나 내 카드를 ${P:과/와} 바꿨습니다. | |
+| T.replay.self.blind | 새 카드는 확인하지 못했고, 최종 카드는 ${f:이었/였}습니다. | |
+| T.body.dockMaybe | 내 카드 | dockHint와 동일, 한 줄 유지 |
+| T.body.dayTalk | 토론을 마쳤다면 투표를 준비해 주세요. | |
+| T.body.raised | 투표 준비 ${r}/${n} · 모두 준비하면 투표가 시작됩니다. | |
+| T.body.pickTarget | 대상 선택하기 | 비활성 버튼도 -기 문체 |
+| T.body.nightWait | 밤이 되었습니다. 눈을 감고 기다려 주세요. | 밤 시작 직후 안내 띠 |
+| T.replay.ui.tickHint | 표시된 장면에서 카드가 바뀌었습니다 · 눌러서 이동하기 | 타임라인 눈금 안내, 처음 한 번 |
+| T.replay.ui.tickLbl | ${p} ${i} · ${r} | p: 단계(밤), i: 순서, r: 역할 이름 |

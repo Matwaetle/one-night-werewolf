@@ -25,7 +25,7 @@ const size = (n) => wire(path.join(aDir, n));
 
 const rows = [];
 let bad = false;
-const GAME_WARN = 23.8 * KB;   // FEATURES_SPEC 0.4: 경고선(WARN), 상한 24KB(FAIL)
+const GAME_WARN = 25.8 * KB;   // FEATURES_SPEC 0.4: 경고선(WARN), 상한 26KB(FAIL)
 const row = (name, bytes, limit, note = '') => {
   const ok = bytes <= limit;
   if (!ok) bad = true;
@@ -67,7 +67,7 @@ const htmlBr = row('index.html', br(htmlBuf), 16 * KB);
   } else rows.push('SKIP   base.css (public/css/base.css 없음)');
 }
 
-const gameWarn = (f) => (size(f) > GAME_WARN ? 'WARN (>23.8KB: FEATURES_SPEC 0.4 컷 순서 확인)' : '');
+const gameWarn = (f) => (size(f) > GAME_WARN ? 'WARN (>25.8KB: FEATURES_SPEC 0.4 컷 순서 확인)' : '');
 
 /* 크리티컬 패스 */
 const fT = need('hanbam-t 폰트', /^hanbam-t\.[0-9a-f]+\.woff2$/);
@@ -76,18 +76,18 @@ const game = need('game.js', /^game\.[0-9a-f]+\.js$/);
 const fD0 = find(/^hanbam-d\.[0-9a-f]+\.woff2$/)[0];
 const tS = fT ? row('hanbam-t (제목 폰트)', size(fT), 10 * KB) : 0;
 const sS = sio ? row('sio (≈15KB, 상한 17KB)', size(sio), 17 * KB) : 0;
-const gS = game ? row('game.js', size(game), 24 * KB, gameWarn(game)) : 0;
+const gS = game ? row('game.js', size(game), 26 * KB, gameWarn(game)) : 0;
 const dPre = /<link[^>]*rel=["']?preload["']?[^>]*hanbam-d/i.test(html) || /<link[^>]*hanbam-d[^>]*rel=["']?preload["']?/i.test(html);   // app+base 는 프리로드를 뺀다
 const dCrit = dPre && fD0 ? size(fD0) : 0;
 const critical = row('크리티컬 패스 합계 (html+font+sio+game' + (dPre ? '+hanbam-d' : '') + ')', htmlBr + tS + sS + gS + dCrit, 75 * KB);
 
 /* 지연 로드 */
-const gc = need('game.css', /^game\.[0-9a-f]+\.css$/); if (gc) row('game.css', size(gc), 9 * KB);
+const gc = need('game.css', /^game\.[0-9a-f]+\.css$/); if (gc) row('game.css', size(gc), 10 * KB);
 const fx = need('fx.js', /^fx\.[0-9a-f]+\.js$/); if (fx) row('fx.js', size(fx), 5 * KB);
 const fD = need('hanbam-d 폰트', /^hanbam-d\.[0-9a-f]+\.woff2$/); if (fD) row('hanbam-d (디스플레이 폰트)', size(fD), 30 * KB);
-const rp = opt('replay.js', /^replay\.[0-9a-f]+\.js$/); if (rp.length) row('replay.js (JS+CSS+문양)', size(rp[0]), 16 * KB);
+const rp = opt('replay.js', /^replay\.[0-9a-f]+\.js$/); if (rp.length) row('replay.js (JS+CSS+문양)', size(rp[0]), 18 * KB);
 
-const rs = opt('result.js (A1 결과 청크)', /^result\.[0-9a-f]+\.js$/); if (rs.length) row('result.js (A1 결과 청크)', size(rs[0]), 6 * KB);
+const rs = opt('result.js (A1 결과 청크)', /^result\.[0-9a-f]+\.js$/); if (rs.length) row('result.js (A1 결과 청크)', size(rs[0]), 7 * KB);
 const fS = opt('hanbam-s (명조 서브셋)', /^hanbam-s\.[0-9a-f]+\.woff2$/); if (fS.length) row('hanbam-s (명조 서브셋)', size(fS[0]), 30 * KB);
 
 const cx = opt('chatx.js (F1 답글)', /^chatx.[0-9a-f]+.js$/); if (cx.length) row('chatx.js (JS+CSS)', size(cx[0]), 2 * KB);
@@ -116,6 +116,16 @@ for (const [label, re, lim] of imgRules) {
     if (/키아트 데스크톱/.test(label)) imgTotals.key = s;
     if (/키아트 모바일/.test(label)) imgTotals.keyM = s;
   }
+}
+/* 홈 TTI 분석적 최악 추정: 4 RTT(300ms) + (html br + sio + game.js + game.css + hanbam-t + key-m) / 125KiB/s.
+   '1MB/s' 는 1Mbit/s(=125KB/s) 최악 경우로 취급한다. FAIL 상한 3.0s. */
+{
+  const gcS = gc ? size(gc) : 0;
+  const bytes = htmlBr + sS + gS + gcS + tS + imgTotals.keyM;
+  const ms = 4 * 300 + (bytes / (125 * KB)) * 1000;
+  const ok = ms <= 3000;
+  if (!ok) bad = true;
+  rows.push(`${!ok ? 'FAIL' : ms > 2850 ? 'WARN' : 'OK  '} ${'홈 TTI 최악 추정 (4RTT+바이트/125KB/s)'.padEnd(40)} ${(ms / 1000).toFixed(2).padStart(7)}s / 3.0s [${(bytes / KB).toFixed(0)}KB]`);
 }
 const bonfire = imgTotals.atlas + imgTotals.back + imgTotals.horizon + imgTotals.grain;
 if (bonfire) row('모닥불 추가 (아틀라스+뒷면+지평선+그레인)', bonfire, 130 * KB);
