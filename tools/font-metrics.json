@@ -1,0 +1,9 @@
+{
+  "sa": 87.1,
+  "ao": 97.6,
+  "do": 17.2,
+  "fallback": "Malgun Gothic",
+  "sample": "366자",
+  "measuredAt": "2026-10-19",
+  "note": "tools/font-metrics.html (캔버스 실측, Song Myung 원본 vs 맑은 고딕, Windows/Chromium). Apple SD Gothic Neo / Noto Sans CJK KR 은 이 기기에 없어 미측정 — local() 순서상 맑은 고딕 값을 쓴다."
+}

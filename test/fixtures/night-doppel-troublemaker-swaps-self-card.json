@@ -1,0 +1,196 @@
+{
+ "name": "doppel-troublemaker-swaps-self-card",
+ "n": 4,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.06854110083806786",
+ "result": {
+  "gameId": "601b3b2a",
+  "players": [
+   {
+    "id": "bot-봇1-0.06854110083806786",
+    "name": "봇1",
+    "original": "doppelganger",
+    "final": "werewolf",
+    "effective": "werewolf",
+    "team": "wolf",
+    "vote": "bot-봇4-0.7235341222089676",
+    "votes": 1,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇2-0.9841162416169341",
+    "name": "봇2",
+    "original": "troublemaker",
+    "final": "troublemaker",
+    "effective": "troublemaker",
+    "team": "village",
+    "vote": "bot-봇4-0.7235341222089676",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇3-0.38623744646044156",
+    "name": "봇3",
+    "original": "villager",
+    "final": "doppelganger",
+    "effective": "troublemaker",
+    "team": "village",
+    "vote": "bot-봇4-0.7235341222089676",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇4-0.7235341222089676",
+    "name": "봇4",
+    "original": "werewolf",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇1-0.06854110083806786",
+    "votes": 3,
+    "dead": true,
+    "win": false
+   }
+  ],
+  "winners": [
+   "wolf"
+  ],
+  "noDeath": false,
+  "wolvesInPlay": 1,
+  "center": {
+   "original": [
+    "werewolf",
+    "villager",
+    "villager"
+   ],
+   "final": [
+    "werewolf",
+    "villager",
+    "villager"
+   ]
+  },
+  "doppelCopy": "troublemaker",
+  "deaths": [
+   {
+    "s": 3,
+    "by": "vote"
+   }
+  ],
+  "why": [
+   [
+    "wolf_lived",
+    [
+     0
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "doppelganger",
+    "troublemaker",
+    "villager",
+    "werewolf",
+    "werewolf",
+    "villager",
+    "villager"
+   ],
+   "ev": [
+    {
+     "st": "doppelganger",
+     "k": "copy",
+     "by": [
+      0
+     ],
+     "tg": [
+      1
+     ],
+     "see": [
+      [
+       1,
+       1
+      ]
+     ],
+     "dop": [
+      0
+     ]
+    },
+    {
+     "st": "doppelganger",
+     "r": "troublemaker",
+     "k": "swap",
+     "by": [
+      0
+     ],
+     "tg": [
+      2,
+      3
+     ],
+     "mv": [
+      [
+       2,
+       3
+      ],
+      [
+       3,
+       2
+      ]
+     ],
+     "dop": [
+      0
+     ]
+    },
+    {
+     "st": "werewolf",
+     "k": "peek",
+     "by": [
+      3
+     ],
+     "tg": [
+      4
+     ],
+     "see": [
+      [
+       4,
+       4
+      ]
+     ]
+    },
+    {
+     "st": "troublemaker",
+     "k": "swap",
+     "by": [
+      1
+     ],
+     "tg": [
+      0,
+      2
+     ],
+     "mv": [
+      [
+       0,
+       2
+      ],
+      [
+       3,
+       0
+      ]
+     ]
+    }
+   ],
+   "end": [
+    3,
+    1,
+    0,
+    2,
+    4,
+    5,
+    6
+   ]
+  }
+ }
+}

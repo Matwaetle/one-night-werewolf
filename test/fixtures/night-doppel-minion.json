@@ -1,0 +1,164 @@
+{
+ "name": "doppel-minion",
+ "n": 4,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.3391087230483433",
+ "result": {
+  "gameId": "2cf1e013",
+  "players": [
+   {
+    "id": "bot-봇1-0.3391087230483433",
+    "name": "봇1",
+    "original": "doppelganger",
+    "final": "doppelganger",
+    "effective": "minion",
+    "team": "wolf",
+    "vote": "bot-봇3-0.19199887640660318",
+    "votes": 1,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇2-0.15791725665098566",
+    "name": "봇2",
+    "original": "minion",
+    "final": "minion",
+    "effective": "minion",
+    "team": "wolf",
+    "vote": "bot-봇3-0.19199887640660318",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇3-0.19199887640660318",
+    "name": "봇3",
+    "original": "werewolf",
+    "final": "werewolf",
+    "effective": "werewolf",
+    "team": "wolf",
+    "vote": "bot-봇1-0.3391087230483433",
+    "votes": 3,
+    "dead": true,
+    "win": false
+   },
+   {
+    "id": "bot-봇4-0.366502078527541",
+    "name": "봇4",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇3-0.19199887640660318",
+    "votes": 0,
+    "dead": false,
+    "win": true
+   }
+  ],
+  "winners": [
+   "village"
+  ],
+  "noDeath": false,
+  "wolvesInPlay": 1,
+  "center": {
+   "original": [
+    "werewolf",
+    "villager",
+    "villager"
+   ],
+   "final": [
+    "werewolf",
+    "villager",
+    "villager"
+   ]
+  },
+  "doppelCopy": "minion",
+  "deaths": [
+   {
+    "s": 2,
+    "by": "vote"
+   }
+  ],
+  "why": [
+   [
+    "wolf_died",
+    [
+     2
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "doppelganger",
+    "minion",
+    "werewolf",
+    "villager",
+    "werewolf",
+    "villager",
+    "villager"
+   ],
+   "ev": [
+    {
+     "st": "doppelganger",
+     "k": "copy",
+     "by": [
+      0
+     ],
+     "tg": [
+      1
+     ],
+     "see": [
+      [
+       1,
+       1
+      ]
+     ],
+     "dop": [
+      0
+     ]
+    },
+    {
+     "st": "werewolf",
+     "k": "peek",
+     "by": [
+      2
+     ],
+     "tg": [
+      4
+     ],
+     "see": [
+      [
+       4,
+       4
+      ]
+     ]
+    },
+    {
+     "st": "minion",
+     "k": "know",
+     "by": [
+      0,
+      1
+     ],
+     "know": [
+      2
+     ],
+     "dop": [
+      0
+     ]
+    }
+   ],
+   "end": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  }
+ }
+}

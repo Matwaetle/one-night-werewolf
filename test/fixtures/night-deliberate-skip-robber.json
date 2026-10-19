@@ -1,0 +1,175 @@
+{
+ "name": "deliberate-skip-robber",
+ "n": 4,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.8969935889460124",
+ "result": {
+  "gameId": "dcc0e963",
+  "players": [
+   {
+    "id": "bot-봇1-0.8969935889460124",
+    "name": "봇1",
+    "original": "seer",
+    "final": "werewolf",
+    "effective": "werewolf",
+    "team": "wolf",
+    "vote": "bot-봇4-0.6562778144201387",
+    "votes": 1,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇2-0.7953937922750064",
+    "name": "봇2",
+    "original": "robber",
+    "final": "robber",
+    "effective": "robber",
+    "team": "village",
+    "vote": "bot-봇4-0.6562778144201387",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇3-0.18988682266315016",
+    "name": "봇3",
+    "original": "troublemaker",
+    "final": "troublemaker",
+    "effective": "troublemaker",
+    "team": "village",
+    "vote": "bot-봇4-0.6562778144201387",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇4-0.6562778144201387",
+    "name": "봇4",
+    "original": "werewolf",
+    "final": "seer",
+    "effective": "seer",
+    "team": "village",
+    "vote": "bot-봇1-0.8969935889460124",
+    "votes": 3,
+    "dead": true,
+    "win": false
+   }
+  ],
+  "winners": [
+   "wolf"
+  ],
+  "noDeath": false,
+  "wolvesInPlay": 1,
+  "center": {
+   "original": [
+    "werewolf",
+    "villager",
+    "villager"
+   ],
+   "final": [
+    "werewolf",
+    "villager",
+    "villager"
+   ]
+  },
+  "doppelCopy": null,
+  "deaths": [
+   {
+    "s": 3,
+    "by": "vote"
+   }
+  ],
+  "why": [
+   [
+    "wolf_lived",
+    [
+     0
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "seer",
+    "robber",
+    "troublemaker",
+    "werewolf",
+    "werewolf",
+    "villager",
+    "villager"
+   ],
+   "ev": [
+    {
+     "st": "werewolf",
+     "k": "peek",
+     "by": [
+      3
+     ],
+     "tg": [
+      4
+     ],
+     "see": [
+      [
+       4,
+       4
+      ]
+     ]
+    },
+    {
+     "st": "seer",
+     "k": "peek",
+     "by": [
+      0
+     ],
+     "tg": [
+      1
+     ],
+     "see": [
+      [
+       1,
+       1
+      ]
+     ]
+    },
+    {
+     "st": "robber",
+     "k": "skip",
+     "by": [
+      1
+     ]
+    },
+    {
+     "st": "troublemaker",
+     "k": "swap",
+     "by": [
+      2
+     ],
+     "tg": [
+      0,
+      3
+     ],
+     "mv": [
+      [
+       0,
+       3
+      ],
+      [
+       3,
+       0
+      ]
+     ]
+    }
+   ],
+   "end": [
+    3,
+    1,
+    2,
+    0,
+    4,
+    5,
+    6
+   ]
+  }
+ }
+}

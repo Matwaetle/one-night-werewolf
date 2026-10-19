@@ -1,0 +1,141 @@
+{
+ "name": "tanner-blocked",
+ "n": 4,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.1656985234370666",
+ "result": {
+  "gameId": "c8cf1b91",
+  "players": [
+   {
+    "id": "bot-봇1-0.1656985234370666",
+    "name": "봇1",
+    "original": "tanner",
+    "final": "tanner",
+    "effective": "tanner",
+    "team": "tanner",
+    "vote": "bot-봇3-0.9808413737796732",
+    "votes": 3,
+    "dead": true,
+    "win": true
+   },
+   {
+    "id": "bot-봇2-0.10171514155244188",
+    "name": "봇2",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇1-0.1656985234370666",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇3-0.9808413737796732",
+    "name": "봇3",
+    "original": "werewolf",
+    "final": "werewolf",
+    "effective": "werewolf",
+    "team": "wolf",
+    "vote": "bot-봇1-0.1656985234370666",
+    "votes": 1,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇4-0.6862758764725452",
+    "name": "봇4",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇1-0.1656985234370666",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   }
+  ],
+  "winners": [
+   "tanner"
+  ],
+  "noDeath": false,
+  "wolvesInPlay": 1,
+  "center": {
+   "original": [
+    "werewolf",
+    "seer",
+    "robber"
+   ],
+   "final": [
+    "werewolf",
+    "seer",
+    "robber"
+   ]
+  },
+  "doppelCopy": null,
+  "deaths": [
+   {
+    "s": 0,
+    "by": "vote"
+   }
+  ],
+  "why": [
+   [
+    "tanner_blocked",
+    [
+     0
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "tanner",
+    "villager",
+    "werewolf",
+    "villager",
+    "werewolf",
+    "seer",
+    "robber"
+   ],
+   "ev": [
+    {
+     "st": "werewolf",
+     "k": "peek",
+     "by": [
+      2
+     ],
+     "tg": [
+      4
+     ],
+     "see": [
+      [
+       4,
+       4
+      ]
+     ]
+    },
+    {
+     "st": "seer",
+     "k": "idle",
+     "by": []
+    },
+    {
+     "st": "robber",
+     "k": "idle",
+     "by": []
+    }
+   ],
+   "end": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  }
+ }
+}

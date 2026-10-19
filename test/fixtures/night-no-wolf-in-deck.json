@@ -1,0 +1,143 @@
+{
+ "name": "no-wolf-in-deck",
+ "n": 3,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.4464204236580328",
+ "result": {
+  "gameId": "e6a3eef3",
+  "players": [
+   {
+    "id": "bot-봇1-0.4464204236580328",
+    "name": "봇1",
+    "original": "villager",
+    "final": "robber",
+    "effective": "robber",
+    "team": "village",
+    "vote": "bot-봇2-0.006879896466020274",
+    "votes": 1,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇2-0.006879896466020274",
+    "name": "봇2",
+    "original": "seer",
+    "final": "seer",
+    "effective": "seer",
+    "team": "village",
+    "vote": "bot-봇3-0.9639056349565647",
+    "votes": 1,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇3-0.9639056349565647",
+    "name": "봇3",
+    "original": "robber",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇1-0.4464204236580328",
+    "votes": 1,
+    "dead": false,
+    "win": true
+   }
+  ],
+  "winners": [
+   "village"
+  ],
+  "noDeath": true,
+  "wolvesInPlay": 0,
+  "center": {
+   "original": [
+    "villager",
+    "villager",
+    "troublemaker"
+   ],
+   "final": [
+    "villager",
+    "villager",
+    "troublemaker"
+   ]
+  },
+  "doppelCopy": null,
+  "deaths": [],
+  "why": [
+   [
+    "wolf_none"
+   ],
+   [
+    "no_death"
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "villager",
+    "seer",
+    "robber",
+    "villager",
+    "villager",
+    "troublemaker"
+   ],
+   "ev": [
+    {
+     "st": "seer",
+     "k": "peek",
+     "by": [
+      1
+     ],
+     "tg": [
+      0
+     ],
+     "see": [
+      [
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "st": "robber",
+     "k": "swap",
+     "by": [
+      2
+     ],
+     "tg": [
+      0
+     ],
+     "mv": [
+      [
+       2,
+       0
+      ],
+      [
+       0,
+       2
+      ]
+     ],
+     "see": [
+      [
+       0,
+       2
+      ]
+     ]
+    },
+    {
+     "st": "troublemaker",
+     "k": "idle",
+     "by": []
+    }
+   ],
+   "end": [
+    2,
+    1,
+    0,
+    3,
+    4,
+    5
+   ]
+  }
+ }
+}

@@ -1,0 +1,240 @@
+/* screens.css — 게임 화면 (DESIGN_SPEC §5.3 §6 §8 §13.8). base.css·card.css 다음에 로드된다.
+   애니메이션/트랜지션 대상은 transform·opacity만. 무한 애니메이션은 §8.4 목록(선택 맥동·심박·단계 점)뿐.
+   border-radius는 .seat-token(50%)만. 이모지·backdrop-filter·mix-blend-mode·stroke-dashoffset 없음. */
+
+/* ================= #fx 레이어 (z 30) ================= */
+#fx::after{content:"";position:absolute;inset:0;border:2px solid var(--blood-hot);opacity:0}
+#fx.fx-peeking::after{opacity:.75}
+.peek{flex-direction:column;align-items:center;gap:10px;width:max-content;max-width:92vw}
+.peek.is-on{display:flex;animation:fx-in 80ms linear both}
+.peek-label{font-size:var(--fs-small);line-height:1.3;color:var(--bone-dim);text-align:center}
+.fx-ghost{position:fixed;margin:0;transform-origin:0 0;pointer-events:none}
+.vignette[data-hb="1"]::after{animation:fx-hb 833ms ease-in-out infinite}
+.vignette[data-hb="2"]::after{animation:fx-hb 417ms ease-in-out infinite}
+.vignette.fx-dark::after{opacity:.9}
+
+/* ================= 탁자 (§5.3) ================= */
+.stage{--tk:48px;position:relative;width:100%;height:100%;overflow:hidden;transition:opacity var(--t-phase)}
+.stage[data-n="7"],.stage[data-n="8"],.stage[data-n="9"],.stage[data-n="10"]{--tk:40px}
+@media(min-width:1024px){.stage,.stage[data-n]{--tk:56px}}
+.seat{position:absolute;left:50%;top:50%;z-index:1;width:84px;display:flex;flex-direction:column;align-items:center;pointer-events:none;
+  transform:translate(calc(var(--x) - 50%),calc(var(--y) - 50%))}
+.seat-token{position:relative;flex:none;width:var(--tk);height:var(--tk);display:grid;place-items:center;pointer-events:auto;
+  background:var(--char-hi);border:1px solid var(--bone-dim);border-radius:50%;
+  font:600 calc(var(--tk)*.36)/1 var(--f-body);color:var(--bone-hi);touch-action:manipulation}
+.seat-token::before,.seat-token::after{content:"";position:absolute;pointer-events:none}
+.seat-token::before{inset:-4px;border:1px solid var(--bone-hi);border-radius:50%;opacity:0}
+.seat-name{max-width:6.6em;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:13px/1.3 var(--f-body);color:var(--bone-dim)}
+.seat-mark{position:absolute;left:50%;top:-9px;transform:translateX(-50%);padding:0 4px;background:var(--void);border:1px solid var(--bone-dim);
+  font:600 var(--fs-label)/1.3 var(--f-body);color:var(--bone-hi);white-space:nowrap}
+.seat-mark:empty{display:none}
+.seat-mark[data-k=wolf],.seat-mark[data-k=minion]{border-color:var(--blood-hot)}
+.seat-mark[data-k=mason]{border-color:var(--bone-hi)}
+.seat-mark[data-k=votes]{top:auto;bottom:calc(100% - var(--tk) - 2px);left:auto;right:-6px;transform:none;border-color:var(--blood-hot)}
+.seat .card{pointer-events:none;margin-top:2px}
+@media(max-width:599px){        /* 좌석 높이 64px: 카드 28px를 토큰 오른쪽 아래에 겹친다 */
+  .seat .card{--cw:28px;position:absolute;left:calc(50% + var(--tk)*.2);top:calc(var(--tk)*.5);margin:0}
+}
+.seat.is-me .seat-token{border-color:var(--bone-hi);box-shadow:0 0 0 1px var(--bone-hi)}
+.seat.is-host::before{content:"";position:absolute;z-index:2;top:-5px;right:calc(50% - var(--tk)/2 - 9px);width:13px;height:7px;
+  background:linear-gradient(var(--bone-hi),var(--bone-hi)) 0 0/6px 1px,linear-gradient(var(--bone-hi),var(--bone-hi)) 0 6px/6px 1px,
+    linear-gradient(var(--bone-hi),var(--bone-hi)) 0 0/1px 7px,linear-gradient(var(--bone-hi),var(--bone-hi)) 5px 0/1px 7px,
+    linear-gradient(var(--bone-hi),var(--bone-hi)) 6px 3px/7px 1px,linear-gradient(var(--bone-hi),var(--bone-hi)) 9px 3px/1px 3px,
+    linear-gradient(var(--bone-hi),var(--bone-hi)) 12px 3px/1px 3px;background-repeat:no-repeat}
+.seat.is-off .seat-token,.seat.is-gone .seat-token{opacity:.35}
+.seat.is-off .seat-name::before,.seat.is-gone .seat-name::before{content:"";display:inline-block;width:6px;height:3px;margin-right:3px;border:1px solid currentColor;vertical-align:middle}
+.seat.is-off .seat-name::after,.seat.is-gone .seat-name::after{content:"";display:inline-block;width:6px;height:3px;margin-left:3px;border:1px solid currentColor;vertical-align:middle;transform:translateY(2px)}
+.seat.is-off .card,.seat.is-gone .card{opacity:.35}
+.seat.is-ready::after,.seat.is-voted::after{content:"";position:absolute;top:calc(var(--tk) - 7px);left:calc(50% - var(--tk)/2 - 3px);width:7px;height:7px;background:var(--bone-dim);transform:rotate(45deg)}
+.seat.is-dim{opacity:.35}
+.seat.is-selectable .seat-token{cursor:pointer}
+.seat.is-selectable .seat-token::before{animation:fx-pulse 1.6s ease-in-out infinite alternate}
+.seat.is-target .seat-token::before{inset:-4px;border:2px solid var(--blood-hot);opacity:1;animation:fx-tight 120ms var(--ease-out) both}
+.seat.is-dead .seat-token::after{inset:-4px;background:linear-gradient(45deg,transparent calc(50% - 1px),var(--blood-hot) calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px)),
+  linear-gradient(-45deg,transparent calc(50% - 1px),var(--blood-hot) calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px))}
+.seat.is-dead .seat-name{text-decoration:line-through}
+.fx-ring-wolf .seat-token{border-color:var(--blood-hot);box-shadow:0 0 0 1px var(--blood-hot)}   /* 밤 정보: 무리·주인 (seat에 붙임) */
+.fx-ring-mason .seat-token{border-color:var(--bone-hi);box-shadow:0 0 0 1px var(--bone-hi)}
+
+.altar{position:absolute;left:50%;top:50%;z-index:1;transform:translate(-50%,-50%);display:flex;gap:8px;align-items:center}
+.altar .card.is-selectable{cursor:pointer}
+.reveal{position:absolute;left:50%;top:50%;z-index:3;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;animation:fx-rise 360ms var(--ease-out) both}
+.reveal-row{display:flex;gap:8px}
+.reveal-hint{font-size:var(--fs-small);color:var(--bone-dim)}
+
+/* 선 (§5.4) — 투표선·말썽쟁이 예고선·리플레이 칼선 공용 */
+.ln{position:absolute;left:50%;top:50%;z-index:0;width:var(--len);height:1px;background:currentColor;color:var(--bone-dim);pointer-events:none;
+  transform-origin:0 50%;transform:translate(var(--x),var(--y)) rotate(var(--ang)) scaleX(0);transition:transform 280ms var(--ease-ink)}
+.ln.is-on{transform:translate(var(--x),var(--y)) rotate(var(--ang)) scaleX(1)}
+.ln.is-blood{color:var(--blood-hot)}
+.ln.is-fast{transition-duration:250ms;transition-timing-function:var(--ease-out)}
+.ln.is-thick{height:2px}
+.ln.is-faint{opacity:.4}
+.ln.is-trace{opacity:.25}
+
+/* ================= 모닥불 (§6.2) ================= */
+.lobby-mid{position:absolute;left:50%;top:50%;z-index:1;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:10px;width:max-content;max-width:calc(100% - 112px)}
+.lobby-sign{font:400 var(--fs-h1)/1 var(--f-title);letter-spacing:.3em;padding-left:.3em;color:var(--bone-hi);text-shadow:2px 2px 0 #000}
+.lobby-copy{min-height:36px;padding:0 14px;font-size:var(--fs-small);font-weight:600;color:var(--bone-hi);background:var(--char-hi);border:var(--hair);box-shadow:3px 3px 0 #000}
+.lobby-copy:active{transform:translate(2px,2px);box-shadow:none}
+.lobby-count{font-size:var(--fs-small);color:var(--smoke)}
+.fan{display:flex;justify-content:center;margin-top:4px}
+.fan .card{--cw:56px;transform:rotate(var(--r,0deg)) translateY(var(--ty,0px))}
+.fan .card+.card{margin-left:calc(var(--cw)*-.72)}
+@media(min-width:600px){.fan .card{--cw:72px}}
+.fx-drop{animation:fx-drop 180ms var(--ease-out) both}
+.seat.fx-join .seat-token{animation:fx-join 300ms var(--ease-out) both}
+.seat.fx-lightout .seat-token{border-color:var(--ash);box-shadow:none}
+
+/* ================= 밤 (§6.4 §6.5 §6.6) ================= */
+body[data-ns=sleep] .stage,body[data-ns=check] .stage{opacity:.12}
+.night-msg{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font:400 var(--fs-h2)/1.4 var(--f-display);letter-spacing:.06em;color:var(--bone-dim);pointer-events:none}
+.night-nar{position:absolute;left:16px;right:16px;top:14px;z-index:2;min-height:1.6em;text-align:center;font:15px/1.6 var(--f-serif);color:var(--bone-dim);opacity:.7;pointer-events:none}
+.night-track{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;justify-content:center;gap:10px;height:12px;padding-top:4px;pointer-events:none;border-top:0}
+.night-dot{width:5px;height:5px;background:var(--bone-dim);transform:rotate(45deg);opacity:.5}
+.night-dot.is-past{opacity:.12}
+.night-dot.is-now{background:var(--bone-hi);opacity:1;animation:fx-dot 1.2s ease-in-out infinite alternate}
+html[data-perf=lite] .night-dot.is-now{animation:none}
+.check{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 24px;text-align:center}
+.check-card{--cw:var(--cw-xl);animation:fx-in 800ms linear both;transition:transform 1.2s var(--ease-out),opacity 1.2s linear}
+.check-card.is-sink{transform:translateY(40px);opacity:0}
+.check-t1{margin-top:6px;font:400 var(--fs-h2)/1.3 var(--f-display);letter-spacing:.06em;color:var(--bone-hi)}
+.check-t2{font-size:var(--fs-body);color:var(--bone-dim)}
+.check-t2.is-blink{animation:fx-blink 700ms linear}
+.check-t3{font-size:var(--fs-small);color:var(--smoke)}
+.check-bar{width:min(64vw,300px);height:1px;margin-top:6px;background:var(--bone-dim);transform:scaleX(1);transform-origin:50% 50%;transition:transform var(--ms,13s) linear}
+.check-bar.is-run{transform:scaleX(0)}
+.secret{position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.secret-in{filter:blur(14px)}
+.secret.is-on .secret-in{filter:none}
+.secret-lbl{position:absolute;inset:0;display:grid;place-items:center;font-size:var(--fs-small);font-weight:600;color:var(--bone-hi)}
+.secret.is-on .secret-lbl{display:none}
+.dock-card.is-cracked::after,.dock-card .crack{content:"";position:absolute;inset:0;width:100%;height:100%;color:var(--bone);opacity:.5;pointer-events:none}
+.dock-card.is-cracked::after{background:linear-gradient(100deg,transparent calc(46% - .5px),currentColor calc(46% - .5px) calc(46% + .5px),transparent calc(46% + .5px)) 0 0/100% 40% no-repeat,
+  linear-gradient(80deg,transparent calc(52% - .5px),currentColor calc(52% - .5px) calc(52% + .5px),transparent calc(52% + .5px)) 0 40%/100% 35% no-repeat,
+  linear-gradient(110deg,transparent calc(44% - .5px),currentColor calc(44% - .5px) calc(44% + .5px),transparent calc(44% + .5px)) 0 75%/100% 25% no-repeat}
+.dock-card .crack{inset:0}
+
+/* ================= 새벽·낮·심판 (§6.7 §6.8) ================= */
+.fx-head{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 20px;text-align:center;pointer-events:none;animation:fx-out 600ms 4s linear both}
+.fx-head-1{font:400 var(--fs-hero)/1.2 var(--f-display);letter-spacing:.06em;color:var(--bone-hi);text-shadow:2px 2px 0 #000;animation:fx-in 500ms linear both;word-break:keep-all}
+.fx-head-2{font:var(--fs-body)/1.5 var(--f-serif);color:var(--bone-dim);animation:fx-in 500ms 1s linear both}
+.fx-head[data-k=vote]{animation-delay:1.2s;animation-duration:400ms}
+.ticker{position:absolute;left:12px;right:12px;bottom:6px;z-index:3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-small);color:var(--bone-hi);pointer-events:none;animation:fx-tick 2.5s linear both}
+.band-q{position:relative;flex:none;width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--ash);font:600 14px/1 var(--f-body);color:var(--bone-dim)}
+.band-q::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%)}
+.band-q[aria-expanded=true]{color:var(--bone-hi);border-color:var(--bone-dim)}
+.band-rule{position:absolute;left:0;right:0;bottom:100%;padding:8px 16px;background:var(--char);border-top:var(--hair);font-size:var(--fs-small);color:var(--bone-dim);text-align:center}
+.seg{display:flex;border:var(--hair)}
+.seg-btn{flex:1;min-height:44px;font-size:var(--fs-small);font-weight:600;color:var(--smoke)}
+.seg-btn+.seg-btn{border-left:var(--hair)}
+.seg-btn[aria-pressed=true]{color:var(--bone-hi);box-shadow:inset 0 -2px 0 var(--bone-hi)}
+
+/* ================= 덱 시트 (§6.2) ================= */
+.deck-bar{display:flex;align-items:center;gap:10px;padding:6px 0 10px}
+.deck-count{font:400 var(--fs-h2)/1.2 var(--f-display);letter-spacing:.06em;color:var(--blood-hot)}
+.deck-count.is-ok{color:var(--bone-hi)}
+.deck-warn{width:32px;height:32px;position:relative;display:grid;place-items:center;border:1px solid var(--ash);font-weight:600;color:var(--bone-dim)}
+.deck-warn::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%)}
+.deck-desc{min-height:2.8em;padding:8px 0;font:14px/1.5 var(--f-serif);color:var(--bone-dim);border-bottom:var(--hair)}
+.deck-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 4px;padding:12px 0}
+@media(min-width:600px){.deck-grid{grid-template-columns:repeat(6,1fr)}}
+.deck-cell{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+.deck-ctl{display:flex;align-items:center;justify-content:center;gap:2px}
+.deck-ctl output{min-width:1.4em;text-align:center;font:400 16px/1 var(--f-title);color:var(--bone-hi)}
+.deck-dec,.deck-inc{position:relative;width:36px;height:40px;font-size:18px;line-height:1;color:var(--bone-hi);background:var(--char-hi);border:var(--hair)}
+.deck-dec::before,.deck-inc::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%)}
+.deck-cell.is-zero .card{opacity:.35}
+
+/* ================= 결말: 판결·끝판 보드 (§6.9 §13.8) ================= */
+.res{display:flex;flex-direction:column;min-height:100%}
+.stage-bar{display:none;flex:none;align-items:center;justify-content:center;height:40px;font-size:var(--fs-small);font-weight:600;color:var(--bone-dim);border-bottom:var(--hair)}
+.stage.is-fold{height:40px;flex:none}
+.stage.is-fold>*:not(.stage-bar){display:none}
+.stage.is-fold .stage-bar{display:flex}
+.verdict{position:relative;padding:22px 16px 18px;background:#000;border-top:1px solid var(--blood);border-bottom:1px solid var(--blood);text-align:center;overflow:hidden}
+.verdict>*{position:relative}
+.verdict::before{content:"";position:absolute;inset:0;opacity:.5;background-position:50% 50%;background-size:cover;background-repeat:no-repeat}
+.verdict[data-team=wolf]::before{background-image:var(--img-verdict-wolf,none)}
+.verdict[data-team=village]::before{background-image:var(--img-verdict-village,none)}
+.verdict[data-team=tanner]::before{background-image:var(--img-verdict-tanner,none)}
+.verdict-line{font:400 var(--fs-h1)/1.3 var(--f-display);letter-spacing:.06em;color:var(--bone-hi);word-break:keep-all;text-wrap:balance}
+.verdict[data-team=wolf] .verdict-line{color:var(--blood-hot)}
+.verdict-why{margin-top:8px;font:var(--fs-body)/1.55 var(--f-serif);color:var(--bone-dim)}
+.verdict-self{margin-top:6px;font:var(--fs-body)/1.55 var(--f-serif);color:var(--bone-hi)}
+.rec-head{padding:14px 12px 6px;font:600 var(--fs-label)/1 var(--f-body);letter-spacing:.18em;color:var(--smoke)}
+.rec-list,.tl-list{list-style:none;margin:0;padding:0}
+.rec-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:10px 12px;border-bottom:var(--hair);font-size:var(--fs-small);color:var(--bone-dim)}
+.rec-row,.tl-row{content-visibility:auto;contain-intrinsic-size:auto 64px}
+.rec-row[role=button],.tl-row[role=button]{cursor:pointer}
+.rec-row.is-me{background:var(--char)}
+.rec-n{flex:none;min-width:3.4em;max-width:6.6em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-body);color:var(--bone-hi)}
+.rec-from,.rec-to{display:inline-flex;align-items:center;gap:4px;color:var(--bone-hi)}
+.rec-from svg,.rec-to svg{width:16px;height:16px;flex:none}
+.rec-arrow{color:var(--smoke)}
+.rec-vote{margin-left:auto}
+.rec-got{color:var(--bone-hi)}
+.rec-stamp{flex:none;padding:0 6px;border:2px solid var(--bone-dim);font:400 16px/1.4 var(--f-display);letter-spacing:.06em;color:var(--bone-dim);transform:rotate(-6deg)}
+.rec-stamp.is-win,.rec-row.is-win .rec-stamp{border-color:var(--bone-hi);color:var(--bone-hi)}
+.rec-path{flex:0 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;color:var(--bone-dim)}
+.rec-belief{flex:0 0 100%;color:var(--smoke)}
+.rec-belief i{font-style:normal;color:var(--bone-dim)}
+.rec-belief:is(.is-diff,.is-wrong,.is-off) i,.rec-belief[data-diff="1"] i{border-bottom:1px solid var(--blood)}
+.rec-row.is-dead .rec-n,.rec-row.is-dead .rec-to{text-decoration:line-through}
+.rec-row.is-gone{opacity:.5}
+.rec-row.is-rel,.tl-row.is-rel{box-shadow:inset 2px 0 0 var(--bone-hi)}
+.rec-row.is-altar .rec-n{color:var(--bone-dim)}
+.tl-list{margin:4px 0 12px 12px;border-left:1px solid var(--ash)}
+.tl-row{display:flex;align-items:center;gap:10px;padding:8px 12px}
+.tl-t{font-size:var(--fs-small);line-height:1.5;color:var(--bone-dim)}
+.tl-head{padding:14px 12px 6px;font:600 var(--fs-label)/1 var(--f-body);letter-spacing:.18em;color:var(--smoke)}
+.tl-list:empty{display:none}
+@media(min-width:1024px){.verdict-line{font-size:var(--fs-h1)}}
+
+/* ================= 법도 모달 종이 (§6.11) — 유일한 반전 표면 ================= */
+.modal-box:is(.law,.paper){background:var(--bone);color:var(--ink);font-family:var(--f-serif);border:1px solid var(--ink);box-shadow:var(--shadow-hard);outline:1px solid var(--ink);outline-offset:-6px;padding:28px 26px calc(24px + var(--sab))}
+.modal-box:is(.law,.paper)::before{display:none}
+.modal-box:is(.law,.paper) .modal-title{color:var(--ink)}
+.modal-box:is(.law,.paper) .modal-x{color:var(--ink)}
+.modal-box:is(.law,.paper) :focus-visible{outline-color:var(--ink)}
+.law-list{margin:0 0 14px;padding:0;list-style:none}
+.law-row{padding:6px 0;font:15px/1.65 var(--f-serif)}
+.law-row b{margin-right:8px;font-weight:700}
+.law-row ul{margin:2px 0 0;padding-left:18px;list-style:"– "}
+.law-sub{margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--ink);font:400 var(--fs-h2)/1.2 var(--f-display);letter-spacing:.06em}
+.law-roles{display:grid;gap:12px}
+.law-role{display:flex;align-items:center;gap:12px}
+.law-role b{display:block;font:700 15px/1.3 var(--f-serif)}
+.law-role span{display:block;font:13px/1.5 var(--f-serif)}
+@media(max-width:599px){.modal-box:is(.law,.paper){position:fixed;inset:0;max-width:none;max-height:none;border:0}}
+@media(min-width:600px){
+  .modal-box:is(.law,.paper){max-width:720px}
+  .law-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+  .law-grid .law-sub{margin-top:0;padding-top:0;border-top:0}
+}
+
+/* ================= 모션 ================= */
+@keyframes fx-in{from{opacity:0}to{opacity:1}}
+@keyframes fx-out{from{opacity:1}to{opacity:0}}
+@keyframes fx-rise{from{opacity:0;transform:translate(-50%,calc(-50% - 12px))}to{opacity:1;transform:translate(-50%,-50%)}}
+@keyframes fx-drop{from{opacity:0;transform:rotate(var(--r,0deg)) translateY(-20px)}to{opacity:1;transform:rotate(var(--r,0deg)) translateY(var(--ty,0px))}}
+@keyframes fx-join{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes fx-tight{from{transform:scale(1.15)}to{transform:scale(1)}}
+@keyframes fx-pulse{from{opacity:.3}to{opacity:.9}}
+@keyframes fx-hb{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes fx-dot{from{opacity:.35}to{opacity:1}}
+@keyframes fx-blink{0%,100%{opacity:1}40%,60%{opacity:.15}}
+@keyframes fx-tick{0%{opacity:0}8%,85%{opacity:1}100%{opacity:0}}
+
+/* ================= 등급·접근성 ================= */
+html[data-perf=lite] .seat.is-selectable .seat-token::before{animation:none;opacity:.6}
+html[data-perf=lite] .vignette[data-hb]::after{animation:none;opacity:.8}
+@media(prefers-reduced-motion:reduce){
+  .seat.is-selectable .seat-token::before{animation:none;opacity:.6}
+  .seat.is-target .seat-token::before,.seat.fx-join .seat-token,.fx-drop,.reveal,.peek.is-on,.check-card,.check-t2.is-blink,.fx-head-1,.fx-head-2{animation:none}
+  .vignette[data-hb]::after{animation:none;opacity:.8}
+  .night-dot.is-now{animation:none}
+  .ln{transition:none}
+  .check-card{transition:opacity .16s linear}
+  .check-bar{transition:none}
+}

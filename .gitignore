@@ -1,3 +1,7 @@
 node_modules/
 .claude/
 *.log
+dist/
+# 오너 원본 PNG·폰트 TTF 는 배포하지 않는다. 단, LQIP 는 정적 사이트 빌드(stamp)가 읽으므로 커밋한다.
+art-src/*
+!art-src/lqip.json

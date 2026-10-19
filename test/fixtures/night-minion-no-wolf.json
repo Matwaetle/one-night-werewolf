@@ -1,0 +1,133 @@
+{
+ "name": "minion-no-wolf",
+ "n": 3,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.16925160329507016",
+ "result": {
+  "gameId": "51cb54c7",
+  "players": [
+   {
+    "id": "bot-봇1-0.16925160329507016",
+    "name": "봇1",
+    "original": "minion",
+    "final": "minion",
+    "effective": "minion",
+    "team": "wolf",
+    "vote": "bot-봇2-0.9557764782485303",
+    "votes": 2,
+    "dead": true,
+    "win": false
+   },
+   {
+    "id": "bot-봇2-0.9557764782485303",
+    "name": "봇2",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇1-0.16925160329507016",
+    "votes": 1,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇3-0.010854108839201793",
+    "name": "봇3",
+    "original": "seer",
+    "final": "seer",
+    "effective": "seer",
+    "team": "village",
+    "vote": "bot-봇1-0.16925160329507016",
+    "votes": 0,
+    "dead": false,
+    "win": true
+   }
+  ],
+  "winners": [
+   "village"
+  ],
+  "noDeath": false,
+  "wolvesInPlay": 0,
+  "center": {
+   "original": [
+    "werewolf",
+    "werewolf",
+    "villager"
+   ],
+   "final": [
+    "werewolf",
+    "werewolf",
+    "villager"
+   ]
+  },
+  "doppelCopy": null,
+  "deaths": [
+   {
+    "s": 0,
+    "by": "vote"
+   }
+  ],
+  "why": [
+   [
+    "wolf_center"
+   ],
+   [
+    "minion_only_died",
+    [
+     0
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "minion",
+    "villager",
+    "seer",
+    "werewolf",
+    "werewolf",
+    "villager"
+   ],
+   "ev": [
+    {
+     "st": "werewolf",
+     "k": "idle",
+     "by": []
+    },
+    {
+     "st": "minion",
+     "k": "know",
+     "by": [
+      0
+     ],
+     "know": []
+    },
+    {
+     "st": "seer",
+     "k": "peek",
+     "by": [
+      2
+     ],
+     "tg": [
+      1
+     ],
+     "see": [
+      [
+       1,
+       1
+      ]
+     ]
+    }
+   ],
+   "end": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  }
+ }
+}

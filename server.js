@@ -2,38 +2,143 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const zlib = require('zlib');
+const crypto = require('crypto');
 const { Server } = require('socket.io');
 const WW = require('./public/roles.js');
+const TX = require('./public/strings.js');
 
 const { ROLES, ROLE_ORDER, NIGHT_ORDER, MIN_PLAYERS, MAX_PLAYERS } = WW;
 
-// 테스트할 때 TIME_SCALE=0.02 처럼 줄여서 빠르게 돌릴 수 있습니다.
+// 테스트할 때 TIME_SCALE=0.02 처럼 줄여서 빠르게 돌릴 수 있다.
 const SCALE = Number(process.env.TIME_SCALE || 1);
-const T = {
-  CARD_CHECK: 10000,   // 처음 카드 확인 시간
+const TM = {
+  CARD_CHECK: 13000,   // 처음 패 확인 시간 (spec 9.5)
   ACT: 30000,          // 역할별 밤 행동 제한 시간
   DOPPEL: 45000,       // 도플갱어 (두 단계라 더 길게)
   MIN_STEP: 8000,      // 행동이 빨리 끝나도 최소 이만큼은 기다림 (정보 노출 방지)
   IDLE_MIN: 8000,      // 아무도 없는 역할 차례에 기다리는 시간 (무작위)
   IDLE_MAX: 16000,
   VOTE: 60000,
+  VOTE_GRACE: 1500,    // 모두 투표한 뒤 결말까지
 };
-for (const k of Object.keys(T)) T[k] = Math.max(50, Math.round(T[k] * SCALE));
-const LOBBY_GRACE = 30000;        // 대기실에서 연결이 끊긴 플레이어를 내보내기까지
+for (const k of Object.keys(TM)) TM[k] = Math.max(50, Math.round(TM[k] * SCALE));
+const LOBBY_GRACE = 60000;        // 대기실에서 연결이 끊긴 플레이어를 내보내기까지
 const ROOM_TTL = 10 * 60000;      // 모두 나간 방을 지우기까지
 const HOST_GRACE = 20000;         // 방장 연결이 끊긴 뒤 방장을 넘기기까지
+const DEV = process.env.NODE_ENV !== 'production';
 
 // 도플갱어가 따라 했을 때, 원래 역할 차례에 함께 깨어나는 역할
 const WAKE_WITH = ['werewolf', 'minion', 'mason', 'insomniac'];
 // 도플갱어가 따라 했을 때, 그 자리에서 바로 능력을 쓰는 역할
 const ACT_NOW = ['seer', 'robber', 'troublemaker', 'drunk'];
 
+// 테스트 전용 훅: 방장 id -> 정해진 배분(역할 배열). 소켓으로는 닿지 않는다.
+const _test = { deals: new Map() };
+
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
-// 호스팅 서비스가 서버 상태를 확인하는 주소
-app.get('/healthz', (_req, res) => res.json({ ok: true, rooms: rooms.size }));
-app.use(express.static(path.join(__dirname, 'public')));
+const io = new Server(server, {
+  serveClient: false,
+  cors: { origin: [process.env.STATIC_ORIGIN].filter(Boolean) },
+  pingInterval: 20000,
+  pingTimeout: 25000,
+  perMessageDeflate: false,
+  connectionStateRecovery: { maxDisconnectionDuration: 120000 },
+});
+
+// ---------- 정적 서빙 (같은 출처 폴백, spec 9.0) ----------
+// tools/stamp.js 가 있으면 메모리에 빌드한 결과를 시작 시 1회 미리 압축해 서빙한다.
+// 없거나 던지면 public/ 을 그대로 정적 서빙한다 (서버는 언제나 뜬다).
+const MIME = {
+  html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8',
+  css: 'text/css; charset=utf-8', json: 'application/json; charset=utf-8', svg: 'image/svg+xml',
+  txt: 'text/plain; charset=utf-8', map: 'application/json; charset=utf-8', xml: 'application/xml; charset=utf-8',
+  webp: 'image/webp', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', ico: 'image/x-icon',
+  woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf', webmanifest: 'application/manifest+json',
+};
+const TEXT_EXT = new Set(['html', 'js', 'mjs', 'css', 'json', 'svg', 'txt', 'map', 'xml', 'webmanifest']);
+let ASSETS = null; // Map<string path, {type, raw, br, gz, etag, immutable}>
+
+function installAssets(out) {
+  if (!out) return false;
+  let entries;
+  if (out instanceof Map) entries = [...out.entries()];
+  else if (out.files instanceof Map) entries = [...out.files.entries()];
+  else if (out.files && typeof out.files === 'object') entries = Object.entries(out.files);
+  else if (typeof out === 'object') entries = Object.entries(out);
+  else return false;
+  const map = new Map();
+  for (let [p, v] of entries) {
+    if (v && typeof v === 'object' && !Buffer.isBuffer(v)) v = v.body ?? v.content ?? v.data ?? v.buf;
+    if (typeof v !== 'string' && !Buffer.isBuffer(v)) continue;
+    p = String(p).replace(/\\/g, '/').replace(/^\.?\/*/, '').replace(/^dist\//, '');
+    const ext = (p.split('.').pop() || '').toLowerCase();
+    const raw = Buffer.isBuffer(v) ? v : Buffer.from(v, 'utf8');
+    const e = {
+      type: MIME[ext] || 'application/octet-stream', raw, br: null, gz: null,
+      etag: '"' + crypto.createHash('sha1').update(raw).digest('base64url').slice(0, 20) + '"',
+      immutable: p.startsWith('a/'),
+    };
+    if (TEXT_EXT.has(ext) && raw.length > 256) {
+      e.br = zlib.brotliCompressSync(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9 } });
+      e.gz = zlib.gzipSync(raw, { level: 9 });
+    }
+    map.set(p, e);
+  }
+  if (!map.has('index.html')) return false;
+  ASSETS = map;
+  return true;
+}
+
+function loadStamp() {
+  let mod;
+  try { mod = require('./tools/stamp.js'); } catch (e) {
+    if (e && e.code !== 'MODULE_NOT_FOUND') console.warn('[static] tools/stamp.js load failed:', e.message);
+    return;
+  }
+  try {
+    const out = mod.build({ memory: true });
+    if (out && typeof out.then === 'function') {
+      out.then((r) => { if (!installAssets(r)) console.warn('[static] stamp result unusable, serving public/'); })
+        .catch((e) => console.warn('[static] stamp build failed, serving public/:', e.message));
+    } else if (!installAssets(out)) console.warn('[static] stamp result unusable, serving public/');
+  } catch (e) {
+    console.warn('[static] stamp build failed, serving public/:', e.message);
+  }
+}
+loadStamp();
+
+app.get('/healthz', (_req, res) => {
+  res.set('Access-Control-Allow-Origin', process.env.STATIC_ORIGIN || '*');
+  res.send('ok');
+});
+app.use((req, res, next) => {
+  if (!ASSETS || (req.method !== 'GET' && req.method !== 'HEAD')) return next();
+  let p;
+  try { p = decodeURIComponent(req.path); } catch { return next(); }
+  p = p.replace(/^\/+/, '') || 'index.html';
+  const e = ASSETS.get(p);
+  if (!e) return next();
+  res.set('Cache-Control', e.immutable ? 'public, max-age=31536000, immutable' : 'no-cache');
+  res.set('ETag', e.etag);
+  res.set('Content-Type', e.type);
+  if (req.headers['if-none-match'] === e.etag) return res.status(304).end();
+  let body = e.raw;
+  if (e.br) {
+    res.set('Vary', 'Accept-Encoding');
+    const ae = String(req.headers['accept-encoding'] || '');
+    if (/\bbr\b/.test(ae)) { res.set('Content-Encoding', 'br'); body = e.br; }
+    else if (/\bgzip\b/.test(ae)) { res.set('Content-Encoding', 'gzip'); body = e.gz; }
+  }
+  res.set('Content-Length', String(body.length));
+  res.end(req.method === 'HEAD' ? undefined : body);
+});
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, file) {
+    res.setHeader('Cache-Control', /[\\/]a[\\/]/.test(file) ? 'public, max-age=31536000, immutable' : 'no-cache');
+  },
+}));
 
 /** @type {Map<string, any>} */
 const rooms = new Map();
@@ -59,20 +164,8 @@ function cleanName(name) {
   const s = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 12);
   return s || null;
 }
-const rn = (r) => `${ROLES[r].emoji} ${ROLES[r].name}`;
-
-// 마지막 글자에 받침이 있는지 보고 조사(이/가, 와/과)를 고름
-function hasBatchim(s) {
-  const t = String(s).replace(/[)\]\s]+$/, '');
-  const ch = t[t.length - 1] || '';
-  const code = ch.charCodeAt(0);
-  if (code >= 0xac00 && code <= 0xd7a3) return (code - 0xac00) % 28 !== 0;
-  if (/[013678]/.test(ch)) return true;
-  if (/[lmnr]/i.test(ch)) return true;
-  return false;
-}
-const ga = (s) => s + (hasBatchim(s) ? '이' : '가');
-const wa = (s) => s + (hasBatchim(s) ? '과' : '와');
+const rn = (r) => ROLES[r].name;
+const M = (key, vars) => TX.fmt(TX.msg[key], vars);
 const deckTotal = (deck) => ROLE_ORDER.reduce((s, r) => s + (deck[r] || 0), 0);
 
 // ---------- 방 ----------
@@ -90,6 +183,7 @@ function createRoom() {
     result: null,
     chat: [],
     cleanupTimer: null,
+    createdAt: Date.now(),
   };
   rooms.set(room.code, room);
   return room;
@@ -107,7 +201,7 @@ function ensureHost(room) {
   const next = connectedIds(room)[0] || room.order[0] || null;
   if (next && next !== room.hostId) {
     room.hostId = next;
-    sysChat(room, `${pn(room, next)}님이 방장이 되었습니다.`);
+    sysChat(room, M('newChief', { n: pn(room, next) }));
   }
 }
 
@@ -120,7 +214,7 @@ function removePlayer(room, id) {
   if (!p) return;
   room.players.delete(id);
   room.order = room.order.filter((x) => x !== id);
-  sysChat(room, `${p.name}님이 나갔습니다.`);
+  sysChat(room, M('left', { n: p.name }));
   if (room.order.length === 0) {
     rooms.delete(room.code);
     return;
@@ -155,16 +249,17 @@ function view(room, pid) {
   const v = {
     now: Date.now(),
     code: room.code,
+    gameId: g ? g.id : null,
     phase: room.phase,
     hostId: room.hostId,
     me: pid,
     players: room.order.map((id) => {
       const p = room.players.get(id);
-      return {
-        id, name: p.name, connected: p.connected,
-        ready: !!p.ready,
-        voted: !!(g && room.phase === 'vote' && g.votes[id] !== undefined),
-      };
+      // ready / voted 는 참일 때만 키를 둔다 (상태 크기, 6KB 예산). 없으면 거짓으로 읽는다.
+      const o = { id, name: p.name, connected: p.connected };
+      if (p.ready) o.ready = true;
+      if (g && room.phase === 'vote' && g.votes[id] !== undefined) o.voted = true;
+      return o;
     }),
     deck: room.deck,
     deckCustom: room.deckCustom,
@@ -179,14 +274,20 @@ function view(room, pid) {
     v.stepIdx = g.stepIdx;
     v.stepRole = g.stepRole;
     const pr = g.prompts[pid];
-    v.prompt = pr ? { ...pr } : null;
-    // 남은 시간은 행동하는 사람과 카드 확인 단계에만 알려줌 (누가 있는지 시간으로 짐작 못 하게)
+    v.prompt = pr ? publicPrompt(pr) : null;
+    // 남은 시간은 행동하는 사람과 패 확인 단계에만 알려줌 (누가 있는지 시간으로 짐작 못 하게)
     v.stepEndsAt = (pr && !pr.done) || g.stepRole === '_check' ? g.stepEndsAt : null;
     v.dayEndsAt = g.dayEndsAt;
     v.voteEndsAt = g.voteEndsAt;
     v.myVote = g.votes[pid] ?? null;
   }
   return v;
+}
+
+// 서버 내부 필드(ack)는 내보내지 않는다.
+function publicPrompt(p) {
+  const { ack, ...rest } = p; // eslint-disable-line no-unused-vars
+  return rest;
 }
 
 function broadcast(room) {
@@ -214,30 +315,72 @@ function setGameTimer(room, ms, fn) {
   }, ms);
 }
 
+// ----- 밤의 기록 (spec 13.2) -----
+// 슬롯: 0..n-1 = 좌석(g.seats), n..n+2 = 제단. 슬롯 계산은 g.seats만 쓴다 (room.order 금지).
+const slotOf = (g, pid) => {
+  const s = g.seats.indexOf(pid);
+  if (s < 0) throw new Error('slotOf ' + pid);
+  return s;
+};
+
+function checkInvariant(g) {
+  const n = g.seats.length;
+  for (let s = 0; s < n + 3; s++) {
+    const want = s < n ? g.cards[g.seats[s]] : g.center[s - n];
+    if (g.deal[g.pos[s]] !== want) throw new Error(`invariant broken at slot ${s}`);
+  }
+}
+
+function rec(g, e) {                       // 모든 기록은 여기를 지난다
+  const dop = e.by.filter((s) => g.original[g.seats[s]] === 'doppelganger');
+  if (dop.length) e.dop = dop;             // 비면 키를 넣지 않는다
+  if (e.r === e.st) delete e.r;            // r이 없으면 r = st
+  g.ev.push(e);
+}
+// st = 기록 순간의 g.stepRole (행마다 리터럴로 쓰지 않는다)
+const recStep = (g, e) => rec(g, { st: g.stepRole, ...e });
+
+function swapSlots(room, a, b) {           // a, b = 슬롯. 카드 교환은 반드시 이 함수 하나로만 한다
+  const g = room.game, n = g.seats.length, ca = g.pos[a], cb = g.pos[b];
+  g.pos[a] = cb; g.pos[b] = ca;
+  const put = (s, c) => { if (s < n) g.cards[g.seats[s]] = g.deal[c]; else g.center[s - n] = g.deal[c]; };
+  put(a, cb); put(b, ca);
+  if (DEV) checkInvariant(g);              // 깨뜨린 단계에서 바로 실패
+  return [[ca, b], [cb, a]];               // mv 항목: [cardId, to]
+}
+
 function startGame(room) {
   // 연결이 끊긴 사람은 빼고 시작
   for (const id of [...room.order]) if (!room.players.get(id).connected) removePlayer(room, id);
   const n = room.order.length;
-  if (n < MIN_PLAYERS || n > MAX_PLAYERS) return `${MIN_PLAYERS}~${MAX_PLAYERS}명이 필요합니다.`;
-  if (deckTotal(room.deck) !== n + 3) return `카드는 인원 + 3장(${n + 3}장)이어야 합니다.`;
+  if (n < MIN_PLAYERS || n > MAX_PLAYERS) return M('needPlayers');
+  if (deckTotal(room.deck) !== n + 3) return M('needCards', { n: n + 3 });
 
-  const cards = [];
+  let cards = [];
   for (const r of ROLE_ORDER) for (let i = 0; i < (room.deck[r] || 0); i++) cards.push(r);
-  shuffle(cards);
+  const forced = _test.deals.get(room.order[0]);
+  if (forced && forced.length === cards.length) cards = forced.slice();
+  else shuffle(cards);
 
   const g = {
+    id: crypto.randomBytes(4).toString('hex'),     // 판마다 새로 (spec 7.4)
+    startedAt: Date.now(),
+    seats: [...room.order],                         // 좌석 고정
+    deal: cards.slice(),                            // cardId -> role (좌석 n + 제단 3)
+    pos: cards.map((_, i) => i),                    // slot -> cardId
+    ev: [],
     deck: { ...room.deck },
     original: {}, cards: {},
     originalCenter: [], center: [],
     doppelCopy: null, doppelId: null,
-    nightLog: {}, timeline: [],
+    nightLog: {}, acks: {},
     prompts: {}, promptSeq: 0,
     steps: ['_check', ...NIGHT_ORDER.filter((r) => room.deck[r] > 0)],
     stepIdx: -1, stepRole: null, stepStartedAt: 0, stepEndsAt: 0,
     votes: {}, dayEndsAt: null, voteEndsAt: null,
     timer: null, token: 0,
   };
-  room.order.forEach((id, i) => {
+  g.seats.forEach((id, i) => {
     g.original[id] = g.cards[id] = cards[i];
     g.nightLog[id] = [];
     if (cards[i] === 'doppelganger') g.doppelId = id;
@@ -249,37 +392,28 @@ function startGame(room) {
   room.result = null;
   room.phase = 'night';
   for (const id of room.order) room.players.get(id).ready = false;
-  sysChat(room, '🌙 밤이 되었습니다. 채팅이 잠깁니다.');
+  sysChat(room, M('nightStart'));
   runStep(room, 0);
   return null;
 }
 
+// 도플갱어 카드를 쥔 사람은 도플갱어가 복사한 역할이다 (spec 13.1)
 function eff(g, card) {
   return card === 'doppelganger' ? (g.doppelCopy || 'doppelganger') : card;
 }
 
-// 이번 역할 차례에 깨어나는 사람
+// 이번 역할 차례에 깨어나는 사람. 깨는 규칙은 처음 받은 패(g.original)만으로 정해진다.
 function actorsFor(room, role) {
   const g = room.game;
-  return room.order.filter((pid) => {
+  return g.seats.filter((pid) => {
     const o = g.original[pid];
     if (o === role) return true;
     return o === 'doppelganger' && g.doppelCopy === role && WAKE_WITH.includes(role);
   });
 }
 
-function label(room, pid) {
-  const g = room.game;
-  const o = g.original[pid];
-  const r = o === 'doppelganger' && g.doppelCopy ? `도플갱어-${ROLES[g.doppelCopy].name}` : ROLES[o].name;
-  return `${pn(room, pid)}(${r})`;
-}
-
-function log(room, pid, text) {
-  room.game.nightLog[pid].push(text);
-}
-function timeline(room, text) {
-  room.game.timeline.push(text);
+function log(room, pid, text, reveal = []) {
+  room.game.nightLog[pid].push({ text, reveal });
 }
 
 function setPrompt(room, pid, p) {
@@ -298,18 +432,31 @@ function runStep(room, idx) {
   g.stepStartedAt = now;
 
   if (role === '_check') {
-    g.stepEndsAt = now + T.CARD_CHECK;
-    setGameTimer(room, T.CARD_CHECK, () => runStep(room, idx + 1));
+    g.stepEndsAt = now + TM.CARD_CHECK;
+    setGameTimer(room, TM.CARD_CHECK, () => runStep(room, idx + 1));
     return broadcast(room);
   }
 
   const actors = actorsFor(room, role);
   for (const pid of actors) makePrompt(room, pid, role, actors);
+  recordStep(room, role, actors);
 
-  const dur = actors.length ? (role === 'doppelganger' ? T.DOPPEL : T.ACT) : rand(T.IDLE_MIN, T.IDLE_MAX);
+  const dur = actors.length ? (role === 'doppelganger' ? TM.DOPPEL : TM.ACT) : rand(TM.IDLE_MIN, TM.IDLE_MAX);
   g.stepEndsAt = now + dur;
   setGameTimer(room, dur, () => endStep(room));
   broadcast(room);
+}
+
+// 차례 시작 때 한 번 남기는 기록 (spec 13.2 기록 지점 표)
+function recordStep(room, role, actors) {
+  const g = room.game;
+  const S = (ids) => ids.map((i) => slotOf(g, i));
+  if (!actors.length) return recStep(g, { k: 'idle', by: [] });
+  const by = S(actors);
+  if (role === 'werewolf' && actors.length > 1) recStep(g, { k: 'know', by });
+  else if (role === 'minion') recStep(g, { k: 'know', by, know: S(actorsFor(room, 'werewolf')) });
+  else if (role === 'mason') recStep(g, { k: 'know', by });
+  else if (role === 'insomniac') recStep(g, { k: 'peek', by, see: by.map((s) => [g.pos[s], s]) });
 }
 
 function makePrompt(room, pid, role, actors) {
@@ -321,142 +468,175 @@ function makePrompt(room, pid, role, actors) {
       return setPrompt(room, pid, { type: 'doppelganger' });
     case 'werewolf':
       if (actors.length > 1) {
-        const text = `동료 늑대인간: ${names(others)}`;
-        log(room, pid, `🐺 ${text}`);
-        return setPrompt(room, pid, { type: 'info', title: '늑대인간', text });
+        const text = M('pack', { names: names(others) });
+        log(room, pid, text);
+        return setPrompt(room, pid, { type: 'info', title: rn('werewolf'), text, ids: others });
       }
-      log(room, pid, '🐺 늑대인간은 당신 혼자입니다.');
+      log(room, pid, M('packAlone'));
       return setPrompt(room, pid, { type: 'lonewolf' });
     case 'minion': {
       const wolves = actorsFor(room, 'werewolf');
-      const text = wolves.length ? `늑대인간: ${names(wolves)}` : '플레이어 중에 늑대인간이 없습니다. (모두 가운데에 있습니다)';
-      log(room, pid, `🦹 ${text}`);
-      return setPrompt(room, pid, { type: 'info', title: '하수인', text });
+      const text = wolves.length ? M('owners', { names: names(wolves) }) : M('noWolfInPlay');
+      log(room, pid, text);
+      return setPrompt(room, pid, { type: 'info', title: rn('minion'), text, ids: wolves });
     }
     case 'mason': {
-      const text = others.length ? `다른 프리메이슨: ${names(others)}` : '다른 프리메이슨은 플레이어 중에 없습니다.';
-      log(room, pid, `🔨 ${text}`);
-      return setPrompt(room, pid, { type: 'info', title: '프리메이슨', text });
+      const text = others.length ? M('brothers', { names: names(others) }) : M('noBrothers');
+      log(room, pid, text);
+      return setPrompt(room, pid, { type: 'info', title: rn('mason'), text, ids: others });
     }
     case 'insomniac': {
       const now = g.cards[pid];
-      const text = `당신의 현재 카드: ${rn(now)}`;
-      log(room, pid, `🥱 ${text}`);
-      timeline(room, `🥱 ${ga(label(room, pid))} 자신의 카드를 확인했습니다 → ${rn(now)}`);
-      return setPrompt(room, pid, { type: 'info', title: '불면증환자', text });
+      const text = M('nowCard', { r: rn(now) });
+      log(room, pid, text, [{ at: 'p', id: pid, role: now }]);
+      return setPrompt(room, pid, { type: 'info', title: rn('insomniac'), text });
     }
     default: // seer, robber, troublemaker, drunk
       return setPrompt(room, pid, { type: role });
   }
 }
 
-const isPlayer = (room, id) => room.order.includes(id);
+const isPlayer = (room, id) => (room.game ? room.game.seats : room.order).includes(id);
 const validCenter = (c) => Number.isInteger(c) && c >= 0 && c <= 2;
+const okAck = (text = '', reveal = []) => ({ ok: true, text, reveal });
+const failAck = (error) => ({ ok: false, error });
 
-// 밤 행동 처리. 오류가 있으면 문자열을 돌려줍니다.
+// 밤 행동 처리. 항상 ack 객체 {ok, text, reveal} 또는 {ok:false, error}를 돌려준다.
+// 같은 행동을 다시 보내면(재시도) 같은 ack를 돌려준다 (멱등).
 function doAction(room, pid, data, auto = false) {
   const g = room.game;
-  const p = g.prompts[pid];
-  if (room.phase !== 'night' || !p || p.done) return '지금은 행동할 수 없습니다.';
   data = data || {};
-  const tag = auto ? ' (시간 초과로 자동 선택)' : '';
+  let p = g.prompts[pid];
+  // 이미 끝난 프롬프트(도플갱어 복사, 단계·밤이 막 끝난 뒤 등)에 대한 재전송: 키로 같은 ack를 찾는다
+  if (data.key !== undefined && (!p || data.key !== p.key || room.phase !== 'night')) {
+    const old = g.acks[pid]?.get(data.key);
+    if (old) return old;
+  }
+  if (room.phase !== 'night') return failAck(M('notNow'));
+  if (!p) return failAck(M('notNow'));
+  if (p.done) return p.ack || okAck();
+  const n = g.seats.length;
+  const s = slotOf(g, pid);
+  const tag = auto ? ' ' + M('autoPicked') : '';
+  const done = (ack) => {
+    p.done = true;
+    p.ack = ack;
+    (g.acks[pid] ||= new Map()).set(p.key, ack);
+    return ack;
+  };
+  const seeAt = (slot) => [g.pos[slot], slot];
 
   switch (p.type) {
     case 'info':
-      p.done = true;
-      break;
+      return done(okAck());
 
     case 'lonewolf': {
-      if (data.skip) { p.done = true; break; }
-      if (!validCenter(data.center)) return '가운데 카드를 고르세요.';
+      if (data.skip) {
+        recStep(g, { r: 'werewolf', k: 'skip', by: [s] });
+        return done(okAck());
+      }
+      if (!validCenter(data.center)) return failAck(M('pickAltar'));
       const c = g.center[data.center];
-      log(room, pid, `🐺 가운데 ${data.center + 1}번 카드: ${rn(c)}`);
-      timeline(room, `🐺 ${ga(label(room, pid))} 가운데 ${data.center + 1}번 카드를 봤습니다 → ${rn(c)}`);
-      p.done = true;
-      break;
+      const text = M('altarSeen', { pos: TX.altar[data.center], r: rn(c) });
+      const reveal = [{ at: 'c', idx: data.center, role: c }];
+      log(room, pid, text, reveal);
+      recStep(g, { r: 'werewolf', k: 'peek', by: [s], tg: [n + data.center], see: [seeAt(n + data.center)] });
+      return done(okAck(text, reveal));
     }
 
     case 'doppelganger': {
       const t = data.player;
-      if (!isPlayer(room, t) || t === pid) return '다른 플레이어를 고르세요.';
+      if (!isPlayer(room, t) || t === pid) return failAck(M('pickOther'));
+      const ts = slotOf(g, t);
       const copy = g.cards[t];
       g.doppelCopy = copy;
-      log(room, pid, `🎭 ${pn(room, t)}의 카드는 ${rn(copy)}입니다. 당신은 이제 ${ROLES[copy].name}입니다.${tag}`);
-      timeline(room, `🎭 ${pn(room, pid)}(도플갱어)가 ${pn(room, t)}의 카드를 보고 ${ga(rn(copy))} 되었습니다`);
-      if (ACT_NOW.includes(copy)) {
-        setPrompt(room, pid, { type: copy, fromDoppel: true });
-      } else {
-        if (WAKE_WITH.includes(copy)) log(room, pid, `🎭 ${ROLES[copy].name}의 차례에 다시 깨어납니다.`);
-        p.done = true;
-      }
-      break;
+      const text = M('copied', { t: pn(room, t), r: rn(copy) }) + tag;
+      const reveal = [{ at: 'p', id: t, role: copy }];
+      recStep(g, { r: 'doppelganger', k: 'copy', by: [s], tg: [ts], see: [seeAt(ts)], ...(auto ? { auto: 1 } : {}) });
+      log(room, pid, text, reveal);
+      if (!ACT_NOW.includes(copy) && WAKE_WITH.includes(copy)) log(room, pid, M('rewake', { r: rn(copy) }));
+      const ack = done(okAck(text, reveal));
+      if (ACT_NOW.includes(copy)) setPrompt(room, pid, { type: copy, fromDoppel: true });
+      return ack;
     }
 
     case 'seer': {
-      if (data.skip) { p.done = true; break; }
+      if (data.skip) {
+        recStep(g, { r: 'seer', k: 'skip', by: [s] });
+        return done(okAck());
+      }
       if (data.player !== undefined) {
         const t = data.player;
-        if (!isPlayer(room, t) || t === pid) return '다른 플레이어를 고르세요.';
-        log(room, pid, `🔮 ${pn(room, t)}의 카드: ${rn(g.cards[t])}`);
-        timeline(room, `🔮 ${ga(label(room, pid))} ${pn(room, t)}의 카드를 봤습니다 → ${rn(g.cards[t])}`);
-      } else {
-        const cs = data.centers;
-        if (!Array.isArray(cs) || cs.length !== 2 || !cs.every(validCenter) || cs[0] === cs[1]) return '가운데 카드 2장을 고르세요.';
-        const txt = cs.map((c) => `${c + 1}번 ${rn(g.center[c])}`).join(', ');
-        log(room, pid, `🔮 가운데 카드: ${txt}`);
-        timeline(room, `🔮 ${ga(label(room, pid))} 가운데 카드를 봤습니다 → ${txt}`);
+        if (!isPlayer(room, t) || t === pid) return failAck(M('pickOther'));
+        const ts = slotOf(g, t);
+        const text = M('seerSaw', { t: pn(room, t), r: rn(g.cards[t]) });
+        const reveal = [{ at: 'p', id: t, role: g.cards[t] }];
+        log(room, pid, text, reveal);
+        recStep(g, { r: 'seer', k: 'peek', by: [s], tg: [ts], see: [seeAt(ts)] });
+        return done(okAck(text, reveal));
       }
-      p.done = true;
-      break;
+      const cs = data.centers;
+      if (!Array.isArray(cs) || cs.length !== 2 || !cs.every(validCenter) || cs[0] === cs[1]) return failAck(M('pickTwoAltar'));
+      const list = cs.map((c) => M('altarTwo', { pos: TX.altar[c], r: rn(g.center[c]) })).join(', ');
+      const text = M('altarTwoHead', { list });
+      const reveal = cs.map((c) => ({ at: 'c', idx: c, role: g.center[c] }));
+      log(room, pid, text, reveal);
+      recStep(g, { r: 'seer', k: 'peek', by: [s], tg: cs.map((c) => n + c), see: cs.map((c) => seeAt(n + c)) });
+      return done(okAck(text, reveal));
     }
 
     case 'robber': {
       if (data.skip) {
-        log(room, pid, '🗡️ 카드를 훔치지 않았습니다.');
-        p.done = true;
-        break;
+        const text = M('noTouch');
+        log(room, pid, text);
+        recStep(g, { r: 'robber', k: 'skip', by: [s] });
+        return done(okAck(text));
       }
       const t = data.player;
-      if (!isPlayer(room, t) || t === pid) return '다른 플레이어를 고르세요.';
-      [g.cards[pid], g.cards[t]] = [g.cards[t], g.cards[pid]];
-      log(room, pid, `🗡️ ${wa(pn(room, t))} 카드를 바꿨습니다. 당신의 새 카드: ${rn(g.cards[pid])}`);
-      timeline(room, `🗡️ ${ga(label(room, pid))} ${pn(room, t)}의 카드를 훔쳤습니다 → ${rn(g.cards[pid])}`);
-      p.done = true;
-      break;
+      if (!isPlayer(room, t) || t === pid) return failAck(M('pickOther'));
+      const ts = slotOf(g, t);
+      const mv = swapSlots(room, s, ts);
+      const text = M('stole', { t: pn(room, t), r: rn(g.cards[pid]) });
+      // 훔친 패는 이제 강도의 좌석에 놓여 있다
+      const reveal = [{ at: 'p', id: pid, role: g.cards[pid] }];
+      log(room, pid, text, reveal);
+      recStep(g, { r: 'robber', k: 'swap', by: [s], tg: [ts], mv, see: [seeAt(s)] });
+      return done(okAck(text, reveal));
     }
 
     case 'troublemaker': {
       if (data.skip) {
-        log(room, pid, '🃏 카드를 바꾸지 않았습니다.');
-        p.done = true;
-        break;
+        const text = M('noTouch');
+        log(room, pid, text);
+        recStep(g, { r: 'troublemaker', k: 'skip', by: [s] });
+        return done(okAck(text));
       }
       const ps = data.players;
       if (!Array.isArray(ps) || ps.length !== 2 || ps[0] === ps[1] || !ps.every((x) => isPlayer(room, x) && x !== pid)) {
-        return '자신을 제외한 두 명을 고르세요.';
+        return failAck(M('pickTwoOthers'));
       }
       const [a, b] = ps;
-      [g.cards[a], g.cards[b]] = [g.cards[b], g.cards[a]];
-      log(room, pid, `🃏 ${wa(pn(room, a))} ${pn(room, b)}의 카드를 바꿨습니다.`);
-      timeline(room, `🃏 ${ga(label(room, pid))} ${wa(pn(room, a))} ${pn(room, b)}의 카드를 바꿨습니다`);
-      p.done = true;
-      break;
+      const as = slotOf(g, a), bs = slotOf(g, b);
+      const mv = swapSlots(room, as, bs);
+      const text = M('swapped', { a: pn(room, a), b: pn(room, b) });
+      log(room, pid, text);
+      recStep(g, { r: 'troublemaker', k: 'swap', by: [s], tg: [as, bs], mv });
+      return done(okAck(text));
     }
 
     case 'drunk': {
-      if (!validCenter(data.center)) return '가운데 카드를 고르세요.';
+      if (!validCenter(data.center)) return failAck(M('pickAltar'));
       const c = data.center;
-      [g.cards[pid], g.center[c]] = [g.center[c], g.cards[pid]];
-      log(room, pid, `🍺 가운데 ${c + 1}번 카드와 바꿨습니다. (새 카드는 모릅니다)${tag}`);
-      timeline(room, `🍺 ${ga(label(room, pid))} 가운데 ${c + 1}번 카드와 바꿨습니다 → ${rn(g.cards[pid])}`);
-      p.done = true;
-      break;
+      const mv = swapSlots(room, s, n + c);
+      const text = M('drunkSwapped', { pos: TX.altar[c] }) + tag;
+      log(room, pid, text);
+      recStep(g, { r: 'drunk', k: 'swap', by: [s], tg: [n + c], mv, ...(auto ? { auto: 1 } : {}) });
+      return done(okAck(text));
     }
 
     default:
-      return '알 수 없는 행동입니다.';
+      return failAck(M('notNow'));
   }
-  return null;
 }
 
 function finishPending(room) {
@@ -466,12 +646,17 @@ function finishPending(room) {
       const p = g.prompts[pid];
       if (!p || p.done) break;
       if (p.type === 'doppelganger') {
-        doAction(room, pid, { player: pick(room.order.filter((x) => x !== pid)) }, true);
+        doAction(room, pid, { player: pick(g.seats.filter((x) => x !== pid)) }, true);
       } else if (p.type === 'drunk') {
         doAction(room, pid, { center: rand(0, 2) }, true);
       } else {
-        if (p.type !== 'info') log(room, pid, '⏰ 시간이 지나 아무 행동도 하지 않았습니다.');
+        if (p.type !== 'info') {
+          log(room, pid, M('timedOut'));
+          recStep(g, { r: p.type === 'lonewolf' ? 'werewolf' : p.type, k: 'skip', by: [slotOf(g, pid)], auto: 1 });
+        }
         p.done = true;
+        p.ack = okAck();
+        (g.acks[pid] ||= new Map()).set(p.key, p.ack);
       }
     }
   }
@@ -486,7 +671,7 @@ function checkStepDone(room) {
   const g = room.game;
   const all = Object.values(g.prompts);
   if (!all.length || all.some((p) => !p.done)) return;
-  const wait = Math.max(0, g.stepStartedAt + T.MIN_STEP - Date.now());
+  const wait = Math.max(0, g.stepStartedAt + TM.MIN_STEP - Date.now());
   setGameTimer(room, wait, () => endStep(room));
 }
 
@@ -497,7 +682,7 @@ function startDay(room) {
   room.phase = 'day';
   g.dayEndsAt = Date.now() + Math.round(room.settings.dayTime * 1000 * SCALE);
   for (const id of room.order) room.players.get(id).ready = false;
-  sysChat(room, '☀️ 아침이 밝았습니다! 토론을 시작하세요.');
+  sysChat(room, M('dawn'));
   setGameTimer(room, g.dayEndsAt - Date.now(), () => startVote(room));
   broadcast(room);
 }
@@ -506,9 +691,9 @@ function startVote(room) {
   const g = room.game;
   room.phase = 'vote';
   g.votes = {};
-  g.voteEndsAt = Date.now() + T.VOTE;
-  sysChat(room, '🗳️ 투표 시간입니다! 죽일 사람을 고르세요.');
-  setGameTimer(room, T.VOTE, () => resolve(room));
+  g.voteEndsAt = Date.now() + TM.VOTE;
+  sysChat(room, M('voteStart'));
+  setGameTimer(room, TM.VOTE, () => resolve(room));
   broadcast(room);
 }
 
@@ -521,14 +706,26 @@ function checkAllVoted(room) {
   const g = room.game;
   const ids = connectedIds(room);
   if (ids.length && ids.every((id) => g.votes[id] !== undefined)) {
-    setGameTimer(room, 1500, () => resolve(room));
+    setGameTimer(room, TM.VOTE_GRACE, () => resolve(room));
   }
 }
 
 function resolve(room) {
   const g = room.game;
   clearGameTimers(room);
-  const ids = room.order;
+  const ids = g.seats, n = ids.length;
+
+  // 정합성 단언: 개발에서는 던지고, 운영에서는 기록만 버리고(night 생략) 결말은 진행한다
+  let nightOk = true;
+  try {
+    checkInvariant(g);
+    if (g.ev.length > 20) throw new Error('too many events: ' + g.ev.length);
+  } catch (e) {
+    if (DEV) throw e;
+    nightOk = false;
+    console.error('[night record dropped]', e.message);
+  }
+
   const counts = Object.fromEntries(ids.map((i) => [i, 0]));
   for (const t of Object.values(g.votes)) if (t in counts) counts[t]++;
   const max = Math.max(...Object.values(counts));
@@ -537,16 +734,21 @@ function resolve(room) {
   const final = Object.fromEntries(ids.map((i) => [i, eff(g, g.cards[i])]));
   const team = (role) => ROLES[role].team;
 
-  // 사냥꾼: 죽으면 자기가 투표한 사람도 데려감
+  // 사냥꾼 연쇄 큐를 돌면서 deaths를 만든다 (순서 = 연출 순서)
+  const deaths = dead.map((i) => ({ s: slotOf(g, i), by: 'vote' }));
   const hunterKills = [];
   const queue = [...dead];
   while (queue.length) {
     const d = queue.shift();
-    const t = g.votes[d];
-    if (final[d] === 'hunter' && t && !dead.includes(t)) {
+    if (final[d] !== 'hunter') continue;
+    const t = g.votes[d] ?? null;
+    if (t && !dead.includes(t)) {
       dead.push(t);
       queue.push(t);
       hunterKills.push({ hunter: d, target: t });
+      deaths.push({ s: slotOf(g, t), by: 'hunter', h: slotOf(g, d) });
+    } else {
+      deaths.push({ s: t ? slotOf(g, t) : -1, by: 'miss', h: slotOf(g, d) });  // 죽음이 아니다
     }
   }
 
@@ -568,6 +770,22 @@ function resolve(room) {
     wolfWin = minions.length > 0 && !tannerDied && dead.some((i) => final[i] !== 'minion');
   }
 
+  // 판결 이유 (spec 13.2): [코드, 좌석?][], 표시 순서 그대로. 승패 계산과 같은 분기를 글로 옮긴 것.
+  const Sl = (a) => a.map((i) => slotOf(g, i));
+  const dw = Sl(dead.filter((i) => final[i] === 'werewolf'));
+  const dt = Sl(dead.filter((i) => final[i] === 'tanner'));
+  let why;
+  if (wolves.length) {
+    why = dw.length ? [['wolf_died', dw], ...(dt.length ? [['tanner_too', dt]] : [])]
+      : dt.length ? [['tanner_blocked', dt]] : [['wolf_lived', Sl(wolves)]];
+  } else {
+    why = [[g.deal.includes('werewolf') ? 'wolf_center' : 'wolf_none']];
+    if (!dead.length) why.push(['no_death']);
+    else if (dt.length) why.push(['no_wolf_tanner', dt]);
+    else if (minions.length) why.push(dead.every((i) => final[i] === 'minion') ? ['minion_only_died', Sl(dead)] : ['minion_lived', Sl(minions)]);
+    else why.push(['innocent_died']);
+  }
+
   const players = ids.map((i) => {
     const t = team(final[i]);
     const isDead = dead.includes(i);
@@ -585,17 +803,29 @@ function resolve(room) {
   if (players.some((p) => p.team === 'tanner' && p.win)) winners.push('tanner');
 
   room.result = {
-    players, winners, hunterKills,
+    gameId: g.id,
+    players, winners,
     noDeath: dead.length === 0,
     wolvesInPlay: wolves.length,
     center: { original: g.originalCenter, final: g.center },
     doppelCopy: g.doppelCopy,
-    timeline: g.timeline,
+    deaths, why,
+    // 한 릴리스 동안만 호환 (spec 13.3): 다음 릴리스에서 지운다
+    hunterKills,
+    timeline: [],
   };
+  if (nightOk) room.result.night = { deal: g.deal, ev: g.ev, end: g.pos.slice() };
   room.phase = 'result';
-  const wn = winners.length ? winners.map((w) => WW.TEAM_NAME[w]).join(', ') + ' 승리!' : '아무도 이기지 못했습니다.';
-  sysChat(room, `🏁 게임 종료 — ${wn}`);
+  sysChat(room, M('endLine', { verdict: verdictLine(winners, wolves.length) }));
   broadcast(room);
+}
+
+function verdictLine(winners, wolfCount) {
+  const V = TX.verdict;
+  if (winners.includes('village')) return wolfCount ? V.village : V.villageNoWolf;
+  if (winners.includes('wolf')) return wolfCount ? V.wolf : V.minion;
+  if (winners.includes('tanner')) return V.tanner;
+  return V.none;
 }
 
 function backToLobby(room) {
@@ -638,22 +868,29 @@ io.on('connection', (socket) => {
 
   socket.on('create', ({ name, playerId } = {}, cb) => {
     name = cleanName(name);
-    if (!name) return reply(cb, { ok: false, error: '닉네임을 입력하세요.' });
-    if (!playerId || typeof playerId !== 'string') return reply(cb, { ok: false, error: '잘못된 요청입니다.' });
+    if (!name) return reply(cb, { ok: false, error: M('needName') });
+    if (!playerId || typeof playerId !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
+    // 재시도 멱등: 방금 이 사람이 만든 방이 있으면 같은 방을 돌려준다
+    const prev = rooms.get(socket.data.code);
+    if (prev && socket.data.pid === playerId && prev.hostId === playerId && prev.phase === 'lobby'
+      && prev.order.length === 1 && Date.now() - prev.createdAt < 10000) {
+      reply(cb, { ok: true, code: prev.code });
+      return broadcast(prev);
+    }
     const room = createRoom();
     room.players.set(playerId, { id: playerId, name, connected: true, socketId: null, ready: false });
     room.order.push(playerId);
     room.hostId = playerId;
     attach(room, playerId);
-    sysChat(room, `${name}님이 방을 만들었습니다.`);
+    sysChat(room, M('townOpened', { name }));
     reply(cb, { ok: true, code: room.code });
     broadcast(room);
   });
 
   socket.on('join', ({ code, name, playerId, rejoin } = {}, cb) => {
     const room = rooms.get(String(code || '').toUpperCase().trim());
-    if (!room) return reply(cb, { ok: false, error: '방을 찾을 수 없습니다.' });
-    if (!playerId || typeof playerId !== 'string') return reply(cb, { ok: false, error: '잘못된 요청입니다.' });
+    if (!room) return reply(cb, { ok: false, error: M('noTown') });
+    if (!playerId || typeof playerId !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
 
     if (room.players.has(playerId)) {
       // 재접속
@@ -662,11 +899,11 @@ io.on('connection', (socket) => {
       reply(cb, { ok: true, code: room.code });
       return broadcast(room);
     }
-    if (rejoin) return reply(cb, { ok: false, error: '이전 방에 다시 들어갈 수 없습니다.' });
+    if (rejoin) return reply(cb, { ok: false, error: M('cannotReturn') });
     name = cleanName(name);
-    if (!name) return reply(cb, { ok: false, error: '닉네임을 입력하세요.' });
-    if (room.phase !== 'lobby') return reply(cb, { ok: false, error: '이미 게임이 진행 중입니다. 게임이 끝나면 다시 시도하세요.' });
-    if (room.order.length >= MAX_PLAYERS) return reply(cb, { ok: false, error: `방이 가득 찼습니다. (최대 ${MAX_PLAYERS}명)` });
+    if (!name) return reply(cb, { ok: false, error: M('needName') });
+    if (room.phase !== 'lobby') return reply(cb, { ok: false, error: M('alreadyStarted') });
+    if (room.order.length >= MAX_PLAYERS) return reply(cb, { ok: false, error: M('townFull') });
 
     const names = new Set(room.order.map((id) => room.players.get(id).name));
     let final = name;
@@ -676,7 +913,7 @@ io.on('connection', (socket) => {
     attach(room, playerId);
     if (!room.players.has(room.hostId)) ensureHost(room);
     autoDeck(room);
-    sysChat(room, `${final}님이 들어왔습니다.`);
+    sysChat(room, M('sat', { n: final }));
     reply(cb, { ok: true, code: room.code });
     broadcast(room);
   });
@@ -692,7 +929,7 @@ io.on('connection', (socket) => {
       const p = room.players.get(pid);
       p.connected = false;
       p.socketId = null;
-      sysChat(room, `${p.name}님이 게임을 떠났습니다.`);
+      sysChat(room, M('left', { n: p.name }));
       ensureHost(room);
       if (room.phase === 'day') checkAllReady(room);
       if (room.phase === 'vote') checkAllVoted(room);
@@ -741,7 +978,12 @@ io.on('connection', (socket) => {
 
   socket.on('start', (_, cb) => {
     const { room, isHost } = ctx();
-    if (!room || !isHost || room.phase !== 'lobby') return reply(cb, { ok: false, error: '시작할 수 없습니다.' });
+    if (!room || !isHost) return reply(cb, { ok: false, error: M('cannotStart') });
+    // 재시도 멱등: 방금 시작된 판이면 같은 ack
+    if (room.phase !== 'lobby') {
+      if (room.game && Date.now() - room.game.startedAt < 10000) return reply(cb, { ok: true });
+      return reply(cb, { ok: false, error: M('cannotStart') });
+    }
     const err = startGame(room);
     if (err) {
       reply(cb, { ok: false, error: err });
@@ -752,10 +994,12 @@ io.on('connection', (socket) => {
 
   socket.on('nightAction', (data, cb) => {
     const { room, pid } = ctx();
-    if (!room || !room.game) return reply(cb, { ok: false, error: '게임이 없습니다.' });
-    const err = doAction(room, pid, data);
-    if (err) return reply(cb, { ok: false, error: err });
-    reply(cb, { ok: true });
+    if (!room || !room.game) return reply(cb, { ok: false, error: M('noGame') });
+    const before = room.game.prompts[pid];
+    const wasDone = !!(before && before.done);
+    const ack = doAction(room, pid, data);
+    reply(cb, ack);
+    if (!ack.ok || (wasDone && before === room.game.prompts[pid])) return;   // 재전송이면 상태를 다시 흔들지 않는다
     checkStepDone(room);
     broadcast(room);
   });
@@ -776,8 +1020,10 @@ io.on('connection', (socket) => {
 
   socket.on('vote', ({ target } = {}, cb) => {
     const { room, pid } = ctx();
-    if (!room || room.phase !== 'vote') return reply(cb, { ok: false, error: '지금은 투표할 수 없습니다.' });
-    if (!isPlayer(room, target) || target === pid) return reply(cb, { ok: false, error: '자신이 아닌 플레이어를 고르세요.' });
+    if (room && room.phase === 'result' && room.game && target && room.game.votes[pid] === target) return reply(cb, { ok: true });   // 멱등(결과 직후 재전송)
+    if (!room || room.phase !== 'vote') return reply(cb, { ok: false, error: M('notVoteTime') });
+    if (!isPlayer(room, target) || target === pid) return reply(cb, { ok: false, error: M('noSelfVote') });
+    if (room.game.votes[pid] === target) return reply(cb, { ok: true });   // 멱등
     room.game.votes[pid] = target;
     reply(cb, { ok: true });
     broadcast(room);
@@ -838,7 +1084,7 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🐺 한밤의 늑대인간 서버 실행 중: http://localhost:${PORT}`);
+  console.log(`한밤의 늑대인간 서버 실행 중: http://localhost:${PORT}`);
 });
 
-module.exports = { server, rooms };
+module.exports = { server, rooms, _test };

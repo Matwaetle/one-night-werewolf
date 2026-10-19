@@ -1,62 +1,106 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-perf="full" data-net="fast">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>한밤의 늑대인간 온라인</title>
-  <meta name="description" content="친구들과 브라우저로 즐기는 한밤의 늑대인간">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐺</text></svg>">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <meta name="theme-color" content="#070914">
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>한밤의 늑대인간</title>
+<meta name="description" content="하룻밤. 한 번의 심판. 늑대를 찾아 처형하라.">
+<meta name="theme-color" content="#070606">
+<meta name="color-scheme" content="dark">
+<meta name="app-ver" content="__VER__">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23070606'/%3E%3Cpath d='M5 13l9 4v2l-9-3zM27 13l-9 4v2l9-3z' fill='%238e0f0f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="__SOCKET_URL__" crossorigin>
+<link rel="preload" as="font" type="font/woff2" crossorigin href="/a/__FONT_T__">
+<script>window.SOCKET_URL='__SOCKET_URL__'</script>
+<script>(function(){var d=document.documentElement,n=navigator,c=n.connection||{},q=c.saveData,r=(performance.getEntriesByType('navigation')[0]||{}).responseStart;d.dataset.perf=n.deviceMemory<=2||n.hardwareConcurrency<=2||q?'lite':'full';d.dataset.net=q||/2g|3g/.test(c.effectiveType)||r>1500?'slow':'fast';try{fetch(SOCKET_URL+'/healthz',{mode:'no-cors',cache:'no-store'})}catch(e){}})()</script>
+<style>
+@font-face{font-family:"Hanbam T";src:url(/a/__FONT_T__) format("woff2");font-display:swap}
+@font-face{font-family:"Hanbam";src:url(/a/__FONT_D__) format("woff2");font-display:swap}
+@font-face{font-family:"Hanbam Fallback";src:local("Apple SD Gothic Neo"),local("Malgun Gothic"),local("Noto Sans CJK KR"),local("Noto Sans KR");size-adjust:__SA__%;ascent-override:__AO__%;descent-override:__DO__%}
+__BASE_CSS__
+</style>
+<style id="lqip">__LQIP__</style>
+<script>__MANIFEST__</script>
+<script>window.ASSETS={ver:'__VER__',css:'/a/__GAME_CSS__',fx:'/a/__FX_JS__',replay:'/a/__REPLAY_JS__',fontD:'/a/__FONT_D__'}</script>
+<script defer src="/a/__SIO__"></script>
+<script defer src="/a/__GAME_JS__"></script>
 </head>
-<body>
-  <div class="scene" aria-hidden="true">
-    <div class="sky"></div>
-    <div class="stars"></div>
-    <div class="shooting"></div>
-    <div class="moon"><span class="crater c1"></span><span class="crater c2"></span><span class="crater c3"></span></div>
-    <div class="sun"></div>
-    <div class="clouds"></div>
-    <div class="land back"></div>
-    <div class="fog f1"></div>
-    <div class="land front"></div>
-    <div class="land windows"></div>
-    <div class="eyes e1"><i></i><i></i></div>
-    <div class="eyes e2"><i></i><i></i></div>
-    <div class="fog f2"></div>
-    <div class="vignette"></div>
-  </div>
-  <div id="app">
-    <header id="topbar" hidden>
-      <div class="brand"><span class="crescent">☾</span>한밤의 늑대인간</div>
-      <div class="top-actions">
-        <span id="roomTag" class="room-tag"></span>
-        <button class="icon-btn" data-act="toggleVoice" id="voiceBtn" title="밤 나레이션 음성">🔈</button>
-        <button class="icon-btn" data-act="guide" title="역할 설명">📖</button>
-        <button class="icon-btn" data-act="leave" title="방 나가기">🚪</button>
+<body data-phase="home">
+<div id="bg" aria-hidden="true">
+  <div class="bg-art"></div>
+  <div class="light light-night"></div>
+  <div class="light light-day"></div>
+  <div class="light light-vote"></div>
+  <div class="grain"></div>
+  <div class="vignette"></div>
+</div>
+<div id="app">
+  <header id="hud" data-r="hud" hidden></header>
+  <main id="main">
+    <section class="home" id="home" data-r="home">
+      <div class="home-top">
+        <h1 class="home-title"><span>한밤의 늑대인간</span><i class="ink-cover"></i></h1>
+        <div class="home-eyes" aria-hidden="true"><i></i><i></i></div>
       </div>
-    </header>
-    <div id="layout">
-      <main id="main"></main>
-      <aside id="chat" hidden>
-        <div class="chat-head">💬 채팅</div>
-        <div id="chatLog"></div>
-        <form id="chatForm" autocomplete="off">
-          <input id="chatInput" maxlength="300" placeholder="메시지 입력…">
-          <button type="submit">전송</button>
-        </form>
-      </aside>
-    </div>
-  </div>
-  <button id="chatFab" data-act="toChat" hidden title="채팅으로 이동">💬</button>
-  <div id="modal" hidden></div>
-  <div id="toast" hidden></div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="roles.js"></script>
-  <script src="app.js"></script>
+      <form class="home-form" id="homeForm" autocomplete="off" novalidate>
+        <input class="in" id="nameInput" maxlength="12" placeholder="이름" aria-label="이름" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next">
+        <p class="home-boot" id="homeBoot" role="status" hidden></p>
+        <p class="home-boot-sub" id="homeBootSub" hidden>깊이 잠든 마을이다. 1분은 걸린다.</p>
+        <button class="btn-main" id="createBtn" type="button"><span class="lbl">마을을 연다</span></button>
+        <p class="home-or"><span>혹은</span></p>
+        <div class="home-join">
+          <input class="in in-code" id="codeInput" maxlength="4" placeholder="표식" aria-label="표식" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="latin" enterkeyhint="go">
+          <button class="btn-sub" id="joinBtn" type="button"><span class="lbl">들어간다</span></button>
+        </div>
+        <a class="home-alt" id="otherLink" href="#" role="button" hidden>다른 마을을 연다</a>
+        <a class="home-law" id="lawLink" href="#" role="button">법도</a>
+      </form>
+    </section>
+  </main>
+  <nav id="dock" data-r="dock" hidden></nav>
+</div>
+<aside id="sheet" data-h="0">
+  <div class="sheet-head"><button class="sheet-tab" aria-selected="true">속삭임</button><button class="sheet-tab" aria-selected="false">기록</button></div>
+  <div class="sheet-body"></div>
+</aside>
+<div id="fx" aria-hidden="true">
+  <div class="lid lid-t"></div><div class="lid lid-b"></div>
+  <div class="flash"></div>
+  <div class="peek"></div>
+</div>
+<div id="modal" hidden></div>
+<div id="conn" role="status" aria-live="polite" hidden></div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<div id="sr" class="sr-only" role="status" aria-live="polite"></div>
+<span id="hold-hint" class="sr-only">길게 눌러 확정한다</span>
+<svg id="sprite" hidden xmlns="http://www.w3.org/2000/svg">
+<symbol id="sg-doppelganger" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 20V9l4-5h4v4l1 3-2 1v2l-3 2v4zM21 20V9l-4-5h-4v4l-1 3 2 1v2l3 2v4z"/></symbol>
+<symbol id="sg-werewolf" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 4l5 3h8l5-3-2 10-5 6h-4l-5-6zM9 14l1.5 4 1.5-4 1.5 4 1.5-4"/></symbol>
+<symbol id="sg-minion" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M11 4L6 6l-2 6 2 6 5 2M14 4l4 2 2 6M13 9l-3 6M17 17l3 3"/></symbol>
+<symbol id="sg-mason" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 15l5-6h4l3 3-3 3M22 15l-5-6h-4M7 18l5 3 5-3M9 13l3 3"/></symbol>
+<symbol id="sg-seer" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-6 9 6-9 6zM12 7v4M5 18h14l-2 4H7z"/></symbol>
+<symbol id="sg-robber" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 5h6v6H3zM9 8h5M12 8l8 8M17 13l-2 2M20 16l-2 2M14 20h7"/></symbol>
+<symbol id="sg-troublemaker" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M5 5l14 14M19 19h-6M19 19v-6M19 5L5 19M5 19h6M5 19v-6"/></symbol>
+<symbol id="sg-drunk" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 10h12l-2 11H8zM6 10l6-8 6 8M7 14h10"/></symbol>
+<symbol id="sg-insomniac" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2l3 4-3 4-3-4zM9 12h6v10H9zM9 16h6"/></symbol>
+<symbol id="sg-villager" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 22V8M6 3v6h12V3M12 3v6"/></symbol>
+<symbol id="sg-hunter" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 20L20 4M20 4h-7M20 4v7M4 20l1-4M4 20l4-1M7 6q5-1 11 5"/></symbol>
+<symbol id="sg-tanner" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2v5M12 7l-5 3v6l5 4 5-4v-6zM10 11l4 4"/></symbol>
+<symbol id="tm-wolf" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M5 3l3 18M11 3l3 18M17 3l3 18"/></symbol>
+<symbol id="tm-village" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 22V12M9 12h6M12 2l4 5-4 5-4-5z"/></symbol>
+<symbol id="tm-tanner" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2v4M12 6l5 3v6l-5 3-5-3V9zM12 18v4"/></symbol>
+<symbol id="back-mark" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 3l5 4h6l5-4v10l-4 6-4 3-4-3-4-6z"/><path d="M7 11l4 1M17 11l-4 1" style="stroke:var(--blood)"/></symbol>
+<symbol id="ic-menu" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="ic-x" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></symbol>
+<symbol id="ic-send" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 5v8H6M10 9l-4 4 4 4"/></symbol>
+<symbol id="ic-copy" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M8 8h11v11H8zM5 16V5h11"/></symbol>
+<symbol id="ic-key" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 8h7v7H3zM10 11h11M17 11v4M21 11v3"/></symbol>
+<symbol id="ic-chain" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M10 8H6l-3 4 3 4h4M14 16h4l3-4-3-4h-4M13 5l-2 4M11 19l2-4"/></symbol>
+<symbol id="ic-hand" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 12h12v5l-3 5H9l-3-5zM8 12V5M11 12V3M14 12V4M17 12V6"/></symbol>
+<symbol id="ic-seal" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 3l6 3 3 6-3 6-6 3-6-3-3-6 3-6z" fill="currentColor" stroke="none"/><path d="M9 12h6" style="stroke:var(--void)"/></symbol>
+<symbol id="ic-claw" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><use href="#tm-wolf"/></symbol>
+<symbol id="ic-crack" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 100 140" preserveAspectRatio="none"><path d="M50 0l-8 28 12 24-14 28 10 24-6 36M54 52l18 10-6 22M42 80l-20 8" vector-effect="non-scaling-stroke"/></symbol>
+<symbol id="rp-turn" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 5H9L5 9l4 4h7M13 10l-4 3 4 4"/><path d="M16 13l3 3" stroke-dasharray="1.5 2"/></symbol>
+</svg>
 </body>
 </html>

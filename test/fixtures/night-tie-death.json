@@ -1,0 +1,145 @@
+{
+ "name": "tie-death",
+ "n": 4,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.8592396390848286",
+ "result": {
+  "gameId": "beadf17f",
+  "players": [
+   {
+    "id": "bot-봇1-0.8592396390848286",
+    "name": "봇1",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇2-0.730917250186985",
+    "votes": 2,
+    "dead": true,
+    "win": false
+   },
+   {
+    "id": "bot-봇2-0.730917250186985",
+    "name": "봇2",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇1-0.8592396390848286",
+    "votes": 2,
+    "dead": true,
+    "win": false
+   },
+   {
+    "id": "bot-봇3-0.6118556243762057",
+    "name": "봇3",
+    "original": "werewolf",
+    "final": "werewolf",
+    "effective": "werewolf",
+    "team": "wolf",
+    "vote": "bot-봇2-0.730917250186985",
+    "votes": 0,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇4-0.26315157342833373",
+    "name": "봇4",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇1-0.8592396390848286",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   }
+  ],
+  "winners": [
+   "wolf"
+  ],
+  "noDeath": false,
+  "wolvesInPlay": 1,
+  "center": {
+   "original": [
+    "werewolf",
+    "seer",
+    "troublemaker"
+   ],
+   "final": [
+    "werewolf",
+    "seer",
+    "troublemaker"
+   ]
+  },
+  "doppelCopy": null,
+  "deaths": [
+   {
+    "s": 0,
+    "by": "vote"
+   },
+   {
+    "s": 1,
+    "by": "vote"
+   }
+  ],
+  "why": [
+   [
+    "wolf_lived",
+    [
+     2
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "villager",
+    "villager",
+    "werewolf",
+    "villager",
+    "werewolf",
+    "seer",
+    "troublemaker"
+   ],
+   "ev": [
+    {
+     "st": "werewolf",
+     "k": "peek",
+     "by": [
+      2
+     ],
+     "tg": [
+      4
+     ],
+     "see": [
+      [
+       4,
+       4
+      ]
+     ]
+    },
+    {
+     "st": "seer",
+     "k": "idle",
+     "by": []
+    },
+    {
+     "st": "troublemaker",
+     "k": "idle",
+     "by": []
+    }
+   ],
+   "end": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  }
+ }
+}

@@ -1,0 +1,258 @@
+// art.js — 카드 마크업 생성 + 이미지 로더 (DESIGN_SPEC §4.5, §7.3, §9.4). 전역 하나: ART.
+// 의존: ROLES / WW (roles.js, 먼저 로드). 이미지가 하나도 없어도 ART.card()는 완성된 카드를 돌려준다.
+//
+// manifest 모양 (window.ART_MANIFEST, 값은 파일명 또는 경로. 파일명이면 ART.base 붙임):
+//   { art:{seer:'seer.1a2b.webp',…}, lite:{seer:'seer-l.x.webp',…}, atlas:'atlas.x.webp',
+//     back:'back.x.webp', grain:'grain.x.webp', horizon:'horizon.x.webp', home:'home.x.webp', homeM:'home-m.x.webp' }
+(function (root) {
+  'use strict';
+  var doc = typeof document !== 'undefined' ? document : null;
+  var docEl = doc && doc.documentElement;
+
+  var FALLBACK_ORDER = ['doppelganger', 'werewolf', 'minion', 'mason', 'seer', 'robber',
+    'troublemaker', 'drunk', 'insomniac', 'villager', 'hunter', 'tanner'];
+  function roles() { return root.ROLES || (root.WW && root.WW.ROLES) || {}; }
+  function order() { return (root.WW && root.WW.ROLE_ORDER) || FALLBACK_ORDER; }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  var ART = {
+    manifest: root.ART_MANIFEST || {},
+    base: '/a/',
+    CONCURRENCY: 2,
+    TEAM_SYMBOL: { wolf: 'tm-wolf', village: 'tm-village', tanner: 'tm-tanner' },
+  };
+
+  // ---------- 경로 ----------
+  function url(v) {
+    if (!v) return '';
+    return /^(\/|https?:|data:|blob:)/.test(v) ? v : ART.base + v;
+  }
+  function attr(k) { return docEl && docEl.getAttribute(k); }
+  function isSmall() { return attr('data-perf') === 'lite' || attr('data-net') === 'slow'; }
+  function isSlow() { return attr('data-net') === 'slow'; }
+
+  // 역할 큰 아트 URL (lite/slow면 360px 판 우선)
+  function roleUrl(id) {
+    var m = ART.manifest || {};
+    var bg = m.art || m.big, big = bg && bg[id], lite = m.lite && m.lite[id];
+    return url(isSmall() ? (lite || big) : (big || lite));
+  }
+  function staticUrl(name) {
+    var m = ART.manifest || {};
+    var v = m[name];
+    if (name === 'home') {                       // home:{d,m} (optimize-images) 또는 home + homeM
+      var h = m.home, mob = root.matchMedia && root.matchMedia('(max-width:700px)').matches;
+      v = (h && typeof h === 'object') ? (mob && h.m ? h.m : h.d || h.m) : (mob && m.homeM ? m.homeM : h);
+    } else if (name.indexOf('verdict-') === 0) v = m.verdict && m.verdict[name.slice(8)];
+    return url(v);
+  }
+  function roleIndex(id) { return order().indexOf(id); }
+
+  // ---------- 로더 (동시 2, 우선순위 큐, decode) ----------
+  var done = {};        // key -> true(성공) | false(실패)
+  var pending = {};     // key -> Promise
+  var keep = {};        // key -> Image (디코드된 비트맵 유지)
+  var queue = [];       // {key,url,front,resolve}
+  var active = 0;
+
+  function pump() {
+    while (active < ART.CONCURRENCY && queue.length) {
+      start(queue.shift());
+    }
+  }
+  function start(job) {
+    active++;
+    var img = new Image();
+    img.decoding = 'async';
+    var finish = function (ok) {
+      active--;
+      done[job.key] = ok;
+      if (ok) keep[job.key] = img;
+      delete pending[job.key];
+      job.resolve(ok);
+      if (ok) onLoaded(job.key);
+      pump();
+    };
+    img.onerror = function () { finish(false); };
+    img.src = job.url;
+    if (img.decode) img.decode().then(function () { finish(true); }, function () {
+      // decode() 거부는 오류일 수도, 일부 브라우저의 미지원 거부일 수도 있다
+      if (img.complete && img.naturalWidth) finish(true); else finish(false);
+    });
+    else img.onload = function () { finish(true); };
+  }
+  function load(key, u, front) {
+    if (!u || !doc) return Promise.resolve(false);
+    if (key in done) return Promise.resolve(done[key]);
+    if (pending[key]) {
+      if (front) {   // 이미 대기 중이면 앞으로
+        for (var i = 0; i < queue.length; i++) if (queue[i].key === key) { queue.unshift(queue.splice(i, 1)[0]); break; }
+      }
+      return pending[key];
+    }
+    var p = new Promise(function (resolve) {
+      var job = { key: key, url: u, resolve: resolve };
+      if (front) queue.unshift(job); else queue.push(job);
+    });
+    pending[key] = p;
+    pump();
+    return p;
+  }
+
+  // 로드 성공 후: 정적 이미지는 CSS 변수를 설정(그 전엔 CSS가 URL을 요청하지 않는다), 카드에 data-art 부여
+  function onLoaded(key) {
+    if (!doc) return;
+    if (key.indexOf('s:') === 0) {
+      var name = key.slice(2);
+      docEl.style.setProperty('--img-' + name, 'url("' + staticUrl(name) + '")');
+      var have = (attr('data-img') || '').split(' ').filter(Boolean);
+      if (have.indexOf(name) < 0) { have.push(name); docEl.setAttribute('data-img', have.join(' ')); }
+      if (name === 'home') docEl.setAttribute('data-home-art', '1');
+    }
+    ART.mark(doc);
+  }
+
+  // ---------- 공개 API ----------
+  // 모닥불 진입 때 W6이 호출: ART.warm() = back, atlas, horizon, grain (slow면 horizon 생략)
+  ART.warm = function (names) {
+    names = names || ['back', 'atlas', 'horizon', 'grain'];
+    var out = [];
+    names.forEach(function (n) {
+      if (isSlow() && (n === 'horizon' || n === 'home')) return;
+      var u = staticUrl(n);
+      if (u) out.push(load('s:' + n, u, false));
+    });
+    return Promise.all(out).then(function () {});
+  };
+  ART.has = function (id) { return done['r:' + id] === true; };
+
+  // 큰 아트 로드 요청(동시 2개, 이미 있으면 무시). 가장 먼저 부른 것이 아니라 가장 최근 호출이 앞선다(최우선).
+  ART.want = function (ids) {
+    if (!ids) return;
+    (Array.isArray(ids) ? ids : [ids]).slice().reverse().forEach(function (id) {
+      var u = roleUrl(id);
+      if (u) load('r:' + id, u, true);
+    });
+  };
+  ART.cancel = function () { queue.forEach(function (j) { delete pending[j.key]; j.resolve(false); }); queue = []; };
+
+  // 덱 확정 뒤 idle 선로딩. deck = {role:count} 또는 [role…]
+  ART.prefetchDeck = function (deck) {
+    if (isSlow() || !deck) return;
+    var ids = Array.isArray(deck) ? deck : Object.keys(deck).filter(function (r) { return deck[r] > 0; });
+    var seen = {}, list = ids.filter(function (r) { if (seen[r]) return false; seen[r] = 1; return true; });
+    var run = function () {
+      list.forEach(function (id) { var u = roleUrl(id); if (u) load('r:' + id, u, false); });
+    };
+    if (root.requestIdleCallback) root.requestIdleCallback(run, { timeout: 3000 }); else setTimeout(run, 200);
+  };
+
+  // decode 완료 또는 1500ms. 아트가 없는 역할은 즉시 resolve
+  ART.ready = function (id) {
+    var u = roleUrl(id);
+    if (!u) return Promise.resolve();
+    var p = load('r:' + id, u, true).then(function () {});
+    return Promise.race([p, new Promise(function (r) { setTimeout(r, 1500); })]);
+  };
+
+  // root 안의 .card에 로드된 아트면 data-art="1" 즉시 부여 (md/xl은 --art도 설정)
+  ART.mark = function (scope) {
+    if (!doc) return;
+    scope = scope || doc;
+    var atlasOk = done['s:atlas'] === true;
+    var cards = scope.querySelectorAll ? scope.querySelectorAll('.card[data-role][data-art="0"]') : [];
+    for (var i = 0; i < cards.length; i++) {
+      var c = cards[i], role = c.getAttribute('data-role'), size = c.getAttribute('data-size');
+      if (size === 'xs' || size === 'sm') {
+        if (atlasOk) c.setAttribute('data-art', '1');
+      } else if (done['r:' + role] === true) {
+        var art = c.querySelector('.card-art');
+        if (art) art.style.setProperty('--art', 'url("' + roleUrl(role) + '")');
+        c.setAttribute('data-art', '1');
+      }
+    }
+  };
+
+  // 카드 뒤집기 (3D 플립 + 90° 섬광). 화면 코드는 data-face를 직접 바꿔도 되지만 이쪽이 will-change 정리까지 한다.
+  ART.flip = function (card, face) {
+    if (!card) return;
+    face = face ? 1 : 0;
+    if (card.getAttribute('data-face') === String(face)) return;
+    var inner = card.firstElementChild;
+    var calm = attr('data-perf') === 'lite' ||
+      (root.matchMedia && root.matchMedia('(prefers-reduced-motion:reduce)').matches);
+    if (!calm && inner) {
+      inner.style.willChange = 'transform';
+      var off = function () { inner.style.willChange = ''; inner.removeEventListener('transitionend', off); };
+      inner.addEventListener('transitionend', off);
+      setTimeout(off, 700);
+      card.classList.add('is-flip');
+      setTimeout(function () { card.classList.remove('is-flip'); }, 560);
+    }
+    card.setAttribute('data-face', String(face));
+    if (!card.hasAttribute('data-lbl')) {
+      var r = roles()[card.getAttribute('data-role')];
+      card.setAttribute('aria-label', face && r ? r.name + ' 카드' : '엎어진 카드');
+    }
+  };
+
+  // ---------- 카드 마크업 (§4.5) ----------
+  // ART.card(roleId|null, {size:'xs|sm|md|xl', face:0|1, cls, label, flat})
+  ART.card = function (roleId, o) {
+    o = o || {};
+    var size = o.size || 'sm';
+    var r = roleId ? roles()[roleId] : null;
+    if (roleId && !r) roleId = null;
+    var flat = !!o.flat;
+    var face = r ? (flat ? 1 : (o.face ? 1 : 0)) : 0;
+    var label = o.label || (r && face ? r.name + ' 카드' : '엎어진 카드');
+    var small = size === 'xs' || size === 'sm';
+
+    // 아트 상태: 이미 로드된 것만 즉시 반영 (그렇지 않으면 0 — 도착하면 ART.mark가 올린다)
+    var artOn = 0, artStyle = '';
+    if (r) {
+      if (small) {
+        var idx = roleIndex(roleId);
+        artStyle = '--col:' + (idx % 6) + ';--row:' + Math.floor(idx / 6);
+        if (done['s:atlas'] === true) artOn = 1;
+      } else if (done['r:' + roleId] === true) {
+        artOn = 1;
+        artStyle = '--art:url("' + roleUrl(roleId) + '")';
+      }
+    }
+
+    var h = '<div class="card' + (o.cls ? ' ' + esc(o.cls) : '') + '" data-size="' + size + '"';
+    if (r) h += ' data-role="' + roleId + '" data-team="' + r.team + '"';
+    h += ' data-face="' + face + '" data-art="' + artOn + '"' + (flat ? ' data-flat="1"' : '') +
+      (o.label ? ' data-lbl="1"' : '') + ' role="img" aria-label="' + esc(label) + '"><div class="card-in">';
+
+    if (r) {
+      h += '<div class="card-front"><div class="card-plate">' +
+        '<div class="card-art"' + (artStyle ? ' style="' + esc(artStyle) + '"' : '') + '></div>';
+      if (size !== 'xs' && size !== 'sm') h += '<span class="card-ord">' + esc(r.ord || '') + '</span>';
+      if (size !== 'xs') h += '<svg class="card-tm" aria-hidden="true"><use href="#' + (ART.TEAM_SYMBOL[r.team] || 'tm-village') + '"/></svg>';
+      h += '<span class="card-sg" aria-hidden="true"><svg><use href="#' + (r.sigil || 'sg-' + roleId) + '"/></svg></span>';
+      if (!small) h += '<svg class="card-sw" aria-hidden="true"><use href="#rp-turn"/></svg>';
+      h += '<div class="card-name">' + esc(r.name) + '</div>';
+      if (size === 'xl') h += '<div class="card-line">' + esc(r.line || '') + '</div>';
+      h += '</div></div>';
+    }
+    if (!r || !flat) {
+      h += '<div class="card-back"><svg class="card-bm" aria-hidden="true"><use href="#back-mark"/></svg></div>';
+    }
+    return h + '</div></div>';
+  };
+
+  // ---------- 시작 ----------
+  // CSS 이미지 변수(--img-back --img-atlas --img-grain --img-horizon --img-home)는 이미지가 로드·디코드된 뒤에 설정한다.
+  // (시작 시 설정하면 CSS가 곧바로 요청해 slow/차단 정책과 우선순위를 무시한다 — 보고서 참조.)
+  // 로드된 정적 이미지는 <html data-img="back atlas …">로 표시된다.
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = ART;
+  else root.ART = ART;
+})(typeof window !== 'undefined' ? window : globalThis);

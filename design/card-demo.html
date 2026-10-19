@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko" data-perf="full" data-net="fast">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>카드 시스템 데모</title>
+<link rel="stylesheet" href="../public/css/card.css">
+<style>
+/* 데모 전용 토큰/셸 — 실제 값은 public/css/base.css 소유 (§2) */
+:root{
+  color-scheme:dark;
+  --void:#070606;--ink:#0d0b09;--char:#15120f;--char-hi:#1f1a16;--ash:#2b2520;--smoke:#8c8176;
+  --bone:#d9cbb0;--bone-hi:#e8dfcc;--bone-dim:#a89a80;--sepia:#6b5a43;
+  --blood:#8e0f0f;--blood-hot:#c4161c;--clot:#4a0709;
+  --t-tap:60ms;--t-flip:520ms;--ease-press:cubic-bezier(.7,0,.3,1);
+  --f-title:"Hanbam T","Nanum Myeongjo","AppleMyungjo","Batang","Noto Serif CJK KR",serif;
+  --f-display:"Hanbam","Nanum Myeongjo","AppleMyungjo","Batang","Noto Serif CJK KR",serif;
+  --f-serif:"Nanum Myeongjo","AppleMyungjo","Batang","Noto Serif CJK KR",serif;
+  --f-body:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+  --fs-name:20px;
+}
+@media (min-width:1024px){:root{--fs-name:22px}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--void);color:var(--bone-dim);font:15px/1.5 var(--f-body);padding:16px 16px 64px}
+h1{font:400 30px/1.2 var(--f-title);color:var(--bone-hi);margin:0 0 8px}
+h2{font:600 12px/1 var(--f-body);letter-spacing:.18em;color:var(--smoke);margin:32px 0 12px;border-top:1px solid var(--ash);padding-top:12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+button{font:600 13px var(--f-body);color:var(--bone-hi);background:var(--char-hi);border:1px solid var(--ash);padding:10px 14px;border-radius:0;cursor:pointer;min-height:44px}
+button[aria-pressed="true"]{background:var(--blood);border-color:var(--blood-hot)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.cell{display:grid;gap:4px;justify-items:center;font-size:12px;color:var(--smoke)}
+.table{background:#000;padding:12px;display:inline-block}
+.tilt{display:inline-block;padding:20px 28px 12px 28px;position:relative}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.log{font:12px/1.4 monospace;color:var(--smoke);margin-top:8px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+
+<!-- 스프라이트: 데모용 근사 문양. 실제 12역할/3팀/back-mark/rp-turn 은 W3의 index.html 소유. 24x24, currentColor -->
+<svg class="sprite" aria-hidden="true"><defs>
+ <symbol id="tm-wolf" viewBox="0 0 24 24"><path d="M5 3 9 21M11 3 13 21M17 3 17 21" fill="none" stroke="currentColor" stroke-width="2.4"/></symbol>
+ <symbol id="tm-village" viewBox="0 0 24 24"><path d="M12 2 16 9 12 12 8 9ZM11 12h2v10h-2Z" fill="currentColor"/></symbol>
+ <symbol id="tm-tanner" viewBox="0 0 24 24"><path d="M12 3 20 11 12 21 4 11ZM8 11 12 7 16 11" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+ <symbol id="back-mark" viewBox="0 0 24 24"><path d="M12 22 4 14 3 3 8 7 16 7 21 3 20 14ZM8 12 10.5 13.5M16 12 13.5 13.5" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+ <symbol id="rp-turn" viewBox="0 0 24 24"><path d="M4 20 4 8 11 4 20 6M4 14 12 10" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+ <symbol id="sg-doppelganger" viewBox="0 0 24 24"><path d="M2 4 8 3 10 10 7 14 8 21M22 4 16 3 14 10 17 14 16 21" fill="none"/></symbol>
+ <symbol id="sg-werewolf" viewBox="0 0 24 24"><path d="M3 4 21 4 17 12 12 21 7 12ZM8 4 10 9 12 4 14 9 16 4" fill="none"/></symbol>
+ <symbol id="sg-minion" viewBox="0 0 24 24"><path d="M3 12 9 6 12 12 8 18 3 12ZM21 12 15 18 12 12 16 6 21 12ZM10 3 14 5" fill="none"/></symbol>
+ <symbol id="sg-mason" viewBox="0 0 24 24"><path d="M2 10 10 6 14 10 22 8M4 17 12 21 20 15 14 10M6 11 9 14" fill="none"/></symbol>
+ <symbol id="sg-seer" viewBox="0 0 24 24"><path d="M1 10Q12 2 23 10Q12 18 1 10ZM12 7 14 10 12 13 10 10ZM4 20 20 20 17 23 7 23Z" fill="none"/></symbol>
+ <symbol id="sg-robber" viewBox="0 0 24 24"><path d="M6 3 12 3 12 9 6 9ZM9 9 9 20 12 22M13 14 21 14 21 18 13 18Z" fill="none"/></symbol>
+ <symbol id="sg-troublemaker" viewBox="0 0 24 24"><path d="M3 3 21 21M21 3 3 21M17 3 21 3 21 7M7 3 3 3 3 7" fill="none"/></symbol>
+ <symbol id="sg-drunk" viewBox="0 0 24 24"><path d="M4 8 20 8 18 21 6 21ZM8 8 12 2 16 8M8 14 16 14" fill="none"/></symbol>
+ <symbol id="sg-insomniac" viewBox="0 0 24 24"><path d="M9 11 15 11 15 22 9 22ZM12 11 12 7M12 2 15 6 12 8 9 6Z" fill="none"/></symbol>
+ <symbol id="sg-villager" viewBox="0 0 24 24"><path d="M12 22 12 6M5 3 5 10 19 10 19 3M9 3 9 8M15 3 15 8" fill="none"/></symbol>
+ <symbol id="sg-hunter" viewBox="0 0 24 24"><path d="M2 21 20 3M20 3 20 9M20 3 14 3M4 6 10 12M2 10 8 16" fill="none"/></symbol>
+ <symbol id="sg-tanner" viewBox="0 0 24 24"><path d="M8 3 16 3 18 10 12 14 6 10ZM12 14 12 22 8 22" fill="none"/></symbol>
+</defs></svg>
+
+<h1>카드 시스템 데모</h1>
+<p>public/css/card.css + public/js/art.js. 이미지 0장 상태가 기본이다. 아래 버튼으로 가짜 아트(data URI)를 주입해 아트 경로도 확인한다.</p>
+<div class="bar">
+  <button id="b-art" aria-pressed="false">가짜 아트 주입 (되돌리려면 새로고침)</button>
+  <button id="b-lite" aria-pressed="false">lite 등급 (플립 대신 크로스페이드)</button>
+  <button id="b-flip">전부 뒤집기</button>
+</div>
+<div class="log" id="log"></div>
+
+<h2>크기 x 앞/뒤 (12역할)</h2>
+<div id="sizes"></div>
+
+<h2>뒷면 4크기</h2>
+<div class="row" id="backs"></div>
+
+<h2>상태 (xl/md/sm)</h2>
+<div id="states"></div>
+
+<h2>flat:1 (한 면, 3D 없음) — 앞면 / 뒷면</h2>
+<div class="row" id="flats"></div>
+
+<h2>플립 (눌러서 뒤집기, ART.flip)</h2>
+<div class="row" id="flip"></div>
+
+<script src="../public/roles.js"></script>
+<script src="../public/js/art.js"></script>
+<script>
+(function(){
+  var ids = WW.ROLE_ORDER, $ = function(i){return document.getElementById(i)};
+  function cell(html, cap){ return '<div class="cell">'+html+'<span>'+cap+'</span></div>'; }
+
+  function render(){
+    var h='';
+    ['xs','sm','md','xl'].forEach(function(sz){
+      h += '<h3 style="font:600 13px var(--f-body);color:var(--bone-hi);margin:16px 0 8px">'+sz+'</h3>';
+      var list = sz==='xl' ? ['seer','werewolf','tanner'] : ids;   // xl은 3장만(너무 크다)
+      [1,0].forEach(function(face){
+        if (sz==='xl' && !face) return;
+        h += '<div class="row" style="margin-bottom:12px">';
+        list.forEach(function(r){
+          h += cell(ART.card(r,{size:sz,face:face}), ROLES[r].name+(face?'':' (엎어짐)'));
+        });
+        h += '</div>';
+      });
+    });
+    $('sizes').innerHTML = h;
+
+    $('backs').innerHTML = ['xs','sm','md','xl'].map(function(sz){return cell(ART.card(null,{size:sz}), sz+' 뒷면')}).join('');
+
+    var st = [
+      ['is-selectable','고를 수 있음 (맥동)'],['is-selectable is-dim','is-dim'],['is-selected','선택됨'],
+      ['is-swapped','바뀐 카드'],['is-unknown','모르는 카드(뒷면)'],['is-dead','처형'],['is-zero','0장']
+    ];
+    var s='';
+    ['md','sm','xl'].forEach(function(sz){
+      s += '<div class="row" style="margin:12px 0">';
+      st.forEach(function(p){
+        var unk = p[0]==='is-unknown';
+        s += cell(ART.card(unk?'seer':(sz==='xl'?'werewolf':'seer'),{size:sz,face:unk?0:1,cls:p[0]}), sz+' '+p[0]);
+      });
+      s += '</div>';
+    });
+    s += '<div class="row" style="margin:12px 0"><div class="tilt">'+ART.card('robber',{size:'md',face:1,cls:'is-swapped'}) +
+         '<span style="position:absolute;left:0;top:0">'+ART.card('villager',{size:'sm',face:1,cls:'is-original'})+'</span></div><span class="cell">is-original 겹침 (≥600px)</span></div>';
+    $('states').innerHTML = s;
+
+    var f='';
+    ['xs','sm','md','xl'].forEach(function(sz){
+      f += cell(ART.card('seer',{size:sz,flat:1}), 'flat '+sz+' 앞');
+      f += cell(ART.card(null,{size:sz,flat:1}), 'flat '+sz+' 뒤');
+    });
+    f += cell(ART.card('tanner',{size:'md',flat:1,cls:'is-dead'}), 'flat dead');
+    $('flats').innerHTML = f;
+
+    $('flip').innerHTML = ['hunter','minion','tanner','doppelganger'].map(function(r){
+      return cell('<div class="fl">'+ART.card(r,{size:'md',face:0})+'</div>', ROLES[r].name+' (탭)');
+    }).join('') + cell('<div class="fl">'+ART.card('seer',{size:'xl',face:0})+'</div>','xl');
+    ART.mark(document);
+    document.querySelectorAll('.fl').forEach(function(el){
+      el.onclick=function(){var c=el.firstChild;ART.flip(c,c.getAttribute('data-face')==='1'?0:1)};
+      el.style.cursor='pointer';
+    });
+  }
+  render();
+
+  // 가짜 아트 -------------------------------------------------------
+  function fakeArt(i, w, h){
+    var wolf = ['werewolf','minion'].indexOf(ids[i])>=0;
+    var lines=''; for(var k=0;k<14;k++) lines += '<path d="M0 '+(h*.5+k*14)+' L'+w+' '+(h*.35+k*17)+'" stroke="#d9cbb0" stroke-width="'+(1+k%3)+'" opacity=".5"/>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'"><rect width="'+w+'" height="'+h+'" fill="#0d0b09"/>'+
+      '<circle cx="'+(w*.5)+'" cy="'+(h*.32)+'" r="'+(w*.22)+'" fill="#d9cbb0"/>'+
+      '<circle cx="'+(w*.58)+'" cy="'+(h*.3)+'" r="'+(w*.2)+'" fill="#0d0b09"/>'+lines+
+      '<path d="M'+(w*.3)+' '+h+' L'+(w*.5)+' '+(h*.55)+' L'+(w*.7)+' '+h+'Z" fill="'+(wolf?'#8e0f0f':'#d9cbb0')+'"/>'+
+      '<rect y="'+(h*.8)+'" width="'+w+'" height="'+(h*.2)+'" fill="#0d0b09"/></svg>';
+  }
+  function svgUrl(s){return 'data:image/svg+xml,'+encodeURIComponent(s)}
+  $('b-art').onclick=function(){
+    var m={art:{},lite:{}};
+    ids.forEach(function(r,i){ m.art[r]=svgUrl(fakeArt(i,560,784)); m.lite[r]=m.art[r]; });
+    var cv=document.createElement('canvas'); cv.width=1056; cv.height=492; var cx=cv.getContext('2d');
+    var pr=[], jobs=ids.map(function(r,i){return new Promise(function(res){var im=new Image();im.onload=function(){cx.drawImage(im,(i%6)*176,Math.floor(i/6)*246,176,246);res()};im.src=m.art[r]})});
+    Promise.all(jobs).then(function(){
+      m.atlas=cv.toDataURL('image/png');
+      var b='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 784"><rect width="560" height="784" fill="#0d0b09"/><path d="M280 700 170 560 140 230 220 300 340 300 420 230 400 560Z" fill="none" stroke="#d9cbb0" stroke-width="6"/><path d="M215 470 250 490M345 470 310 490" stroke="#8e0f0f" stroke-width="10"/></svg>';
+      m.back=svgUrl(b);
+      ART.manifest=m; window.ART_MANIFEST=m;
+      $('b-art').setAttribute('aria-pressed','true');
+      ART.warm(['back','atlas']).then(function(){ return Promise.all(ids.map(function(r){return ART.ready(r)})); }).then(function(){
+        render(); $('log').textContent='아트 주입 완료. 읽은 data-art=1 카드 수: '+document.querySelectorAll('.card[data-art="1"]').length;
+      });
+    });
+  };
+  $('b-lite').onclick=function(){
+    var on=this.getAttribute('aria-pressed')!=='true'; this.setAttribute('aria-pressed',on);
+    document.documentElement.setAttribute('data-perf', on?'lite':'full');
+  };
+  $('b-flip').onclick=function(){
+    document.querySelectorAll('.card[data-role]').forEach(function(c){ ART.flip(c, c.getAttribute('data-face')==='1'?0:1); });
+  };
+})();
+</script>
+</body>
+</html>

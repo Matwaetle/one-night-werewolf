@@ -1,0 +1,220 @@
+{
+ "name": "all-timeout",
+ "n": 6,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.5106549158959668",
+ "result": {
+  "gameId": "e5b83927",
+  "players": [
+   {
+    "id": "bot-봇1-0.5106549158959668",
+    "name": "봇1",
+    "original": "doppelganger",
+    "final": "doppelganger",
+    "effective": "werewolf",
+    "team": "wolf",
+    "vote": "bot-봇2-0.9558399416385664",
+    "votes": 1,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇2-0.9558399416385664",
+    "name": "봇2",
+    "original": "werewolf",
+    "final": "werewolf",
+    "effective": "werewolf",
+    "team": "wolf",
+    "vote": "bot-봇3-0.2541387337345048",
+    "votes": 1,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇3-0.2541387337345048",
+    "name": "봇3",
+    "original": "seer",
+    "final": "seer",
+    "effective": "seer",
+    "team": "village",
+    "vote": "bot-봇4-0.88898519713623",
+    "votes": 1,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇4-0.88898519713623",
+    "name": "봇4",
+    "original": "robber",
+    "final": "robber",
+    "effective": "robber",
+    "team": "village",
+    "vote": "bot-봇5-0.37055158441866565",
+    "votes": 1,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇5-0.37055158441866565",
+    "name": "봇5",
+    "original": "troublemaker",
+    "final": "troublemaker",
+    "effective": "troublemaker",
+    "team": "village",
+    "vote": "bot-봇6-0.38792084065498744",
+    "votes": 1,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇6-0.38792084065498744",
+    "name": "봇6",
+    "original": "drunk",
+    "final": "insomniac",
+    "effective": "insomniac",
+    "team": "village",
+    "vote": "bot-봇1-0.5106549158959668",
+    "votes": 1,
+    "dead": false,
+    "win": false
+   }
+  ],
+  "winners": [
+   "wolf"
+  ],
+  "noDeath": true,
+  "wolvesInPlay": 2,
+  "center": {
+   "original": [
+    "werewolf",
+    "insomniac",
+    "villager"
+   ],
+   "final": [
+    "werewolf",
+    "drunk",
+    "villager"
+   ]
+  },
+  "doppelCopy": "werewolf",
+  "deaths": [],
+  "why": [
+   [
+    "wolf_lived",
+    [
+     0,
+     1
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "doppelganger",
+    "werewolf",
+    "seer",
+    "robber",
+    "troublemaker",
+    "drunk",
+    "werewolf",
+    "insomniac",
+    "villager"
+   ],
+   "ev": [
+    {
+     "st": "doppelganger",
+     "k": "copy",
+     "by": [
+      0
+     ],
+     "tg": [
+      1
+     ],
+     "see": [
+      [
+       1,
+       1
+      ]
+     ],
+     "auto": 1,
+     "dop": [
+      0
+     ]
+    },
+    {
+     "st": "werewolf",
+     "k": "know",
+     "by": [
+      0,
+      1
+     ],
+     "dop": [
+      0
+     ]
+    },
+    {
+     "st": "seer",
+     "k": "skip",
+     "by": [
+      2
+     ],
+     "auto": 1
+    },
+    {
+     "st": "robber",
+     "k": "skip",
+     "by": [
+      3
+     ],
+     "auto": 1
+    },
+    {
+     "st": "troublemaker",
+     "k": "skip",
+     "by": [
+      4
+     ],
+     "auto": 1
+    },
+    {
+     "st": "drunk",
+     "k": "swap",
+     "by": [
+      5
+     ],
+     "tg": [
+      7
+     ],
+     "mv": [
+      [
+       5,
+       7
+      ],
+      [
+       7,
+       5
+      ]
+     ],
+     "auto": 1
+    },
+    {
+     "st": "insomniac",
+     "k": "idle",
+     "by": []
+    }
+   ],
+   "end": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    7,
+    6,
+    5,
+    8
+   ]
+  }
+ }
+}

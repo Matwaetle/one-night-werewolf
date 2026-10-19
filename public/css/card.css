@@ -1,0 +1,277 @@
+/* card.css — 카드 시스템 (DESIGN_SPEC §4). 이미지 0장이어도 완성품. 애니메이션은 transform/opacity만.
+   마크업은 ART.card()가 만든다(§4.5). 토큰(--ink 등)은 base.css :root. */
+
+:root{
+  --cw-xs:40px; --cw-sm:72px; --cw-md:128px; --cw-xl:min(64vw,300px);
+}
+@media (min-width:600px){ :root{ --cw-sm:88px; --cw-md:156px; } }
+
+/* 크기: :where()로 특이도 0 — 문맥(독 44px, 제단 52px 등)이 쉽게 덮어쓴다 */
+:where(.card){ --cw:var(--cw-sm); }
+:where(.card[data-size="xs"]){ --cw:var(--cw-xs); }
+:where(.card[data-size="sm"]){ --cw:var(--cw-sm); }
+:where(.card[data-size="md"]){ --cw:var(--cw-md); }
+:where(.card[data-size="xl"]){ --cw:var(--cw-xl); }
+@media (max-width:399px){ .card.altar-card{ --cw:52px; } }
+
+.card{
+  position:relative; display:block; flex:none; box-sizing:border-box;
+  width:var(--cw); aspect-ratio:5/7; perspective:800px;
+  -webkit-tap-highlight-color:transparent;
+}
+.card *{ box-sizing:border-box; }
+.card-in{
+  position:relative; width:100%; height:100%;
+  transform-style:preserve-3d;
+  transition:transform var(--t-flip,520ms) var(--ease-press,cubic-bezier(.7,0,.3,1));
+}
+.card-front,.card-back{
+  position:absolute; inset:0;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+}
+.card[data-face="1"] .card-in{ transform:rotateY(180deg); }
+
+/* ---------- 앞면 ---------- */
+.card-front{
+  transform:rotateY(180deg);
+  background-color:var(--bone);
+  padding:calc(var(--cw)*.04);
+}
+/* 판목 못: 종이 여백 네 귀 2px 점 (md 이상) */
+.card[data-size="md"] .card-front,
+.card[data-size="xl"] .card-front{
+  background-image:
+    linear-gradient(var(--ink),var(--ink)),linear-gradient(var(--ink),var(--ink)),
+    linear-gradient(var(--ink),var(--ink)),linear-gradient(var(--ink),var(--ink));
+  background-size:2px 2px;
+  background-repeat:no-repeat;
+  background-position:calc(var(--cw)*.012) calc(var(--cw)*.012),
+    calc(100% - var(--cw)*.012) calc(var(--cw)*.012),
+    calc(var(--cw)*.012) calc(100% - var(--cw)*.012),
+    calc(100% - var(--cw)*.012) calc(100% - var(--cw)*.012);
+}
+.card-plate{
+  position:relative; height:100%; background-color:var(--ink);
+  background-image:repeating-linear-gradient(115deg,rgba(217,203,176,.05) 0 1px,transparent 1px 4px);
+}
+.card[data-size="md"] .card-plate,
+.card[data-size="xl"] .card-plate{ outline:1px solid var(--ink); outline-offset:1px; }
+/* 아트 없는 md/xl: 판 안쪽 이중 괘선(목판 가장자리) */
+.card[data-art="0"][data-size="md"] .card-plate,
+.card[data-art="0"][data-size="xl"] .card-plate{
+  box-shadow:inset 0 0 0 calc(var(--cw)*.03) var(--ink),inset 0 0 0 calc(var(--cw)*.03 + 1px) rgba(168,154,128,.35);
+}
+
+.card-art{
+  position:absolute; inset:0; opacity:0; transition:opacity 180ms linear;
+  background:var(--art) 50% 0/cover no-repeat;
+}
+.card[data-art="1"] .card-art{ opacity:1; }
+/* xs/sm: 썸네일 아틀라스 (2행 x 6열, ROLE_ORDER 순) */
+.card[data-size="xs"] .card-art,
+.card[data-size="sm"] .card-art{
+  background:var(--img-atlas) calc(var(--col,0)*20%) calc(var(--row,0)*100%)/600% 200% no-repeat;
+}
+/* 역할별 미세 조정은 W8: [data-role=x] .card-art{background-position:50% N%} (md/xl 전용으로 쓸 것) */
+
+/* 좌상 밤 순서 / 우상 팀 문양 */
+.card-ord{
+  position:absolute; left:6%; top:3%; z-index:2;
+  font:400 calc(var(--cw)*.105)/1 var(--f-title); letter-spacing:.04em;
+  color:var(--bone-hi); text-shadow:1px 1px 0 var(--ink);
+}
+.card-tm{
+  position:absolute; right:5%; top:3%; z-index:2;
+  width:calc(var(--cw)*.11); min-width:11px; max-width:20px; aspect-ratio:1; height:auto;
+  color:var(--bone-hi); fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:butt; stroke-linejoin:miter;
+  background:rgba(13,11,9,.6); padding:1px;
+}
+
+/* 역할 문양 .card-sg: 아트 없을 때 크게, xs/sm은 항상 칩 */
+.card-sg{
+  position:absolute; z-index:2; display:grid; place-items:center;
+  color:var(--bone-dim);
+}
+.card-sg svg{
+  width:46%; height:auto; aspect-ratio:1; display:block;
+  fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:butt; stroke-linejoin:miter;
+}
+/* md/xl 아트 없음: 리본 위 영역 가운데 */
+.card[data-size="md"] .card-sg,
+.card[data-size="xl"] .card-sg{ left:0; right:0; top:0; height:76%; }
+.card[data-art="1"][data-size="md"] .card-sg,
+.card[data-art="1"][data-size="xl"] .card-sg{ display:none; }
+/* xs/sm 아트 있음: 우하단 18px 칩 */
+.card[data-size="xs"] .card-sg,
+.card[data-size="sm"] .card-sg{
+  right:3%; bottom:3%; left:auto; top:auto; width:18px; height:18px;
+  background:var(--ink); color:var(--bone-hi);
+}
+.card[data-size="xs"] .card-sg svg,
+.card[data-size="sm"] .card-sg svg{ width:16px; height:16px; }
+/* xs/sm 아트 없음: 칩 대신 판 위쪽에 크게 */
+.card[data-art="0"][data-size="xs"] .card-sg,
+.card[data-art="0"][data-size="sm"] .card-sg{
+  left:0; right:0; top:0; bottom:auto; width:auto; height:50%; background:none; color:var(--bone-dim);
+}
+.card[data-art="0"][data-size="xs"] .card-sg svg,
+.card[data-art="0"][data-size="sm"] .card-sg svg{ width:62%; height:auto; aspect-ratio:1; }
+.card[data-art="0"][data-size="sm"] .card-sg{ height:57%; }
+
+/* 리본(역할명 띠). clip-path는 정적 다각형이라 예산 밖 */
+.card-name{
+  position:absolute; left:-4%; right:-4%; top:76%; height:12%; z-index:3;
+  display:grid; place-items:center; overflow:visible; white-space:nowrap;
+  font:400 min(var(--fs-name,22px),calc(var(--cw)*.145))/1 var(--f-display); letter-spacing:.06em;
+  clip-path:polygon(0 0,100% 0,96% 50%,100% 100%,0 100%,4% 50%);
+  background:var(--bone-hi); color:var(--ink);
+  box-shadow:inset 0 1px 0 var(--ink),inset 0 -1px 0 var(--ink);
+}
+.card[data-size="xl"] .card-name{ font-size:calc(var(--cw)*.088); }
+.card[data-team="wolf"] .card-name{ background:var(--blood); color:var(--bone-hi); box-shadow:none; }
+.card[data-team="tanner"] .card-name{
+  background:var(--sepia); color:var(--bone-hi);
+  box-shadow:inset 0 -1px 0 0 var(--sepia);
+  background-image:repeating-linear-gradient(90deg,var(--bone-hi) 0 4px,transparent 4px 7px);
+  background-size:100% 1px; background-repeat:repeat-x; background-position:0 calc(100% - 1px);
+  background-color:var(--sepia);
+}
+.card[data-team="wolf"] .card-tm{ color:var(--bone-hi); }
+
+/* sm: 이름 body 13px, 리본 아래로 칩 자리 확보 */
+.card[data-size="sm"] .card-name{
+  top:57%; height:18%;
+  font:600 min(13px,calc(var(--cw)*.17))/1 var(--f-body); letter-spacing:0;
+}
+.card[data-size="sm"] .card-tm{ width:11px; height:11px; min-width:0; right:4%; top:3%; padding:0; }
+.card[data-size="sm"] .card-ord{ display:none; }
+/* xs: 글자 없음. 팀 색 띠만 */
+.card[data-size="xs"] .card-name{ top:50%; height:12%; font-size:0; color:transparent; clip-path:none; left:0; right:0; }
+.card[data-size="xs"] .card-ord,.card[data-size="xs"] .card-tm,.card[data-size="xs"] .card-line{ display:none; }
+
+/* 한 줄 (xl만) */
+.card-line{
+  position:absolute; left:0; right:0; top:88%; bottom:0; z-index:2;
+  display:none; place-items:center; padding:0 6%; text-align:center;
+  background:var(--ink); color:var(--bone-dim);
+  font:400 13px/1.25 var(--f-serif);
+}
+.card[data-size="xl"] .card-line{ display:grid; }
+.card[data-size="sm"] .card-line,.card[data-size="xs"] .card-line,.card[data-size="md"] .card-line{ display:none; }
+
+/* ---------- 뒷면 ---------- */
+.card-back{
+  --bi:max(2px,calc(var(--cw)*.025));
+  background-color:var(--ink);
+  background-image:repeating-linear-gradient(115deg,rgba(217,203,176,.05) 0 1px,transparent 1px 4px);
+  box-shadow:inset 0 0 0 var(--bi) var(--ink),inset 0 0 0 calc(var(--bi) + 1px) var(--bone-dim);
+}
+.card-bm{
+  position:absolute; left:20%; top:25%; width:60%; height:50%;
+  color:var(--bone-dim); opacity:.55; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linejoin:miter;
+}
+/* 뒷면 판화: html[data-img~=back]일 때만(art.js가 로드·디코드 뒤 --img-back과 함께 설정) */
+.card-back::after{
+  content:""; position:absolute; inset:calc(var(--bi) + 1px); opacity:0; transition:opacity 180ms linear;
+  background:var(--img-back) 50% 0/cover no-repeat;
+}
+html[data-img~="back"] .card-back::after{ opacity:1; }
+
+/* ---------- 상태 (::before = 선택 테두리, ::after = 플립 섬광) ---------- */
+.card::before{
+  content:""; position:absolute; inset:-3px; z-index:5; pointer-events:none;
+  border:1px solid var(--bone-hi); opacity:0;
+}
+.card::after{
+  content:""; position:absolute; inset:0; z-index:6; pointer-events:none;
+  background:var(--bone-hi); opacity:0;
+}
+.card.is-flip::after{ animation:card-flash 520ms linear; }
+@keyframes card-flash{ 0%,48%{opacity:0} 50%{opacity:.5} 62%,100%{opacity:0} }
+
+.card.is-dim{ opacity:.35; }
+.card.is-selectable::before{ animation:card-pulse 1.6s ease-in-out infinite alternate; }
+@keyframes card-pulse{ from{opacity:.3} to{opacity:.9} }
+.card.is-selectable{ cursor:pointer; }
+
+.card.is-selected{
+  transform:translateY(-6px); box-shadow:0 6px 0 #000;
+  transition:transform var(--t-tap,60ms) linear;
+}
+.card.is-selected::before{ border:2px solid var(--blood-hot); opacity:1; animation:none; }
+.card.is-selected.is-dim{ opacity:1; }
+
+/* 모르는 카드: 뒷면 위 ? 낙인 */
+.card.is-unknown .card-back::before{
+  content:"?"; position:absolute; inset:0; z-index:2; display:grid; place-items:center;
+  font:400 calc(var(--cw)*.4)/1 var(--f-title); color:var(--bone-dim);
+}
+.card.is-unknown .card-bm{ opacity:.25; }
+
+/* 처형: 아트 .55(정적), 대각 피 칼자국 2줄, 리본 위 도장 */
+.card.is-dead[data-art="1"] .card-art{ opacity:.55; }
+.card.is-dead .card-plate::after{
+  content:""; position:absolute; inset:0; z-index:4; pointer-events:none;
+  background:
+    linear-gradient(to top right,transparent calc(50% - 1.5px),var(--blood) calc(50% - 1.5px),var(--blood) calc(50% + 1.5px),transparent calc(50% + 1.5px)),
+    linear-gradient(to bottom right,transparent calc(50% - 1px),var(--blood) calc(50% - 1px),var(--blood) calc(50% + 1px),transparent calc(50% + 1px));
+}
+.card.is-dead[data-size="md"] .card-plate::before,
+.card.is-dead[data-size="xl"] .card-plate::before{
+  content:"처형"; position:absolute; left:50%; top:70%; z-index:5;
+  padding:.1em .45em; transform:translate(-50%,-50%) rotate(-6deg);
+  font:400 calc(var(--cw)*.1)/1.1 var(--f-display); letter-spacing:.1em;
+  color:var(--bone-hi); background:var(--ink); border:2px solid var(--blood-hot);
+}
+
+/* 바뀐 카드: 귀퉁이 찢김(정적 clip-path) + 리본 옆 rp-turn 표식 */
+.card-sw{ display:none; }
+.card.is-swapped .card-front{
+  clip-path:polygon(0 0,100% 0,100% 90%,96% 92%,97% 95%,92% 96%,93% 100%,0 100%);
+}
+.card.is-swapped .card-sw{
+  position:absolute; left:3%; top:calc(76% - var(--cw)*.13); z-index:4; display:block;
+  width:calc(var(--cw)*.12); min-width:12px; max-width:22px; aspect-ratio:1; height:auto;
+  color:var(--bone-hi); fill:none; stroke:currentColor; stroke-width:1.5; stroke-linejoin:miter;
+  background:rgba(13,11,9,.6); padding:1px;
+}
+.card[data-size="sm"].is-swapped .card-sw{ top:calc(57% - 14px); }
+.card[data-size="xs"].is-swapped .card-sw{ display:none; }
+
+/* 결과의 처음 카드: sm의 60%, 최종 카드 왼쪽 위에 겹침(데스크톱 전용 배치; 모바일은 §6.9 목록) */
+.card.is-original{
+  --cw:calc(var(--cw-sm)*.6);
+  position:absolute; left:-22%; top:-10%; z-index:4; opacity:.7;
+}
+@media (max-width:599px){ .card.is-original{ display:none; } }
+
+/* 덱 빌더 0장 */
+.card.is-zero{ opacity:.35; }
+
+/* ---------- flat:1 (리플레이): 3D 없음, 한 면만 ---------- */
+.card[data-flat="1"]{ perspective:none; }
+.card[data-flat="1"] .card-in{ transform:none; transform-style:flat; transition:none; }
+.card[data-flat="1"][data-face] .card-in{ transform:none; }
+.card[data-flat="1"] .card-front{ transform:none; }
+.card[data-flat="1"] .card-front,
+.card[data-flat="1"] .card-back{ backface-visibility:visible; -webkit-backface-visibility:visible; }
+
+/* ---------- 저사양·모션 줄이기: 플립 대신 크로스페이드 160ms ---------- */
+@media (prefers-reduced-motion:reduce){
+  .card-in{ transform:none!important; transform-style:flat; transition:none; }
+  .card:not([data-flat="1"]) .card-front{ transform:none; opacity:0; transition:opacity 160ms linear; }
+  .card:not([data-flat="1"]) .card-back{ opacity:1; transition:opacity 160ms linear; }
+  .card:not([data-flat="1"])[data-face="1"] .card-front{ opacity:1; }
+  .card:not([data-flat="1"])[data-face="1"] .card-back{ opacity:0; }
+  .card.is-flip::after{ animation:none; }
+  .card.is-selectable::before{ animation:none; opacity:.6; }
+  .card-art,.card-back::after{ transition:none; }
+}
+html[data-perf="lite"] .card-in{ transform:none!important; transform-style:flat; transition:none; }
+html[data-perf="lite"] .card:not([data-flat="1"]) .card-front{ transform:none; opacity:0; transition:opacity 160ms linear; }
+html[data-perf="lite"] .card:not([data-flat="1"]) .card-back{ opacity:1; transition:opacity 160ms linear; }
+html[data-perf="lite"] .card:not([data-flat="1"])[data-face="1"] .card-front{ opacity:1; }
+html[data-perf="lite"] .card:not([data-flat="1"])[data-face="1"] .card-back{ opacity:0; }
+html[data-perf="lite"] .card.is-flip::after{ animation:none; }
+html[data-perf="lite"] .card.is-selectable::before{ animation:none; opacity:.6; }
+body.paused .card::before,body.paused .card::after{ animation-play-state:paused; }

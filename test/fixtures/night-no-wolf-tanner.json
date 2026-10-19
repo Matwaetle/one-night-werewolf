@@ -1,0 +1,125 @@
+{
+ "name": "no-wolf-tanner",
+ "n": 3,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.9066715385338215",
+ "result": {
+  "gameId": "cd1dfe2a",
+  "players": [
+   {
+    "id": "bot-봇1-0.9066715385338215",
+    "name": "봇1",
+    "original": "tanner",
+    "final": "tanner",
+    "effective": "tanner",
+    "team": "tanner",
+    "vote": "bot-봇2-0.6488265659433314",
+    "votes": 2,
+    "dead": true,
+    "win": true
+   },
+   {
+    "id": "bot-봇2-0.6488265659433314",
+    "name": "봇2",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇1-0.9066715385338215",
+    "votes": 1,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "bot-봇3-0.43536593088148934",
+    "name": "봇3",
+    "original": "seer",
+    "final": "seer",
+    "effective": "seer",
+    "team": "village",
+    "vote": "bot-봇1-0.9066715385338215",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   }
+  ],
+  "winners": [
+   "tanner"
+  ],
+  "noDeath": false,
+  "wolvesInPlay": 0,
+  "center": {
+   "original": [
+    "werewolf",
+    "werewolf",
+    "villager"
+   ],
+   "final": [
+    "werewolf",
+    "werewolf",
+    "villager"
+   ]
+  },
+  "doppelCopy": null,
+  "deaths": [
+   {
+    "s": 0,
+    "by": "vote"
+   }
+  ],
+  "why": [
+   [
+    "wolf_center"
+   ],
+   [
+    "no_wolf_tanner",
+    [
+     0
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "tanner",
+    "villager",
+    "seer",
+    "werewolf",
+    "werewolf",
+    "villager"
+   ],
+   "ev": [
+    {
+     "st": "werewolf",
+     "k": "idle",
+     "by": []
+    },
+    {
+     "st": "seer",
+     "k": "peek",
+     "by": [
+      2
+     ],
+     "tg": [
+      1
+     ],
+     "see": [
+      [
+       1,
+       1
+      ]
+     ]
+    }
+   ],
+   "end": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  }
+ }
+}

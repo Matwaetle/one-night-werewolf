@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hanbam Fallback 메트릭 실측</title>
+<style>
+  body{font:14px/1.5 system-ui,sans-serif;background:#070606;color:#d9cbb0;margin:0;padding:16px;max-width:760px}
+  h1{font-size:18px;margin:0 0 8px}
+  code,pre{font-family:ui-monospace,Consolas,monospace}
+  pre{background:#15120f;border:1px solid #2b2520;padding:12px;overflow:auto;white-space:pre-wrap;user-select:all}
+  table{border-collapse:collapse;width:100%;margin:12px 0}
+  td,th{border-bottom:1px solid #2b2520;padding:4px 6px;text-align:left}
+  .ok{color:#d9cbb0}.no{color:#8c8176}
+  button,input{font:inherit}
+</style>
+</head>
+<body>
+<h1>Hanbam Fallback 메트릭 실측 (DESIGN_SPEC §3)</h1>
+<p>Song Myung 원본과 이 기기에 설치된 고딕을 같은 글자열로 캔버스에서 재서
+<code>size-adjust</code>, <code>ascent-override</code>, <code>descent-override</code>를 계산한다.
+결과 JSON을 <code>tools/font-metrics.json</code>에 저장하면 <code>stamp.js</code>가 <code>__SA__ __AO__ __DO__</code>에 채운다.
+기기마다 고딕이 달라 값이 다르다 — 가장 흔한 기기(안드로이드 Noto Sans CJK KR, iOS Apple SD Gothic Neo, 윈도 맑은 고딕)에서 각각 재고
+<code>fallback</code>이 가장 먼저 설치된 항목의 값을 쓴다.</p>
+
+<p>
+  원본 TTF: <input id="file" type="file" accept=".ttf,.otf,.woff,.woff2">
+  <span id="src" class="no"></span>
+</p>
+<p>URL로 열기: <code>font-metrics.html?font=../art-src/fonts/SongMyung-Regular.ttf</code> (파일은 로컬 서버로 열어야 한다. <code>file://</code>에서는 막힌다)</p>
+
+<table id="tbl"><thead><tr><th>대체 고딕</th><th>설치</th><th>size-adjust</th><th>ascent</th><th>descent</th></tr></thead><tbody></tbody></table>
+<h1>복사해서 tools/font-metrics.json 으로 저장</h1>
+<pre id="out">TTF를 고르면 여기에 나온다.</pre>
+
+<!-- 글자열은 손으로 쓰지 않고 실제 문구에서 가져온다 (없으면 기본 샘플) -->
+<script src="../public/strings.js" onerror="void 0"></script>
+<script src="../public/roles.js" onerror="void 0"></script>
+<script>
+(function () {
+  // spec §3 의 local() 순서와 같게 둔다
+  var FALLBACKS = ['Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans CJK KR', 'Noto Sans KR'];
+  var SIZE = 100;                                  // 캔버스 em 크기(px). 비율만 쓴다
+  var DEFAULT = '한밤의 늑대인간 밤이 깊었다 눈을 감아라 처형 마을 승리 0123456789 IVX';
+
+  function strings(v, out) {
+    if (typeof v === 'string') out.push(v.replace(/\$\{[^}]*\}/g, '').replace(/<[^>]+>/g, ''));
+    else if (v && typeof v === 'object') Object.keys(v).forEach(function (k) { strings(v[k], out); });
+    return out;
+  }
+  function sample() {
+    try {
+      if (!window.T) return DEFAULT;
+      var o = [];
+      ['title', 'btn', 'head', 'phase', 'verdict', 'stamp'].forEach(function (g) { strings(window.T[g], o); });
+      var s = o.join('');
+      return s.length > 20 ? s : DEFAULT;
+    } catch (e) { return DEFAULT; }
+  }
+
+  var ctx = document.createElement('canvas').getContext('2d');
+  function measure(family, text) {
+    ctx.font = SIZE + 'px ' + family;
+    var m = ctx.measureText(text);
+    return { w: m.width, a: m.fontBoundingBoxAscent, d: m.fontBoundingBoxDescent };
+  }
+  // 설치 여부: 모르는 글꼴은 generic 으로 떨어지므로 monospace/serif 두 번 재서 폭이 다르면 미설치
+  function installed(name, text) {
+    var a = measure('"' + name + '",monospace', text).w, b = measure('"' + name + '",serif', text).w;
+    return Math.abs(a - b) < 0.01;
+  }
+  var r1 = function (x) { return Math.round(x * 10) / 10; };
+
+  function run(buf, label) {
+    var face = new FontFace('HBWeb', buf);
+    face.load().then(function (f) {
+      document.fonts.add(f);
+      var text = sample();
+      var web = measure('"HBWeb"', text);
+      var rows = [], best = null;
+      FALLBACKS.forEach(function (name) {
+        var inst = installed(name, text);
+        var row = { name: name, installed: inst };
+        if (inst) {
+          var fb = measure('"' + name + '"', text);
+          var sa = web.w / fb.w;                    // 대체 글꼴을 웹폰트 폭에 맞추는 배율
+          row.sa = r1(sa * 100);
+          // override 는 size-adjust 가 적용되기 전 em 기준 → 배율로 나눈다 (next/font, capsize 와 같은 식)
+          row.ao = r1(web.a / SIZE / sa * 100);
+          row.do = r1(web.d / SIZE / sa * 100);
+          if (!best) best = row;
+        }
+        rows.push(row);
+      });
+      var tb = document.querySelector('#tbl tbody');
+      tb.innerHTML = '';
+      rows.forEach(function (r) {
+        var tr = document.createElement('tr');
+        tr.className = r.installed ? 'ok' : 'no';
+        tr.innerHTML = '<td>' + r.name + '</td><td>' + (r.installed ? '예' : '아니오') + '</td><td>' +
+          (r.installed ? r.sa + '%' : '-') + '</td><td>' + (r.installed ? r.ao + '%' : '-') + '</td><td>' + (r.installed ? r.do + '%' : '-') + '</td>';
+        tb.appendChild(tr);
+      });
+      var out = document.getElementById('out');
+      if (!best) { out.textContent = '설치된 대체 고딕이 없다. 목록의 고딕이 있는 기기에서 다시 열어라.'; return; }
+      out.textContent = JSON.stringify({
+        sa: best.sa, ao: best.ao, do: best.do,
+        fallback: best.name, sample: text.length + '자', measuredAt: new Date().toISOString().slice(0, 10),
+        ua: navigator.userAgent
+      }, null, 2);
+    }, function (e) { document.getElementById('out').textContent = '폰트를 읽지 못했다: ' + e; });
+  }
+
+  document.getElementById('file').addEventListener('change', function (e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    document.getElementById('src').textContent = f.name;
+    f.arrayBuffer().then(function (b) { run(b, f.name); });
+  });
+  var q = new URLSearchParams(location.search).get('font');
+  if (q) {
+    document.getElementById('src').textContent = q;
+    fetch(q).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(function (b) { run(b, q); })
+      .catch(function (e) { document.getElementById('out').textContent = '불러오지 못했다: ' + e; });
+  }
+})();
+</script>
+</body>
+</html>

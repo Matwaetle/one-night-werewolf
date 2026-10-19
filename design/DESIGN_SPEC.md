@@ -99,7 +99,7 @@
 
 | 용도 | 폰트 | 비고 |
 |---|---|---|
-| 홈 제목·홈 버튼 | **Hanbam T** = Song Myung 400 서브셋 ①(제목용, ≤10KB, preload) | 첫 페인트에 필요한 글자만 |
+| 홈 제목·홈 버튼 | **Hanbam T** = Song Myung 400 서브셋 ①(제목용, ≤10KB, preload) | 첫 페인트에 필요한 글자만. 홈 버튼 라벨(`T.btn.open/join/otherTown/law/or`)도 ①에 포함(subset-font.mjs `HOME_BTN`) — 홈에서 ②(30KB)를 끌어오지 않게 |
 | 디스플레이 (역할명 md 이상, 리본, 버튼 동사, 헤드라인, 판결, 도장, 단계명) | **Hanbam** = Song Myung 400 서브셋 ②(≤30KB, 지연 로드) | 18px 이상에서만. `font-synthesis:none` |
 | 내레이션, 카드 한 줄(`card-line`), 법도 본문 | 시스템 명조 0KB `--f-serif` | 서브셋에 넣지 않는다(확정, 예외 없음) |
 | 본문 / UI / 채팅 / **닉네임 전부** / 지시문 띠 | 시스템 고딕 0KB `--f-body` | |
@@ -131,7 +131,7 @@
 **서브셋 파이프라인** (`tools/subset-font.mjs`, 오프라인, devDependency `subset-font`(wasm))
 1. 원본: Google Fonts 저장소의 `SongMyung-Regular.ttf`를 `art-src/fonts/`에 둔다(배포 안 함).
 2. 글자 소스는 **손으로 관리하는 목록 없이** 코드를 순회해 만든다(`T.DISPLAY` 삭제).
-   - ① 제목용(Hanbam T): `T.title`의 모든 문자열 값 + `0-9 A-Z I V X — · . , ? ( ) / : ×` + 공백.
+   - ① 제목용(Hanbam T): `T.title`의 모든 문자열 값 + 홈 버튼 라벨 5종(`T.btn.open/join/otherTown/law/or`) + `0-9 A-Z I V X — · . , ? ( ) / : ×` + 공백.
    - ② 디스플레이용(Hanbam): `T`에서 디스플레이 그룹(`T.title T.btn T.head T.phase T.verdict T.stamp`)의 모든 문자열 값 + `ROLES[*].name` + `TEAM_NAME` 값 + ①의 ASCII. 템플릿의 `${…}`는 제거하고 센다. `T.chat`, `T.narr`, `T.body`, `ROLES[*].line/desc`, `NIGHT_TEXT`는 넣지 않는다.
 3. 출력: `public/fonts/hanbam-t.<8자 해시>.woff2`(≤10KB), `public/fonts/hanbam-d.<8자 해시>.woff2`(≤30KB). 넘으면 `check-budget` 실패 → 디스플레이 그룹에서 문장을 `T.body`로 옮긴다(문장 단위, 구현자가 아니라 W2가 결정).
 4. `Hanbam T`만 `<link rel="preload" as="font" type="font/woff2" crossorigin>`. `Hanbam`은 홈이 입력 가능해진 뒤 `requestIdleCallback`(최대 3초) 또는 모닥불 진입 중 먼저 오는 시점에 `new FontFace('Hanbam','url(...)').load().then(f=>document.fonts.add(f))`.
@@ -721,7 +721,7 @@ REPLAY.close()          // 애니메이션 cancel, .rp 제거, 참조 해제 (�
 | ├ socket.io 클라이언트 (`sio.<hash>.js`, defer) | ≈ 15KB | 버전 고정 사본 |
 | └ `game.<hash>.js` (strings+roles+art+app, defer) | ≤ 22KB | |
 | 홈 입력 가능 후 지연 로드 | `game.css` ≤ 9KB, `fx.js` ≤ 5KB, `hanbam-d` ≤ 30KB | 홈에는 필요 없음 |
-| 심판 진입 후 idle 지연 로드 | `replay.<hash>.js` **≤ 7KB** (JS ≈ 5 + 인라인 CSS ≈ 1.5 + 문양 5종 ≈ 0.4) | §13.9. `fx.js` 5KB 예산과 별개. 결말 이미지 0장 추가 |
+| 심판 진입 후 idle 지연 로드 | `replay.<hash>.js` **≤ 12KB** (JS ≈ 5 + 인라인 CSS ≈ 1.5 + 문양 5종 ≈ 0.4) | §13.9. `fx.js` 5KB 예산과 별개. 결말 이미지 0장 추가 |
 | 홈 키아트 | 데스크톱 ≤ 80KB / 모바일 ≤ 45KB | `load` 후 `fetchpriority=low`. slow면 생략 |
 | 모닥불 추가 (아틀라스 + 뒷면 + 지평선 + 그레인) | ≤ 130KB | 55 + 35 + 35 + 4 |
 | idle 선로딩 (이번 덱의 큰 아트) | ≤ 400KB | 취소 가능, slow면 생략 |
@@ -1224,14 +1224,14 @@ TTS는 단계 종료 시 `눈을 감아라.`를 붙여 읽는다.
 | **W1 서버·네트워크** | `serveClient:false`, CORS(`STATIC_ORIGIN`), `/healthz` CORS, stamp 메모리 빌드 + 시작 시 br/gzip 미리 압축 서빙, socket 옵션, `CARD_CHECK` 13000, `LOBBY_GRACE` 60000, 멱등 핸들러/ack, §7.4 데이터 계약(`gameId`, `ids`, `reveal`), §10.7 서버 문구 전체 교체(`T.josa`), 이모지 제거, `package.json`(dev: sharp, subset-font). sim.js는 끝에서 `test/replay.js`가 있으면 `require`해 함께 돌린다(W9 파일, 없으면 건너뜀). `test/sim.js`를 새 문구·페이로드에 맞게 갱신. **3차 — 밤의 기록 서버 쪽 전부(§13.1~13.3)**: `g.seats`/`deal`/`pos`/`ev`, `swapSlots()`·`rec()`, 기록 지점 표 전부, `finishPending`의 `auto:1`(`r`의 `lonewolf`→`werewolf`, `st = g.stepRole`), `rec()`의 `dop`·`r` 생략, `mv` `[c,to]`, 개발 모드 `swapSlots` 불변식 단언, 게임 안 슬롯 계산 `g.seats` 전용(`slotOf`는 −1에서 throw), `resolve()`의 정합성 단언·`deaths`(`miss` 포함)·`why`(`[코드, 좌석]`)·`night`, `label()`·`timeline()` 삭제(호환 `hunterKills`·`timeline:[]`은 한 릴리스 유지, §13.3), `eff()` 규칙 고정. sim.js에 §13.11 서버 단언 + 시나리오 행렬(§13.12) + 각 결과를 `test/fixtures/night-<시나리오>.json`으로 기록 | `server.js`, `package.json`, `test/sim.js`, `test/fixtures/*`(생성물) | `npm test` 통과(금지 키 패턴 검사 포함), 서버 문자열 이모지 0, 결과 `state` ≤ 6KB 단언 통과 |
 | **W3 셸·기반 CSS** | `public/index.html` 템플릿 재작성(§5 레이어 구조, §9.0 토큰(`__REPLAY_JS__` 포함), 메타, head 인라인 스크립트 ≤400B: `data-perf`/`data-net`/`/healthz` 깨우기, SVG 스프라이트 `<symbol>` 전부 — 역할 12, 팀 3, back-mark, UI: 메뉴·닫기·보냄·복사·열쇠·사슬·손·봉인·발톱·균열·`rp-turn`(바뀐 카드 표식, 반쯤 판 끌 갈고리 — §4.6)), `public/css/base.css`(토큰, 리셋, 타이포, **홈 화면 전체**, HUD, 독, 버튼·hold 게이지, 입력, 시트, 모달, 토스트, 채팅, `#conn`, `#bg` 조명, z-index 척도, 모션 토큰, reduced-motion/lite/paused, `.nm`, `.sr-only`). 기존 `public/style.css`, `public/img/*.svg` 삭제 | `public/index.html`, `public/css/base.css`, (삭제) `public/style.css`, `public/img/*.svg` | 제3자 도메인 0, base.css br ≤ 7KB, 홈이 game.css 없이 완성 |
 | **W4 카드 시스템** | `public/css/card.css`(§4 전체 + 상태, 플립 기하, 아틀라스 좌표), `public/js/art.js`(§7.3 ART API, CSS 이미지 변수 설정, 로더, decode, prefetch, data-art 마킹, 폴백), 데모 페이지 | `public/css/card.css`, `public/js/art.js`, `design/card-demo.html` | `ART.card()`가 manifest 없이도 12역할 + 뒷면 전부 완성 렌더(**`flat:1` 한 면 평면 렌더 포함**, §4.5)(데모에서 xs/sm/md/xl × 앞/뒤 × 상태 전부 확인, 앞면이 거울상으로 뒤집히지 않음) |
-| **W5 도구·배포** | `tools/stamp.js`(§9.0), `tools/optimize-images.mjs`(§9.3 duotone·사다리·대칭), `tools/subset-font.mjs`(§3, 2벌), `tools/font-metrics.html`(대체 메트릭 실측), `tools/check-budget.mjs`, `tools/check-waterfall.mjs`, `tools/vendor.mjs`(socket.io 사본), **3차**: stamp에 `replay.<hash>.js` 단계(`__REPLAY_CSS__` 치환, §9.0-3)와 `__REPLAY_JS__` 토큰, check-budget에 replay ≤ 7KB 행, `public/art-manifest.json` 빈 기본값, `public/sw.js` 템플릿(§9.6), `render.yaml`, `.gitignore`(`art-src/`, `dist/`) | `tools/*`, `public/art-manifest.json`, `public/sw.js`, `public/vendor/*`, `render.yaml`, `.gitignore` | 샘플 PNG 1장으로 duotone 파이프라인 동작, `node tools/stamp.js`로 `dist/` 생성, 두 검사 스크립트 동작 |
+| **W5 도구·배포** | `tools/stamp.js`(§9.0), `tools/optimize-images.mjs`(§9.3 duotone·사다리·대칭), `tools/subset-font.mjs`(§3, 2벌), `tools/font-metrics.html`(대체 메트릭 실측), `tools/check-budget.mjs`, `tools/check-waterfall.mjs`, `tools/vendor.mjs`(socket.io 사본), **3차**: stamp에 `replay.<hash>.js` 단계(`__REPLAY_CSS__` 치환, §9.0-3)와 `__REPLAY_JS__` 토큰, check-budget에 replay ≤ 12KB 행, `public/art-manifest.json` 빈 기본값, `public/sw.js` 템플릿(§9.6), `render.yaml`, `.gitignore`(`art-src/`, `dist/`) | `tools/*`, `public/art-manifest.json`, `public/sw.js`, `public/vendor/*`, `render.yaml`, `.gitignore` | 샘플 PNG 1장으로 duotone 파이프라인 동작, `node tools/stamp.js`로 `dist/` 생성, 두 검사 스크립트 동작 |
 
 ### Wave 2 (Wave 1 완료 후, 병렬)
 | ID | 담당 | 소유 파일 | 완료 조건 |
 |---|---|---|---|
 | **W6 화면 렌더 엔진** | `public/app.js` → `public/js/app.js`로 이동·재구성: `SOCKET_URL`, rAF 배치, 셸+영역 패치(§7.2), 탁자 좌석 DOM 유지·JS 좌표 계산(§5.3), §5.4 마크업 그대로, 모든 화면(§6.1~6.12), 비밀 규칙·누르기(§6.3), 선택 문법·hold(600/1200), 채팅 시트, `⋯` 메뉴, 재연결 띠·콜드스타트·Wake Lock(§6.13), 타이머 skew(§7.2-5), `.nm` 감싸기, 모든 문자열 `T.*`, 접근성(§5.5), `game.css`/`fx.js` 지연 주입. 투표선·말썽쟁이 예고선은 `.ln`(§5.4). **3차 — 결말 껍데기(§6.9, §13.9)**: 심판 진입 시 `replay.js` idle 주입, 결과 수신 시 정적 끝판 보드(`.verdict`·`.rec-row`·빈 `.tl-list`)를 먼저 그림, `REPLAY.open/enhanceBoard/close` 호출, `body[data-replay="1"]`인 동안 `dock`·`prompt` 영역 패치를 멈춤, 1회 자동재생 키 `result:<gameId>`, `그 밤을 다시 본다` 링크, **결과 단계의 탁자 좌석과 `.rec-row`는 `result.players`로만 배치**(떠난 자는 `.is-gone`, id → 슬롯은 `result.players.findIndex`, §13.6), `R.night`가 없으면 끝판 보드만 | `public/js/app.js`, (삭제) `public/app.js` | 이미지 0장 상태로 3인 한 판 완주, replay.js를 막아도 결말이 끝판 보드로 완결, `confirm(`·이모지 grep 0건, 375×553에서 10인 탁자 스크롤 0 |
 | **W7 연출·화면 CSS** | `public/js/fx.js`(§7.3 FX API: 눈꺼풀, 섬광, 흔들림(#main), 심박, 글자 출력, peek, 교환, buzz(밤 무시), 1회 재생 Set, 로드 전 호출 큐. **`FX.resultSequence`는 만들지 않는다** — §13 REPLAY가 소유), `public/css/screens.css`(모닥불, 탁자/좌석 상태 클래스, 밤 잠듦/깨어남, 새벽/낮, 심판 선, **`.ln` 원시 요소(§5.4)**, 끝판 보드: `.verdict`·`.verdict-why`·`.verdict-self`·`.rec-row`·`.rec-path`·`.rec-belief`·`.tl-row`·모바일 기록 목록, 덱 시트, 법도 모달 종이, peek) | `public/js/fx.js`, `public/css/screens.css` | `stroke-dashoffset` 0건, 무한 애니메이션 동시 ≤ 3, `mix-blend-mode` 0 |
-| **W9 밤의 기록 (리플레이)** | §13 전부의 클라이언트: `public/js/replay.js`(UMD, `REPLAY.build` 순수 함수 + 무대·박자 재생·스냅샷 점프·조작·끝판 보강, §7.3 API), `public/css/replay.css`(`.rp*` 클래스, stamp가 replay.js 안에 인라인), 문양 4종(§13.6, replay.js 안 문자열), `test/replay.js`(W1의 `test/fixtures/night-*.json` 전부에 대해 §13.11 클라이언트 단언) | `public/js/replay.js`, `public/css/replay.css`, `test/replay.js` | §13.11 반려 조건 전부 통과, replay 번들 br ≤ 7KB, 375×553 10인에서 무대·자막·눈금 자·독 겹침 0 |
+| **W9 밤의 기록 (리플레이)** | §13 전부의 클라이언트: `public/js/replay.js`(UMD, `REPLAY.build` 순수 함수 + 무대·박자 재생·스냅샷 점프·조작·끝판 보강, §7.3 API), `public/css/replay.css`(`.rp*` 클래스, stamp가 replay.js 안에 인라인), 문양 4종(§13.6, replay.js 안 문자열), `test/replay.js`(W1의 `test/fixtures/night-*.json` 전부에 대해 §13.11 클라이언트 단언) | `public/js/replay.js`, `public/css/replay.css`, `test/replay.js` | §13.11 반려 조건 전부 통과, replay 번들 br ≤ 12KB, 375×553 10인에서 무대·자막·눈금 자·독 겹침 0 |
 
 W6과 W7은 §4.5·§5.4의 클래스명, `data-r`, `FX.*` 이름을 그대로 쓴다. 연출 전용 클래스만 W7이 `.fx-*`로 추가할 수 있다. W9는 `.rp-*` 접두사만 정의하고, 좌석·제단·`.ln`·`.card`·`.verdict` 등 기존 클래스에는 **상태 클래스(기존 것 또는 `.rp-dim`처럼 `.rp-` 접두사)를 붙이고 떼기만** 한다(스타일 재정의 금지). 예외 둘: `.rp-card[data-z="seat"]` 범위 안에서 `.card-name`·`.card-ord`·`.card-line` 숨김과 `.card-sg` 역보정(§13.6), `body[data-replay="1"]` 동안 좌석의 `xs` 카드·제단 카드·`.seat-name`을 `opacity:0`. W7은 `.is-gone`(§5.3)을 정의한다. W9는 W1의 픽스처가 나오기 전에는 §13.3 예시 JSON으로 개발한다.
 
@@ -1334,6 +1334,7 @@ W6과 W7은 §4.5·§5.4의 클래스명, `data-r`, `FX.*` 이름을 그대로 �
 - 비평1 #11·비평2 #9·#10·비평3 #9 투표선 — 대상별 묶음(표 많은 순, 동표는 좌석 순) + 지목 없는 좌석 건너뜀 + 뼈색, 처형된 자에게 들어가는 선만 처형 박자에 피색 사본. 셋이 한 그림으로 합쳐진다.
 - 비평3 #7 복사 문양 — `rp-copy`를 지우고 기존 `sg-doppelganger`를 도장으로 쓴다. 그래서 replay.js 문양은 4종(`rp-eye`·`rp-blind`·`rp-swap`·`rp-step`), `rp-turn`은 끝판 보드에서도 쓰이므로 index.html 스프라이트(W3).
 - 비평3 #10 와이프 — 판결뿐 아니라 홈 제목(§6.1)·리플레이 자막도 같은 덮개 `scaleX`로. `clip-path` 애니메이션은 이제 문서에 없다.
+- replay 예산 7KB→12KB, 지연 로드라 크리티컬 패스 무관.
 
 ---
 
@@ -1614,7 +1615,7 @@ room.result = {
 - 모바일은 탁자를 40px 띠로 접는다(§6.9). 리플레이를 다시 열면 탁자가 펼쳐진다.
 
 ### 13.9 클라이언트 모듈 (W9, `public/js/replay.js` + `public/css/replay.css`)
-- **로드**: `vote` 상태 진입 때 W6이 `requestIdleCallback`(최대 2초)으로 `replay.<hash>.js`를 주입한다(br ≤ 7KB, CSS·문양 포함). 결과를 받았는데 아직 없으면 암전(막 0)을 최대 2000ms 늘려 기다린다 → 그래도 없으면 끝판 보드를 먼저 그리고, 도착하는 대로 `enhanceBoard()` + `그 밤을 다시 본다` 활성화(이때는 자동 재생하지 않는다). `R.night`가 없으면(구 서버) 리플레이 없이 끝판 보드만.
+- **로드**: `vote` 상태 진입 때 W6이 `requestIdleCallback`(최대 2초)으로 `replay.<hash>.js`를 주입한다(br ≤ 12KB, CSS·문양 포함). 결과를 받았는데 아직 없으면 암전(막 0)을 최대 2000ms 늘려 기다린다 → 그래도 없으면 끝판 보드를 먼저 그리고, 도착하는 대로 `enhanceBoard()` + `그 밤을 다시 본다` 활성화(이때는 자동 재생하지 않는다). `R.night`가 없으면(구 서버) 리플레이 없이 끝판 보드만.
 - **`REPLAY.build(R, meId)`**: 순수 함수(DOM·시간·난수 없음, 10인 < 1ms). `result` 수신 직후 1회 실행.
   ```js
   function build(R, me) {
@@ -1665,7 +1666,7 @@ room.result = {
 - 조작 버튼은 전부 48×48 이상(속도 토글 44×44), 눈금 탭 영역 24px 이상.
 
 ### 13.11 예산과 반려 조건
-- **바이트**: 새 이미지 0. `replay.<hash>.js` br ≤ 7KB(check-budget). 결과 `state` ≤ 6KB, `night` ≤ 1.5KB(sim.js `max-bytes`, 10인·이름 최대 길이·풀덱, 플레이어마다 실제 `JSON.stringify(view())`).
+- **바이트**: 새 이미지 0. `replay.<hash>.js` br ≤ 12KB(check-budget). 결과 `state` ≤ 6KB, `night` ≤ 1.5KB(sim.js `max-bytes`, 10인·이름 최대 길이·풀덱, 플레이어마다 실제 `JSON.stringify(view())`).
 - **누출**: `night`·`deal`·`pos`·`ev`·`seats`·`why`·`deaths` 키가 `phase!=='result'` 상태에 나타나면 sim.js 실패(§7.4 키 패턴).
 - **서버 정합성**(W1, sim.js, 모든 시나리오): ① 불변식 단언 통과(개발 모드 `swapSlots`마다 + `resolve()`) ② `deal`에 `mv`를 순서대로 적용한 결과 === `end` ③ `deal[end[s]] === players[s].final`, 제단도 `center.final`과 일치 ④ `deaths` 순서가 사냥꾼 큐 순서와 같고, `miss`는 `players[].dead`에 영향이 없다 ⑤ `ev.length ≤ 20` ⑥ `why`와 `winners`의 대응(§13.2) ⑦ 모든 `skip`의 `r`이 실제 역할 id(`lonewolf` 없음), 모든 이벤트의 `st`가 `NIGHT_ORDER` 안 ⑧ `dop`는 비어 있으면 키가 없다 ⑨ grep: `swapSlots`·`startGame` 밖의 `g.cards[…] =`·`g.center[…] =` 0건.
 - **클라이언트**(W9, test/replay.js, 픽스처 전부): ① `build()`의 마지막 `post` === `end`, 불일치면 **테스트 실패**(경고 아님) ② 모든 박자의 `cap`에 `undefined`·`${`·빈 위 줄 0, 제단을 로마 숫자로 부른 문장 0 ③ 이모지 grep 0 ④ `belief`가 시나리오 기대값과 일치(주정뱅이 `blind`, 강도·불면증환자·도플갱어 갱신, **`doppel-robber`·`doppel-insomniac`** 갱신) ⑤ 박자 수 = `1 + (전부 idle ? 1 : 연속 idle을 합친 묶음 수) + 1 + 바뀐 좌석 수 + 1 + 1 + deaths.filter(d => d.by !== 'vote').length + 1` ⑥ 모든 좌석 `effRole(end[s]) === players[s].effective` ⑦ `doppel-robber-steals-wolf`에서 `know.werewolf` 박자의 무리 === 이벤트 `by`이고, 늑대 카드를 쥔 좌석 집합과 다르다 ⑧ 리플레이 도중 한 명이 떠난 상태(`state.players` n−1)로 `open()` → 모든 슬롯의 토큰 id === `result.players[s].id`.

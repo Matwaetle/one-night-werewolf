@@ -1,0 +1,192 @@
+{
+ "name": "doppel-drunk-pulls-idle-role",
+ "n": 4,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.3811700859400996",
+ "result": {
+  "gameId": "cff7e4a2",
+  "players": [
+   {
+    "id": "bot-봇1-0.3811700859400996",
+    "name": "봇1",
+    "original": "doppelganger",
+    "final": "seer",
+    "effective": "seer",
+    "team": "village",
+    "vote": "bot-봇3-0.27985932084084686",
+    "votes": 2,
+    "dead": true,
+    "win": false
+   },
+   {
+    "id": "bot-봇2-0.019770765600308216",
+    "name": "봇2",
+    "original": "drunk",
+    "final": "werewolf",
+    "effective": "werewolf",
+    "team": "wolf",
+    "vote": "bot-봇3-0.27985932084084686",
+    "votes": 0,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇3-0.27985932084084686",
+    "name": "봇3",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇1-0.3811700859400996",
+    "votes": 2,
+    "dead": true,
+    "win": false
+   },
+   {
+    "id": "bot-봇4-0.4727747718216837",
+    "name": "봇4",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇1-0.3811700859400996",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   }
+  ],
+  "winners": [
+   "wolf"
+  ],
+  "noDeath": false,
+  "wolvesInPlay": 1,
+  "center": {
+   "original": [
+    "seer",
+    "werewolf",
+    "werewolf"
+   ],
+   "final": [
+    "doppelganger",
+    "drunk",
+    "werewolf"
+   ]
+  },
+  "doppelCopy": "drunk",
+  "deaths": [
+   {
+    "s": 0,
+    "by": "vote"
+   },
+   {
+    "s": 2,
+    "by": "vote"
+   }
+  ],
+  "why": [
+   [
+    "wolf_lived",
+    [
+     1
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "doppelganger",
+    "drunk",
+    "villager",
+    "villager",
+    "seer",
+    "werewolf",
+    "werewolf"
+   ],
+   "ev": [
+    {
+     "st": "doppelganger",
+     "k": "copy",
+     "by": [
+      0
+     ],
+     "tg": [
+      1
+     ],
+     "see": [
+      [
+       1,
+       1
+      ]
+     ],
+     "dop": [
+      0
+     ]
+    },
+    {
+     "st": "doppelganger",
+     "r": "drunk",
+     "k": "swap",
+     "by": [
+      0
+     ],
+     "tg": [
+      4
+     ],
+     "mv": [
+      [
+       0,
+       4
+      ],
+      [
+       4,
+       0
+      ]
+     ],
+     "dop": [
+      0
+     ]
+    },
+    {
+     "st": "werewolf",
+     "k": "idle",
+     "by": []
+    },
+    {
+     "st": "seer",
+     "k": "idle",
+     "by": []
+    },
+    {
+     "st": "drunk",
+     "k": "swap",
+     "by": [
+      1
+     ],
+     "tg": [
+      5
+     ],
+     "mv": [
+      [
+       1,
+       5
+      ],
+      [
+       5,
+       1
+      ]
+     ]
+    }
+   ],
+   "end": [
+    4,
+    5,
+    2,
+    3,
+    0,
+    1,
+    6
+   ]
+  }
+ }
+}

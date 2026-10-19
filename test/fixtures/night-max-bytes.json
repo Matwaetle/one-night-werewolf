@@ -1,0 +1,377 @@
+{
+ "name": "max-bytes",
+ "n": 10,
+ "meSeat": 0,
+ "meId": "abcdefghijklmnopqrstuvwxyz0123-00000",
+ "sizes": {
+  "max": 6031,
+  "night": 834
+ },
+ "result": {
+  "gameId": "a46296ce",
+  "players": [
+   {
+    "id": "abcdefghijklmnopqrstuvwxyz0123-00000",
+    "name": "가가가가가가가가가가가가",
+    "original": "doppelganger",
+    "final": "doppelganger",
+    "effective": "seer",
+    "team": "village",
+    "vote": "abcdefghijklmnopqrstuvwxyz0123-00001",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "abcdefghijklmnopqrstuvwxyz0123-00001",
+    "name": "나나나나나나나나나나나나",
+    "original": "werewolf",
+    "final": "insomniac",
+    "effective": "insomniac",
+    "team": "village",
+    "vote": "abcdefghijklmnopqrstuvwxyz0123-00002",
+    "votes": 9,
+    "dead": true,
+    "win": false
+   },
+   {
+    "id": "abcdefghijklmnopqrstuvwxyz0123-00002",
+    "name": "다다다다다다다다다다다다",
+    "original": "minion",
+    "final": "minion",
+    "effective": "minion",
+    "team": "wolf",
+    "vote": "abcdefghijklmnopqrstuvwxyz0123-00001",
+    "votes": 1,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "abcdefghijklmnopqrstuvwxyz0123-00003",
+    "name": "라라라라라라라라라라라라",
+    "original": "mason",
+    "final": "robber",
+    "effective": "robber",
+    "team": "village",
+    "vote": "abcdefghijklmnopqrstuvwxyz0123-00001",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "abcdefghijklmnopqrstuvwxyz0123-00004",
+    "name": "마마마마마마마마마마마마",
+    "original": "mason",
+    "final": "mason",
+    "effective": "mason",
+    "team": "village",
+    "vote": "abcdefghijklmnopqrstuvwxyz0123-00001",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "abcdefghijklmnopqrstuvwxyz0123-00005",
+    "name": "바바바바바바바바바바바바",
+    "original": "seer",
+    "final": "seer",
+    "effective": "seer",
+    "team": "village",
+    "vote": "abcdefghijklmnopqrstuvwxyz0123-00001",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "abcdefghijklmnopqrstuvwxyz0123-00006",
+    "name": "사사사사사사사사사사사사",
+    "original": "robber",
+    "final": "mason",
+    "effective": "mason",
+    "team": "village",
+    "vote": "abcdefghijklmnopqrstuvwxyz0123-00001",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "abcdefghijklmnopqrstuvwxyz0123-00007",
+    "name": "아아아아아아아아아아아아",
+    "original": "troublemaker",
+    "final": "troublemaker",
+    "effective": "troublemaker",
+    "team": "village",
+    "vote": "abcdefghijklmnopqrstuvwxyz0123-00001",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "abcdefghijklmnopqrstuvwxyz0123-00008",
+    "name": "자자자자자자자자자자자자",
+    "original": "drunk",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "abcdefghijklmnopqrstuvwxyz0123-00001",
+    "votes": 0,
+    "dead": false,
+    "win": false
+   },
+   {
+    "id": "abcdefghijklmnopqrstuvwxyz0123-00009",
+    "name": "차차차차차차차차차차차차",
+    "original": "insomniac",
+    "final": "werewolf",
+    "effective": "werewolf",
+    "team": "wolf",
+    "vote": "abcdefghijklmnopqrstuvwxyz0123-00001",
+    "votes": 0,
+    "dead": false,
+    "win": true
+   }
+  ],
+  "winners": [
+   "wolf"
+  ],
+  "noDeath": false,
+  "wolvesInPlay": 1,
+  "center": {
+   "original": [
+    "hunter",
+    "tanner",
+    "villager"
+   ],
+   "final": [
+    "hunter",
+    "tanner",
+    "drunk"
+   ]
+  },
+  "doppelCopy": "seer",
+  "deaths": [
+   {
+    "s": 1,
+    "by": "vote"
+   }
+  ],
+  "why": [
+   [
+    "wolf_lived",
+    [
+     9
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "doppelganger",
+    "werewolf",
+    "minion",
+    "mason",
+    "mason",
+    "seer",
+    "robber",
+    "troublemaker",
+    "drunk",
+    "insomniac",
+    "hunter",
+    "tanner",
+    "villager"
+   ],
+   "ev": [
+    {
+     "st": "doppelganger",
+     "k": "copy",
+     "by": [
+      0
+     ],
+     "tg": [
+      5
+     ],
+     "see": [
+      [
+       5,
+       5
+      ]
+     ],
+     "dop": [
+      0
+     ]
+    },
+    {
+     "st": "doppelganger",
+     "r": "seer",
+     "k": "peek",
+     "by": [
+      0
+     ],
+     "tg": [
+      2
+     ],
+     "see": [
+      [
+       2,
+       2
+      ]
+     ],
+     "dop": [
+      0
+     ]
+    },
+    {
+     "st": "werewolf",
+     "k": "peek",
+     "by": [
+      1
+     ],
+     "tg": [
+      11
+     ],
+     "see": [
+      [
+       11,
+       11
+      ]
+     ]
+    },
+    {
+     "st": "minion",
+     "k": "know",
+     "by": [
+      2
+     ],
+     "know": [
+      1
+     ]
+    },
+    {
+     "st": "mason",
+     "k": "know",
+     "by": [
+      3,
+      4
+     ]
+    },
+    {
+     "st": "seer",
+     "k": "peek",
+     "by": [
+      5
+     ],
+     "tg": [
+      10,
+      12
+     ],
+     "see": [
+      [
+       10,
+       10
+      ],
+      [
+       12,
+       12
+      ]
+     ]
+    },
+    {
+     "st": "robber",
+     "k": "swap",
+     "by": [
+      6
+     ],
+     "tg": [
+      3
+     ],
+     "mv": [
+      [
+       6,
+       3
+      ],
+      [
+       3,
+       6
+      ]
+     ],
+     "see": [
+      [
+       3,
+       6
+      ]
+     ]
+    },
+    {
+     "st": "troublemaker",
+     "k": "swap",
+     "by": [
+      7
+     ],
+     "tg": [
+      1,
+      9
+     ],
+     "mv": [
+      [
+       1,
+       9
+      ],
+      [
+       9,
+       1
+      ]
+     ]
+    },
+    {
+     "st": "drunk",
+     "k": "swap",
+     "by": [
+      8
+     ],
+     "tg": [
+      12
+     ],
+     "mv": [
+      [
+       8,
+       12
+      ],
+      [
+       12,
+       8
+      ]
+     ]
+    },
+    {
+     "st": "insomniac",
+     "k": "peek",
+     "by": [
+      9
+     ],
+     "see": [
+      [
+       1,
+       9
+      ]
+     ]
+    }
+   ],
+   "end": [
+    0,
+    9,
+    2,
+    6,
+    4,
+    5,
+    3,
+    7,
+    12,
+    1,
+    10,
+    11,
+    8
+   ]
+  }
+ }
+}

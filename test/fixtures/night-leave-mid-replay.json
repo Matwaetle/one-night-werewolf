@@ -1,0 +1,161 @@
+{
+ "name": "leave-mid-replay",
+ "n": 4,
+ "meSeat": 0,
+ "meId": "bot-봇1-0.5926464354228255",
+ "leave": {
+  "id": "bot-봇4-0.9982892894296758",
+  "seat": 3,
+  "statePlayers": [
+   "bot-봇1-0.5926464354228255",
+   "bot-봇2-0.792013053138646",
+   "bot-봇3-0.6886075647749408"
+  ]
+ },
+ "result": {
+  "gameId": "01045d7e",
+  "players": [
+   {
+    "id": "bot-봇1-0.5926464354228255",
+    "name": "봇1",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇3-0.6886075647749408",
+    "votes": 1,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇2-0.792013053138646",
+    "name": "봇2",
+    "original": "seer",
+    "final": "seer",
+    "effective": "seer",
+    "team": "village",
+    "vote": "bot-봇3-0.6886075647749408",
+    "votes": 0,
+    "dead": false,
+    "win": true
+   },
+   {
+    "id": "bot-봇3-0.6886075647749408",
+    "name": "봇3",
+    "original": "werewolf",
+    "final": "werewolf",
+    "effective": "werewolf",
+    "team": "wolf",
+    "vote": "bot-봇1-0.5926464354228255",
+    "votes": 3,
+    "dead": true,
+    "win": false
+   },
+   {
+    "id": "bot-봇4-0.9982892894296758",
+    "name": "봇4",
+    "original": "villager",
+    "final": "villager",
+    "effective": "villager",
+    "team": "village",
+    "vote": "bot-봇3-0.6886075647749408",
+    "votes": 0,
+    "dead": false,
+    "win": true
+   }
+  ],
+  "winners": [
+   "village"
+  ],
+  "noDeath": false,
+  "wolvesInPlay": 1,
+  "center": {
+   "original": [
+    "werewolf",
+    "villager",
+    "troublemaker"
+   ],
+   "final": [
+    "werewolf",
+    "villager",
+    "troublemaker"
+   ]
+  },
+  "doppelCopy": null,
+  "deaths": [
+   {
+    "s": 2,
+    "by": "vote"
+   }
+  ],
+  "why": [
+   [
+    "wolf_died",
+    [
+     2
+    ]
+   ]
+  ],
+  "hunterKills": [],
+  "timeline": [],
+  "night": {
+   "deal": [
+    "villager",
+    "seer",
+    "werewolf",
+    "villager",
+    "werewolf",
+    "villager",
+    "troublemaker"
+   ],
+   "ev": [
+    {
+     "st": "werewolf",
+     "k": "peek",
+     "by": [
+      2
+     ],
+     "tg": [
+      4
+     ],
+     "see": [
+      [
+       4,
+       4
+      ]
+     ]
+    },
+    {
+     "st": "seer",
+     "k": "peek",
+     "by": [
+      1
+     ],
+     "tg": [
+      0
+     ],
+     "see": [
+      [
+       0,
+       0
+      ]
+     ]
+    },
+    {
+     "st": "troublemaker",
+     "k": "idle",
+     "by": []
+    }
+   ],
+   "end": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  }
+ }
+}

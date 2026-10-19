@@ -5,7 +5,14 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test/sim.js"
+    "test": "node test/sim.js",
+    "smoke": "node test/smoke.js",
+    "build": "node tools/stamp.js",
+    "vendor": "node tools/vendor.mjs",
+    "subset": "node tools/subset-font.mjs",
+    "optimize-images": "node tools/optimize-images.mjs",
+    "check:budget": "node tools/check-budget.mjs",
+    "check:waterfall": "node tools/check-waterfall.mjs"
   },
   "engines": {
     "node": ">=18"
@@ -15,6 +22,9 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "socket.io-client": "^4.8.1"
+    "sharp": "^0.35.5",
+    "socket.io-client": "^4.8.1",
+    "subset-font": "^2.4.0",
+    "terser": "^5.51.2"
   }
 }
