@@ -102,14 +102,15 @@
     ctx = S.ctx;
     ctx.onstatechange = function () { var z = ctx.state; if (z === 'running') gl(0); else if (en && (z === 'suspended' || z === 'interrupted')) gl(1); };
     if (ctx.state === 'running') gl(0);
-    var c = ctx.createDynamicsCompressor(), i, d, fb;
-    c.threshold.value = -24; c.knee.value = 12; c.ratio.value = 4; c.attack.value = 0.01; c.release.value = 0.3; c.connect(ctx.destination);
+    var c, i, d, fb;
+    if (L()) c = g(0.8, ctx.destination);                  // lite: 컴프레서 생략
+    else { c = ctx.createDynamicsCompressor(); c.threshold.value = -24; c.knee.value = 12; c.ratio.value = 4; c.attack.value = 0.01; c.release.value = 0.3; c.connect(ctx.destination); }
     mst = g(0, c); dk = g(1, mst); bt = g(1, dk);
     if (!L()) {                                            // 에코: Delay 0.38s -> 피드백 0.35 -> lowpass 1800Hz
       d = ctx.createDelay(1); d.delayTime.value = 0.38;
       fb = g(0.35, d); d.connect(fb); d.connect(fl('lowpass', 1800, 1, dk)); ech = g(1, d);
     }
-    nb = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); d = nb.getChannelData(0);
+    nb = ctx.createBuffer(1, 22050, 22050); d = nb.getChannelData(0);
     for (i = 0; i < d.length; i++) d[i] = R() * 2 - 1;
   }
   function go() {                                          // 켜져 있고 컨텍스트가 있을 때 시작
@@ -181,7 +182,7 @@
   function gx() {                                          // 첫 제스처(또는 iOS 'interrupted' 뒤 다음 제스처)에서 만들고 잇는다
     try {
       if (!en) return;
-      if (!S.ctx) { var C = W.AudioContext || W.webkitAudioContext; if (C) S.ctx = new C(); go(); }
+      if (!S.ctx) { var C = W.AudioContext || W.webkitAudioContext; if (C) try { S.ctx = new C({ latencyHint: 'playback' }); } catch (e) { S.ctx = new C(); } go(); }
       else if (!mst) go();
       else if (S.ctx.state !== 'running' && !D.hidden) Pr(S.ctx.resume());
     } catch (e) { /* 무시 */ }

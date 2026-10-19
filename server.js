@@ -159,15 +159,18 @@ function shuffle(a) {
   }
   return a;
 }
+const INVIS = /[\u0000-\u001f\u007f-\u009f\u00ad\u115f\u1160\u3164\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g;
+const clean = (s) => String(s || '').normalize('NFC').replace(/\s+/g, ' ').replace(INVIS, '').replace(/\s+/g, ' ').trim();
 function genCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-  let code;
-  do code = Array.from({ length: 4 }, () => pick(chars)).join('');
-  while (rooms.has(code));
-  return code;
+  for (let i = 0; i < 50; i++) {
+    const code = Array.from({ length: 4 }, () => pick(chars)).join('');
+    if (!rooms.has(code)) return code;
+  }
+  return null;
 }
 function cleanName(name) {
-  const s = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 12);
+  const s = Array.from(clean(name)).slice(0, 12).join('');
   return s || null;
 }
 const rn = (r) => ROLES[r].name;
@@ -176,8 +179,10 @@ const deckTotal = (deck) => ROLE_ORDER.reduce((s, r) => s + (deck[r] || 0), 0);
 
 // ---------- 방 ----------
 function createRoom() {
+  const code = genCode();
+  if (!code) return null;
   const room = {
-    code: genCode(),
+    code,
     hostId: null,
     players: new Map(),
     order: [],
@@ -231,6 +236,7 @@ function removePlayer(room, id) {
   room.order = room.order.filter((x) => x !== id);
   sysChat(room, M('left', { n: p.name }));
   if (room.order.length === 0) {
+    clearTimeout(room.bcT);
     rooms.delete(room.code);
     return;
   }
@@ -244,6 +250,7 @@ function scheduleCleanup(room) {
   room.cleanupTimer = setTimeout(() => {
     if (connectedIds(room).length === 0) {
       clearGameTimers(room);
+      clearTimeout(room.bcT);
       rooms.delete(room.code);
     }
   }, ROOM_TTL);
@@ -307,6 +314,18 @@ function publicPrompt(p) {
 }
 
 function broadcast(room) {
+  room.bcDirty = 1;
+  if (room.bcT) return;
+  room.bcT = setTimeout(() => {
+    room.bcT = null;
+    if (room.bcDirty) { room.bcDirty = 0; sendNow(room); }
+  }, 50);
+}
+
+function sendNow(room) {
+  clearTimeout(room.bcT);
+  room.bcT = null;
+  room.bcDirty = 0;
   for (const id of room.order) {
     const p = room.players.get(id);
     if (p.connected && p.socketId) io.to(p.socketId).emit('state', view(room, id));
@@ -451,7 +470,7 @@ function runStep(room, idx) {
   if (role === '_check') {
     g.stepEndsAt = now + TM.CARD_CHECK;
     setGameTimer(room, TM.CARD_CHECK, () => runStep(room, idx + 1));
-    return broadcast(room);
+    return sendNow(room);
   }
 
   const actors = actorsFor(room, role);
@@ -461,7 +480,7 @@ function runStep(room, idx) {
   const dur = actors.length ? (role === 'doppelganger' ? TM.DOPPEL : TM.ACT) : rand(TM.IDLE_MIN, TM.IDLE_MAX);
   g.stepEndsAt = now + dur;
   setGameTimer(room, dur, () => holdEnd(room));
-  broadcast(room);
+  sendNow(room);
 }
 
 // 차례 시작 때 한 번 남기는 기록 (spec 13.2 기록 지점 표)
@@ -708,7 +727,7 @@ function startDay(room) {
   for (const id of room.order) room.players.get(id).ready = false;
   sysChat(room, M('dawn'));
   setGameTimer(room, g.dayEndsAt - Date.now(), () => startVote(room));
-  broadcast(room);
+  sendNow(room);
 }
 
 function startVote(room) {
@@ -718,7 +737,7 @@ function startVote(room) {
   g.voteEndsAt = Date.now() + TM.VOTE;
   sysChat(room, M('voteStart'));
   setGameTimer(room, TM.VOTE, () => resolve(room));
-  broadcast(room);
+  sendNow(room);
 }
 
 function checkAllReady(room) {
@@ -841,7 +860,7 @@ function resolve(room) {
   if (nightOk) room.result.night = { deal: g.deal, ev: g.ev, end: g.pos.slice() };
   room.phase = 'result';
   sysChat(room, M('endLine', { verdict: verdictLine(winners, wolves.length) }));
-  broadcast(room);
+  sendNow(room);
 }
 
 function verdictLine(winners, wolfCount) {
@@ -864,7 +883,7 @@ function backToLobby(room) {
   }
   if (!rooms.has(room.code)) return;
   autoDeck(room);
-  broadcast(room);
+  sendNow(room);
 }
 
 // ---------- 소켓 ----------
@@ -876,7 +895,42 @@ io.on('connection', (socket) => {
     return { room, pid, isHost: room.hostId === pid };
   };
   const reply = (cb, v) => typeof cb === 'function' && cb(v);
-  const on = (ev, fn) => socket.on(ev, (...a) => { try { fn(...a); } catch (e) { console.error('[sock]', ev, e); } });
+  let tok = 20, tokAt = Date.now();
+  const on = (ev, fn) => socket.on(ev, (...a) => {
+    const t = Date.now();
+    tok = Math.min(20, tok + (t - tokAt) * 0.008);
+    tokAt = t;
+    if (tok < 1) {
+      const cb = a[a.length - 1];
+      if (typeof cb === 'function') { try { cb({ ok: false, error: M('badRequest') }); } catch (e) { /* ignore */ } }
+      return;
+    }
+    tok -= 1;
+    try { fn(...a); } catch (e) { console.error('[sock]', ev, e); }
+  });
+
+  function leaveCurrent(sock) {
+    const room = rooms.get(sock.data.code);
+    const pid = sock.data.pid;
+    if (!room || !room.players.has(pid)) { sock.data.code = null; return null; }
+    sock.leave(room.code);
+    sock.data.code = null;
+    if (room.phase === 'lobby' || room.phase === 'result') {
+      removePlayer(room, pid);
+    } else {
+      const p = room.players.get(pid);
+      p.connected = false;
+      p.offAt = 0;
+      p.socketId = null;
+      sysChat(room, M('left', { n: p.name }));
+      ensureHost(room);
+      if (room.phase === 'day') checkAllReady(room);
+      if (room.phase === 'vote') checkAllVoted(room);
+      scheduleCleanup(room);
+    }
+    if (rooms.has(room.code)) broadcast(room);
+    return room;
+  }
 
   function attach(room, pid) {
     const p = room.players.get(pid);
@@ -907,16 +961,22 @@ io.on('connection', (socket) => {
     if (prev && socket.data.pid === playerId && prev.hostId === playerId && prev.phase === 'lobby'
       && prev.order.length === 1 && Date.now() - prev.createdAt < 10000) {
       reply(cb, { ok: true, code: prev.code });
-      return broadcast(prev);
+      return sendNow(prev);
     }
+    const nowT = Date.now();
+    if (socket.data.lastCreate && nowT - socket.data.lastCreate < 3000) return reply(cb, { ok: false, error: M('busy') });
+    if (rooms.size >= 5000) return reply(cb, { ok: false, error: M('busy') });
+    if (socket.data.code) leaveCurrent(socket);
     const room = createRoom();
+    if (!room) return reply(cb, { ok: false, error: M('busy') });
+    socket.data.lastCreate = nowT;
     room.players.set(playerId, { id: playerId, name, connected: true, socketId: null, ready: false });
     room.order.push(playerId);
     room.hostId = playerId;
     attach(room, playerId);
     sysChat(room, M('townOpened', { name }));
     reply(cb, { ok: true, code: room.code });
-    broadcast(room);
+    sendNow(room);
   });
 
   on('join', (d, cb) => {
@@ -927,10 +987,11 @@ io.on('connection', (socket) => {
 
     if (room.players.has(playerId)) {
       // 재접속
+      if (socket.data.code && socket.data.code !== room.code) leaveCurrent(socket);
       attach(room, playerId);
       ensureHost(room);
       reply(cb, { ok: true, code: room.code });
-      return broadcast(room);
+      return sendNow(room);
     }
     if (rejoin) return reply(cb, { ok: false, error: M('cannotReturn') });
     if (typeof name !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
@@ -939,9 +1000,11 @@ io.on('connection', (socket) => {
     if (room.phase !== 'lobby') return reply(cb, { ok: false, error: M('alreadyStarted') });
     if (room.order.length >= MAX_PLAYERS) return reply(cb, { ok: false, error: M('townFull') });
 
-    const names = new Set(room.order.map((id) => room.players.get(id).name));
+    const k = (x) => x.normalize('NFKC').toLowerCase();
+    const names = new Set(room.order.map((id) => k(room.players.get(id).name)));
     let final = name;
-    for (let i = 2; names.has(final); i++) final = `${name.slice(0, 10)}${i}`;
+    for (let i = 2; names.has(k(final)); i++) final = `${Array.from(name).slice(0, 10).join('')}${i}`;
+    if (socket.data.code && socket.data.code !== room.code) leaveCurrent(socket);
     room.players.set(playerId, { id: playerId, name: final, connected: true, socketId: null, ready: false });
     room.order.push(playerId);
     attach(room, playerId);
@@ -949,29 +1012,12 @@ io.on('connection', (socket) => {
     autoDeck(room);
     sysChat(room, M('sat', { n: final }));
     reply(cb, { ok: true, code: room.code });
-    broadcast(room);
+    sendNow(room);
   });
 
   on('leave', (_, cb) => {
-    const { room, pid } = ctx();
-    if (!room) return reply(cb, { ok: true });
-    socket.leave(room.code);
-    socket.data.code = null;
-    if (room.phase === 'lobby' || room.phase === 'result') {
-      removePlayer(room, pid);
-    } else {
-      const p = room.players.get(pid);
-      p.connected = false;
-      p.offAt = 0;
-      p.socketId = null;
-      sysChat(room, M('left', { n: p.name }));
-      ensureHost(room);
-      if (room.phase === 'day') checkAllReady(room);
-      if (room.phase === 'vote') checkAllVoted(room);
-      scheduleCleanup(room);
-    }
+    leaveCurrent(socket);
     reply(cb, { ok: true });
-    if (rooms.has(room.code)) broadcast(room);
   });
 
   on('kick', (d) => {
@@ -1047,6 +1093,7 @@ io.on('connection', (socket) => {
     const { ready } = obj(d);
     const { room, pid } = ctx();
     if (!room || room.phase !== 'day') return;
+    if (room.players.get(pid).ready === !!ready) return;
     room.players.get(pid).ready = !!ready;
     broadcast(room);
     checkAllReady(room);
@@ -1083,14 +1130,14 @@ io.on('connection', (socket) => {
     if (!room) return reply(cb, { ok: false, error: M('noGame') });
     if (room.phase === 'night') return reply(cb, { ok: false, error: M('chatNight') });
     if (typeof text !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
-    const t = text.trim().slice(0, 300);
+    const t = Array.from(clean(text)).slice(0, 300).join('');
     if (!t) return reply(cb, { ok: false, error: M('badRequest') });
     const p = room.players.get(pid);
     const cidOk = typeof cid === 'string' && cid.length <= 24;
     if (cidOk && p && p.lastCid === cid) return reply(cb, { ok: true });
     const now = Date.now();
-    if (socket.data.lastChat && now - socket.data.lastChat < 400) return reply(cb, { ok: false, error: M('chatFast') });
-    socket.data.lastChat = now;
+    if (p && p.lastChat && now - p.lastChat < 400) return reply(cb, { ok: false, error: M('chatFast') });
+    if (p) p.lastChat = now;
     if (p && cidOk) p.lastCid = cid;
     const msg = { id: pid, name: pn(room, pid), text: t, ts: now };
     const o = Number.isInteger(re) && re > 0 ? room.chat.find((m) => m.mid === re && !m.system) : null;

@@ -8,13 +8,13 @@
   --hair:1px solid var(--ash);--shadow-hard:4px 4px 0 #000;
   --f-title:"Hanbam T","Hanbam","Hanbam Fallback",sans-serif;
   --f-display:"Hanbam","Hanbam T","Hanbam Fallback",sans-serif;
-  --f-serif:"Nanum Myeongjo","AppleMyungjo","Batang","Noto Serif CJK KR",serif;
+  --f-serif:"Hanbam S","Nanum Myeongjo","AppleMyungjo","Batang","Noto Serif CJK KR",serif;
   --f-body:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
   --fs-hero:44px;--fs-h1:30px;--fs-h2:22px;--fs-name:20px;--fs-body:15px;--fs-small:13px;--fs-label:12px;
   --t-tap:60ms;--t-ui:180ms;--t-enter:360ms;--t-flip:520ms;--t-lid:500ms;--t-phase:1100ms;--t-hold:600ms;--t-hold-x:1200ms;
   --ease-out:cubic-bezier(.2,.7,.1,1);--ease-press:cubic-bezier(.7,0,.3,1);--ease-ink:steps(5,end);
   --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px);
-  --hud-h:calc(44px + var(--sat));--dock-h:calc(76px + var(--sab));--band-h:56px;--drawer:0px
+  --hud-h:calc(44px + var(--sat));--dock-h:calc(80px + var(--sab));--band-h:56px;--drawer:0px
 }
 @media(max-width:599px){:root{--band-h:72px}}
 body[data-phase=result]{--band-h:0px}
@@ -32,6 +32,7 @@ button{background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-c
 button,[role=button]{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 :focus-visible{outline:2px solid var(--bone-hi);outline-offset:2px}
 .nm{font-family:var(--f-body)!important;font-weight:600}
+:is(.check-desc,.rp-l1,.rp-vw,.rp-vs,.night-nar,.fx-head-2,.deck-desc,.verdict-why,.verdict-self,.law-row,.law-role) .nm{font-family:var(--f-serif)!important;font-weight:700}
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .ic{display:inline-block;width:20px;height:20px;flex:none;vertical-align:middle}
 
@@ -82,29 +83,31 @@ body[data-conn=off] .hud-mid{opacity:.5}
 .band{padding-left:max(16px,var(--sal));padding-right:max(16px,var(--sar))}
 .band-text{flex:0 1 auto;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;white-space:pre-line}
 .band-bar{position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--bone-dim);transform-origin:0 50%}
-#dock{position:fixed;z-index:2;left:0;right:var(--drawer);bottom:0;height:var(--dock-h);padding:0 max(8px,var(--sar)) var(--sab) max(8px,var(--sal));display:grid;grid-template-columns:56px 1fr 48px;gap:8px;align-items:center;background:rgba(21,18,15,.96);border-top:var(--hair)}
+#dock{position:fixed;z-index:2;left:0;right:var(--drawer);bottom:0;height:var(--dock-h);padding:0 max(8px,var(--sar)) max(6px,var(--sab)) max(8px,var(--sal));display:grid;grid-template-columns:64px 1fr 48px;gap:8px;align-items:center;background:rgba(21,18,15,.96);border-top:var(--hair)}
 .dock-card{--cw:34px;position:relative;width:56px;height:auto;display:flex;flex-direction:column;align-items:center;gap:2px;align-self:start;justify-self:center;margin-top:4px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .dock-hint{position:static;transform:none;margin:0;font-size:11px;line-height:1.1;color:var(--bone-dim);white-space:nowrap;pointer-events:none}
 .dock-act{position:relative;align-self:stretch;display:flex;flex-direction:column;justify-content:center}
 .dock-act .btn-main{width:100%;min-height:52px}
-.dock-alt,.home-alt,.home-law{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;font-size:var(--fs-small);font-weight:600;color:var(--bone-dim);text-decoration:underline;text-underline-offset:3px}
-.dock-alt{position:static;flex:none;background:var(--char);border:var(--hair)}
+.home-alt,.home-law{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;font-size:var(--fs-small);font-weight:600;color:var(--bone-dim);text-decoration:underline;text-underline-offset:3px}
+.dock-alt{position:static;flex:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;background:var(--char);color:var(--bone-hi);border:1px solid var(--bone-dim);box-shadow:2px 2px 0 #000;font:400 16px/1.25 var(--f-display);letter-spacing:.06em;text-decoration:none}
+.dock-alt:active{transform:translate(2px,2px);box-shadow:none}
 .dock-alt:empty{display:none}
 .dock-badge{position:relative;width:48px;height:48px;display:grid;place-items:center;background:var(--char-hi);border:var(--hair);font-size:var(--fs-small);font-weight:600;color:var(--bone-dim)}
 .dock-badge .bd{position:absolute;right:3px;bottom:2px;font-size:11px;line-height:1}
 .dock-badge .dot{position:absolute;top:6px;right:6px;width:8px;height:8px;background:var(--blood-hot);transform:rotate(45deg);opacity:0}
 .dock-badge.is-new .dot{opacity:1}
-body[data-phase=lobby] #dock{grid-template-columns:48px 1fr 48px}
-@media(min-width:1024px){body[data-phase] #dock{grid-template-columns:56px 1fr}.dock-badge{display:none}}
+body:is([data-phase=lobby],[data-phase=result]) #dock{grid-template-columns:48px 1fr 48px}
+@media(min-width:1024px){body[data-phase] #dock{grid-template-columns:56px 1fr}.dock-badge{display:none}.dock-act{justify-self:center;width:min(440px,100%)}}
 
 /* ---------- 버튼 · hold 게이지 ---------- */
 .btn-main,.btn-sub{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:48px;padding:0 16px;overflow:hidden;text-align:center;transition:transform var(--t-tap)}
 .btn-main{background:var(--blood);color:var(--bone-hi);box-shadow:inset 0 0 0 3px var(--blood),inset 0 0 0 4px rgba(13,11,9,.5),4px 4px 0 #000}
-.btn-sub{background:var(--char-hi);color:var(--bone-hi);border:var(--hair);box-shadow:3px 3px 0 #000}
+.btn-sub{background:var(--char);color:var(--bone-hi);border:1px solid var(--bone-dim);box-shadow:2px 2px 0 #000}
 .btn-main:active,.btn-main.is-down,.btn-sub:active{transform:translate(2px,2px);box-shadow:none}
 .btn-main:active,.btn-main.is-down{background:var(--clot)}
 .btn-main:focus-visible{outline:2px solid var(--bone-hi);outline-offset:2px}
 .btn-main .lbl,.btn-sub .lbl{position:relative;font:400 18px/1.25 var(--f-display);letter-spacing:.06em}
+.btn-sub .lbl{font-size:16px}
 .btn-main .nm{position:relative;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;line-height:1.25;color:var(--bone-dim)}
 [aria-disabled=true]{opacity:.45;cursor:not-allowed}
 .btn-main[data-cap]:not([aria-disabled=true])::after{content:attr(data-cap);position:relative;font-size:11px;line-height:1.1;color:var(--bone-dim)}
@@ -150,7 +153,7 @@ html[data-perf=lite] .home-eyes i{animation:none!important;opacity:.6}
 .home-or::before,.home-or::after{content:"";flex:1;height:1px;background:var(--ash)}
 .home-join{display:grid;grid-template-columns:1fr auto;gap:10px}
 .home-join .btn-sub{min-width:104px}
-.home-form .btn-main .lbl,.home-form .btn-sub .lbl{font-family:var(--f-title)}
+.home-form .btn-main .lbl{font-family:var(--f-title)}
 .home-alt{align-self:center}
 .home-law{align-self:center}
 .home-law::after{content:"";width:6px;height:6px;margin-left:8px;border-top:1px solid currentColor;border-right:1px solid currentColor;transform:rotate(45deg)}
@@ -219,6 +222,13 @@ body[data-sheet="1"] #sheet-bd{opacity:1;pointer-events:auto}
 .modal-x{position:absolute;top:0;right:0;width:48px;height:48px;display:grid;place-items:center;color:inherit}
 .menu-item{display:flex;align-items:center;width:100%;min-height:48px;padding:0 12px;font-size:var(--fs-body);color:var(--bone-hi);text-align:left;border-bottom:var(--hair)}
 .menu-item.is-danger{border-left:3px solid var(--blood)}
+
+/* 법도 모달 종이: 안쪽 테두리(잉크 6px + 뼈색 실선) 바깥은 고정, 글은 .modal-in 안에서만 스크롤한다 */
+#modal .modal-box:is(.law,.paper){display:flex;padding:0;overflow:hidden;outline:0;border:0;box-shadow:inset 0 0 0 6px var(--ink),inset 0 0 0 7px var(--bone-dim),4px 4px 0 #000}
+#modal .modal-box:is(.law,.paper) .modal-x{top:10px;right:10px;z-index:1}
+.modal-in{flex:1;min-width:0;min-height:0;margin:10px;padding:18px 16px calc(14px + var(--sab));overflow-y:auto;overscroll-behavior:contain}
+.modal-in .modal-title{padding-right:40px}
+html[data-img~=grain]:not([data-perf=lite]) #modal .modal-box:is(.law,.paper)::after{content:"";position:absolute;inset:0;pointer-events:none;background:var(--img-grain) 0 0/128px 128px repeat;opacity:.35;mix-blend-mode:multiply}
 
 /* ---------- 토스트 (z 60) · 연결 띠 (z 50) · #fx (z 30) ---------- */
 #toast{position:fixed;z-index:60;top:calc(var(--hud-h) + 8px);left:0;right:0;width:fit-content;max-width:92vw;margin:0 auto;padding:10px 16px;background:var(--char);border-left:3px solid var(--ash);color:var(--bone-hi);font-size:14px;line-height:1.4;box-shadow:var(--shadow-hard);pointer-events:none}

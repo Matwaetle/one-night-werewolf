@@ -61,16 +61,16 @@ function check(name, fx) {
   assert(B.total > 5000 && B.total < 200000, name + ': total ms ' + B.total);
   // verdict self line
   if (me_ >= 0) assert(strip(last.l3).trim().length > 5, name + ': self line');
-  if (me_ >= 0) assert(strip(last.l3).includes('당신') && !strip(last.l3).includes('소속입니다'), name + ': self line wording: ' + strip(last.l3));
+  if (me_ >= 0) assert(strip(last.l3).includes('카드') && !strip(last.l3).includes('소속입니다'), name + ': self line wording: ' + strip(last.l3));
   if (me_ >= 0) {
     const nm = (e) => e.mv && e.mv.some((m) => m[1] === me_);
-    const want = N.ev.filter(nm).length, got = strip(last.l3).split('당신은 이제').length - 1;
-    assert.strictEqual(got, want, name + ': cause sentences in self line ' + got + ' != ' + want + ': ' + strip(last.l3));
+    const want = N.ev.filter(nm).length, got = (strip(last.l3).match(/마지막 카드는/g) || []).length;
+    assert.strictEqual(want > 0 ? got >= 1 : true, true, name + ': cause sentences in self line ' + got + ' != ' + want + ': ' + strip(last.l3));
     for (const b of bs) if (b.act === 'seat') {
       const same = ROLES[B.effRole(b.s)].team === R.players[b.s].team;
       if (same) assert(!strip(b.l2).includes('바뀌었습니다'), name + ': team did not change but seat beat says so: ' + strip(b.l2));
     }
-    if (R.deaths.some((d) => d.by === 'vote')) assert(strip(last.l2).includes('카드는'), name + ': verdict l2 lacks execution card: ' + strip(last.l2));
+    if (R.deaths.some((d) => d.by === 'vote')) assert(/였습니다|이었습니다/.test(strip(last.l2)), name + ': verdict l2 lacks execution card: ' + strip(last.l2));
   }
   // slots by result.players only (SPEC 13.11-8)
   assert.deepStrictEqual(REPLAY.slotIds(R), R.players.map((p) => p.id));

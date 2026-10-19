@@ -143,7 +143,12 @@ function build(opts = {}) {
     return { game: keep.join('\n'), replay: rp.join('\n').trim(), chatx: cx.join('\n').trim() };
   };
   const strRaw = rd('strings.js', true), sc = stripClient(strRaw);
-  const gameJs = joinJs([sc.game, rd('roles.js', true), rd('js/art.js'), rd('js/app.js')]);
+  // result.js (A1 지연 청크) — game.js 보다 먼저 만들어 URL 을 game.js 안의 __RESULT_JS__ 에 넣는다
+  let RESULT_JS = '';
+  const resSrc = rd('js/result.js');
+  if (resSrc != null) RESULT_JS = hashed('result', '.js', minJs(resSrc, 'result'));
+  const gameJs0 = joinJs([sc.game, rd('roles.js', true), rd('js/art.js'), rd('js/app.js')]);
+  const gameJs = gameJs0.replace(/(["'`])__RESULT_JS__\1|__RESULT_JS__/g, () => JSON.stringify(RESULT_JS ? '/a/' + RESULT_JS : ''));
   if (sc.game !== strRaw) { try { new Function(gameJs); } catch (e) { throw new Error('game.js 구문 오류(strings.js 표식 처리 뒤): ' + e.message); } }
   const GAME_JS = hashed('game', '.js', minJs(gameJs, 'game'));
 
@@ -205,8 +210,9 @@ function build(opts = {}) {
   };
   const FONT_T = newest(fontNames, 'hanbam-t.');
   const FONT_D = newest(fontNames, 'hanbam-d.');
+  const FONT_S = newest(fontNames, 'hanbam-s.');
   // 쓰지 않는 폰트는 dist 에서 뺀다
-  for (const f of fontNames) if (f !== FONT_T && f !== FONT_D) files.delete('/a/' + f);
+  for (const f of fontNames) if (f !== FONT_T && f !== FONT_D && f !== FONT_S) files.delete('/a/' + f);
 
   /* 4. manifest: 파일명 -> /a/<파일명>, 실제 있는 파일만 */
   let manifest = {};
@@ -265,7 +271,9 @@ function build(opts = {}) {
     warn('hanbam-d 폰트 없음 — @font-face 를 뺀다');
     html = html.replace(/<link\b[^>]*__FONT_D__[^>]*>\s*/g, '').replace(/@font-face\s*\{[^}]*__FONT_D__[^}]*\}\s*/g, '');
   }
-  fileTok('__FONT_T__', FONT_T); fileTok('__FONT_D__', FONT_D);
+  if (!FONT_S) html = html.replace(/<link\b[^>]*__FONT_S__[^>]*>\s*/g, '').replace(/@font-face\s*\{[^}]*__FONT_S__[^}]*\}\s*/g, '');
+  fileTok('__FONT_T__', FONT_T); fileTok('__FONT_D__', FONT_D); fileTok('__FONT_S__', FONT_S);
+  fileTok('__RESULT_JS__', RESULT_JS);
   fileTok('__GAME_JS__', GAME_JS); fileTok('__GAME_CSS__', GAME_CSS);
   fileTok('__FX_JS__', FX_JS); fileTok('__REPLAY_JS__', REPLAY_JS); fileTok('__SIO__', SIO);
   fileTok('__CHATX_JS__', CHATX_JS); fileTok('__AUDIO_JS__', AUDIO_JS);
@@ -302,8 +310,10 @@ function build(opts = {}) {
   /* 5. sw.js */
   if (swRaw != null) {
     const pre = ['/'];
-    for (const n of [GAME_JS, GAME_CSS, FX_JS, SIO, FONT_T, FONT_D, REPLAY_JS, CHATX_JS, AUDIO_JS]) if (n) pre.push('/a/' + n);
-    if (typeof manifest.back === 'string') pre.push(manifest.back);
+    // audio.js 는 precache 하지 않는다 (FEATURES_SPEC 0.3)
+    for (const n of [GAME_JS, GAME_CSS, FX_JS, SIO, FONT_T, FONT_D, FONT_S, REPLAY_JS, CHATX_JS, RESULT_JS]) if (n) pre.push('/a/' + n);
+    for (const k of ['back', 'atlas', 'grain']) if (typeof manifest[k] === 'string') pre.push(manifest[k]);
+    if (manifest.home && typeof manifest.home.m === 'string') pre.push(manifest.home.m);
     const sw = swRaw.split('__VER__').join(ver).split('__PRECACHE__').join(JSON.stringify(pre));
     put('/sw.js', sw, 'no-cache');
   }
@@ -319,7 +329,7 @@ function build(opts = {}) {
       fs.writeFileSync(p, f.body);
     }
   }
-  return { ver, files, warnings, outDir, names: { GAME_JS, GAME_CSS, FX_JS, REPLAY_JS, CHATX_JS, AUDIO_JS, SIO, FONT_T, FONT_D } };
+  return { ver, files, warnings, outDir, names: { GAME_JS, GAME_CSS, FX_JS, REPLAY_JS, CHATX_JS, AUDIO_JS, RESULT_JS, SIO, FONT_T, FONT_D, FONT_S } };
 }
 
 module.exports = { build, minCss };

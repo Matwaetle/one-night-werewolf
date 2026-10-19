@@ -23,7 +23,7 @@
 @media(max-height:620px){.stage{--tk:44px}.stage[data-n="7"],.stage[data-n="8"],.stage[data-n="9"],.stage[data-n="10"]{--tk:40px}}
 @media(max-width:399px){.stage{--fan-cw:36px}}
 @media(min-width:600px){.stage,.stage[data-n]{--fan-cw:64px}}
-@media(min-width:1024px){.stage,.stage[data-n]{--tk:56px}.stage{--altar-cw:clamp(44px,min(var(--aw),calc(var(--sh)*.2)),104px)}}
+@media(min-width:1024px){.stage,.stage[data-n]{--tk:clamp(56px,7.5vmin,96px);--seat-cw:56px}.stage,.stage[data-n]{--altar-cw:var(--cw-md);--sw:min(820px,calc(100vw - var(--drawer)));max-width:820px;margin-inline:auto}}
 #stage[data-tight="1"]{--seat-cw:calc(var(--cw-seat)*.9);--altar-cw:64px}
 .seat{position:absolute;left:50%;top:50%;z-index:1;width:84px;display:flex;flex-direction:column;align-items:center;pointer-events:none;
   transform:translate(calc(var(--x) - 50%),calc(var(--y) - var(--tk)/2))}
@@ -55,6 +55,8 @@
 .seat.is-off .seat-name::before,.seat.is-gone .seat-name::before{content:"";display:inline-block;width:6px;height:3px;margin-right:3px;border:1px solid currentColor;vertical-align:middle}
 .seat.is-off .seat-name::after,.seat.is-gone .seat-name::after{content:"";display:inline-block;width:6px;height:3px;margin-left:3px;border:1px solid currentColor;vertical-align:middle;transform:translateY(2px)}
 .seat.is-off .card,.seat.is-gone .card{opacity:.35}
+body[data-phase=result] .seat>.card:not(.is-original){--cw:var(--cw-xs);outline:1px solid var(--ink)}
+body[data-phase=result] .seat>.card .card-name,body[data-replay="1"] .seat>.card .card-name{display:none}
 .seat.is-ready::after,.seat.is-voted::after{content:"";position:absolute;top:calc(var(--tk) - 7px);left:calc(50% - var(--tk)/2 - 3px);width:7px;height:7px;background:var(--bone-dim);transform:rotate(45deg)}
 .seat.is-dim{opacity:.35}
 .seat.is-selectable .seat-token{cursor:pointer}
@@ -82,11 +84,10 @@
 .peek-who{font:600 15px/1.3 var(--f-body);color:var(--bone-hi)}
 .log-c{display:inline-flex;flex-direction:column;align-items:center;gap:2px;width:44px;flex:none}
 .log-who{font:500 10px/1.2 var(--f-body);font-style:normal;color:var(--bone-dim);max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.reveal-hint{font-size:var(--fs-small);color:var(--bone-dim)}
 
 /* 선 (§5.4) — 투표선·말썽쟁이 예고선·리플레이 칼선 공용 */
 .ln{position:absolute;left:50%;top:50%;z-index:0;width:var(--len);height:1px;background:currentColor;color:var(--bone-dim);pointer-events:none;
-  transform-origin:0 50%;transform:translate(var(--x),var(--y)) rotate(var(--ang)) scaleX(0);transition:transform 280ms var(--ease-ink)}
+  transform-origin:0 50%;transform:translate(var(--x),var(--y)) rotate(var(--ang)) scaleX(0)}
 .ln.is-on{transform:translate(var(--x),var(--y)) rotate(var(--ang)) scaleX(1)}
 .ln.is-blood{color:var(--blood-hot)}
 .ln.is-fast{transition-duration:250ms;transition-timing-function:var(--ease-out)}
@@ -106,8 +107,9 @@
 .fan .card+.card{margin-left:calc(var(--cw)*-.58)}
 .fan .card-name{opacity:0}
 .fan .card:last-of-type .card-name{opacity:1}
+.fan .card{outline:1px solid var(--ink);box-shadow:-2px 2px 3px rgba(0,0,0,.55)}
 .fan-more{position:absolute;right:0;bottom:calc(100% + 2px);font:600 var(--fs-small)/1 var(--f-body);color:var(--bone-dim)}
-.fan .card-sg,.altar-card .card-sg,.seat>.card .card-sg,.fan .card .card-plate{display:none}
+.fan .card-sg,.altar-card .card-sg,.seat>.card .card-sg{display:none}
 @media(max-width:599px){.lobby-mid{top:46%}}
 .fx-drop{animation:fx-drop 180ms var(--ease-out) both}
 .seat.fx-join .seat-token{animation:fx-join 300ms var(--ease-out) both}
@@ -121,14 +123,18 @@ body[data-ns=sleep] .stage,body[data-ns=check] .stage{opacity:.18}
 body[data-ns=sleep] .altar{opacity:0;transition:opacity 300ms linear}
 body[data-ns=check] #stage .seat,body[data-ns=check] #stage .altar{visibility:hidden}
 .night-track{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;justify-content:center;gap:10px;height:12px;padding-top:4px;pointer-events:none;border-top:0}
+.night-dot-l{position:absolute;top:16px;font:600 11px/1 var(--f-body);color:var(--bone-dim);white-space:nowrap;transform:translateX(-50%)}
+@media(min-width:1024px){.night-dot-l{font-size:12px}}
 .night-dot{width:5px;height:5px;background:var(--bone-dim);transform:rotate(45deg);opacity:.5}
-.night-dot.is-past{opacity:.12}
 .night-dot.is-now{background:var(--bone-hi);opacity:1;animation:fx-dot 1.2s ease-in-out infinite alternate}
 html[data-perf=lite] .night-dot.is-now{animation:none}
 .check{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:safe center;overflow-y:auto;gap:10px;padding:0 24px;text-align:center;background:rgba(5,4,3,.92)}
-.check-card{--cw:min(var(--cw-xl),max(120px,calc((100vh - 330px)/1.4)));--cw:min(var(--cw-xl),max(120px,calc((100dvh - 330px)/1.4)));animation:fx-in 800ms linear both;transition:transform 1.2s var(--ease-out),opacity 1.2s linear}
+.check-card,.check-card .card{--cw:min(var(--cw-xl),max(120px,calc((100vh - var(--hud-h) - var(--dock-h) - 300px)/1.4)));--cw:min(var(--cw-xl),max(120px,calc((100dvh - var(--hud-h) - var(--dock-h) - 300px)/1.4)))}
+.check-card{position:relative;flex:none;height:calc(var(--cw)*1.4);transition:transform 1.2s var(--ease-out),opacity 1.2s linear}
+.check-card::after{content:"";position:absolute;left:0;right:0;bottom:0;z-index:7;height:3px;background:var(--bone-hi);transform:scaleX(0);transform-origin:0 50%}
+.check-card.is-hold::after{transform:scaleX(1);transition:transform var(--hold,var(--t-hold,600ms)) linear}
 .check-card.is-sink{transform:translateY(40px);opacity:0}
-.check-t1{position:relative;z-index:1;margin-top:6px;font:400 var(--fs-h2)/1.3 var(--f-display);letter-spacing:.06em;color:var(--bone-hi)}
+.check-t1{position:relative;z-index:1;margin-top:14px;font:400 var(--fs-h2)/1.3 var(--f-display);letter-spacing:.06em;color:var(--bone-hi)}
 .check-t2{font-size:var(--fs-body);color:var(--bone-dim)}
 .check-team{font:600 var(--fs-small)/1.3 var(--f-body);letter-spacing:.12em;color:var(--bone)}
 .check-team[data-team=wolf]{color:var(--blood-hot)}
@@ -170,27 +176,32 @@ html[data-perf=lite] .secret.is-on .secret-in{opacity:1}
 /* ================= 덱 시트 (§6.2) ================= */
 .deck-bar{display:flex;align-items:center;gap:10px;padding:6px 0 10px;min-width:0}
 .deck-count{font:400 var(--fs-h2)/1.2 var(--f-display);letter-spacing:.06em;color:var(--blood-hot);white-space:nowrap}
-.deck-bar>:last-child{white-space:nowrap;margin-left:auto}
+.deck-bar>:last-child:not(.deck-note){white-space:nowrap;margin-left:auto}
+.deck-note{margin:0;text-align:left;font-size:var(--fs-small);color:var(--bone-dim)}
 .deck-count.is-ok{color:var(--bone-hi)}
 .deck-warn{width:32px;height:32px;position:relative;display:grid;place-items:center;border:1px solid var(--ash);font-weight:600;color:var(--bone-dim)}
 .deck-warn::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%)}
 .deck-desc{min-height:2.8em;padding:8px 0;font:14px/1.5 var(--f-serif);color:var(--bone-dim);border-bottom:var(--hair)}
+.deck-desc:empty{min-height:0;border:0;padding:0}
 .sheet-body{overflow-x:hidden}
 .deck-grid,#sheet .deck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:16px 8px;padding:12px 0}
 .deck-cell .card,#sheet .deck-cell .card{--cw:64px}
-.deck-cell{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+.deck-cell{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;gap:2px;cursor:pointer}
+.deck-ctl:not(:has(.deck-inc)){position:absolute;left:calc(50% + 32px);top:calc(64px*1.4 - 12px);width:auto;transform:translateX(-100%);padding:1px 5px;background:var(--ink);border:1px solid var(--bone-dim);pointer-events:none}
+.deck-ctl:not(:has(.deck-inc)) output::before{content:"x";font-size:.8em}
 .deck-ctl{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:112px}
 .deck-ctl output{min-width:1.2em;text-align:center;font:400 16px/1 var(--f-title);color:var(--bone-hi)}
 .deck-dec,.deck-inc,#sheet .deck-dec,#sheet .deck-inc{position:relative;width:34px;height:40px;font-size:18px;line-height:1;color:var(--bone-hi);background:var(--char-hi);border:var(--hair)}
 .deck-dec::before,.deck-inc::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%)}
 .deck-cell.is-zero .card{opacity:.35}
+.deck-dec[aria-disabled=true],.deck-inc[aria-disabled=true]{color:var(--bone-dim);opacity:.4}
 
 /* ================= 결말: 판결·끝판 보드 (§6.9 §13.8) ================= */
 .board{padding-bottom:56px}
 @media(min-width:600px){body[data-phase=result] .stage{--seat-cw:56px}}
 @media(min-width:1024px){   /* 결과: 좌 탁자, 우 판결·기록 — 판결이 첫 화면에 보인다 */
   body[data-phase=result]:not([data-replay]) #main:has(.board:not([hidden])){display:grid;grid-template-columns:minmax(0,1fr) 360px;align-items:start}
-  body[data-phase=result]:not([data-replay]) #main:has(.board:not([hidden])) .stage{--sw:calc(100vw - var(--drawer) - 360px);grid-column:1;grid-row:1;position:sticky;top:0;height:var(--sh)!important}
+  body[data-phase=result]:not([data-replay]) #main:has(.board:not([hidden])) .stage{--sw:min(820px,max(560px,calc(100vw - var(--drawer) - 360px - 32px)));grid-column:1;grid-row:1;position:sticky;top:0;height:var(--sh)!important}
   body[data-phase=result]:not([data-replay]) #main:has(.board:not([hidden])) .board{grid-column:2;grid-row:1;min-width:0;border-left:var(--hair)}
 }
 .stage-bar{display:none;flex:none;align-items:center;justify-content:center;height:40px;font-size:var(--fs-small);font-weight:600;color:var(--bone-dim);border-bottom:var(--hair)}
@@ -241,7 +252,9 @@ html[data-perf=lite] .secret.is-on .secret-in{opacity:1}
 .rec-belief{margin-top:4px;color:var(--smoke)}
 .rec-belief i{font-style:normal;color:var(--bone)}
 .rec-belief:is(.is-diff,.is-wrong,.is-off) i,.rec-belief[data-diff="1"] i{border-bottom:1px solid var(--blood)}
-.rec-row.is-dead .rec-n,.rec-row.is-dead .rec-to{text-decoration:line-through}
+.rec-row.is-dead .rec-n{text-decoration:line-through}
+.rec-x{display:inline-block;margin-left:6px;padding:0 4px;border:1px solid var(--blood-hot);color:var(--blood-hot);font:600 var(--fs-label)/1.4 var(--f-body);transform:rotate(-4deg)}
+.rec-diff{margin-left:6px;font-size:var(--fs-label);color:var(--smoke)}
 .rec-row.is-gone{opacity:.5}
 .rec-row.is-rel,.tl-row.is-rel{box-shadow:inset 2px 0 0 var(--bone-hi)}
 .rec-row.is-altar .rec-n{color:var(--bone-dim)}
@@ -289,7 +302,8 @@ html[data-perf=lite] .secret.is-on .secret-in{opacity:1}
 
 /* ================= 등급·접근성 ================= */
 html[data-perf=lite] .seat.is-selectable .seat-token::before{animation:none;opacity:.6}
-html[data-perf=lite] .vignette[data-hb]::after{animation:none;opacity:.8}
+.vignette[data-hb]::after{will-change:opacity}
+html[data-perf=lite] .vignette[data-hb]::after{animation:none;opacity:.8;will-change:auto}
 @media(prefers-reduced-motion:reduce){
   .seat.is-selectable .seat-token::before{animation:none;opacity:.6}
   .seat.is-target .seat-token::before,.seat.fx-join .seat-token,.fx-drop,.reveal,.peek.is-on,.check-card,.check-t2.is-blink,.fx-head-1,.fx-head-2{animation:none}
@@ -304,7 +318,12 @@ html[data-perf=lite] .vignette[data-hb]::after{animation:none;opacity:.8}
 .dock-alt,.home-alt,.home-law{min-height:44px}
 .band-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 @media(max-width:599px){:root{--band-h:72px}.band-text{font-size:14px;line-height:1.35}}
+@media(max-width:379px){.band{height:auto;min-height:var(--band-h)}.band-text{font-size:13px}}
 .sheet-tab{letter-spacing:.02em;white-space:nowrap}
+.sheet-head{position:sticky;top:0;z-index:2;background:var(--void);border-bottom:1px solid var(--bone-dim)}
+.sheet-body{scroll-padding-top:56px}
+.sheet-tab.is-new{position:relative}
+.sheet-tab.is-new::after{content:"";position:absolute;top:12px;right:calc(50% - 2.6em);width:6px;height:6px;background:var(--blood-hot);transform:rotate(45deg)}
 @media(min-width:1024px){
   #dock{grid-template-columns:56px 1fr}
   .dock-badge{display:none}
@@ -352,3 +371,44 @@ html[data-perf=lite] .ln,html[data-perf=lite] .ln.is-blood,html[data-perf=lite] 
   .ln,.ln.is-blood,.ln.is-on.is-lock{transition:none}
   .ln.is-on.is-lock{transform:translate(var(--x),var(--y)) rotate(var(--ang)) scale(1,2)}
 }
+
+/* ================= 리플레이 모드 (replay.js 가 body[data-replay] 를 켠다) ================= */
+body[data-replay="1"]{--band-h:0px}
+body[data-replay="1"] :is(.band){display:none}
+body[data-replay="1"] :is(.seat>.card,.altar .card,.seat-name,.seat-mark){opacity:0}
+body[data-replay="1"] #stage>.ln{display:none}
+body[data-replay="1"] .seat>.card:not(.is-original){--cw:var(--cw-xs)}
+.hud-skip.rp-hid{display:none}
+body[data-replay="1"] .seat.is-host::before{right:auto;left:calc(50% - var(--tk)/2 - 9px);top:-6px}
+@media(min-width:1024px){body[data-replay="1"] #dock{grid-template-columns:56px 1fr 56px}}
+body[data-replay="1"] .hud-sign{visibility:hidden}
+/* 리플레이 눈금자 */
+.rp-bar>*{position:absolute}
+.rp-bar{left:0;right:0;bottom:0;height:44px;z-index:4;padding-right:44px;background:var(--void);outline:none}
+.rp-bar::before{content:"";position:absolute;left:0;right:0;top:28px;height:1px;background:var(--ash)}
+.rp-tick{position:absolute;top:16px;left:calc((100% - 44px)*var(--p));width:8px;height:12px;margin-left:-4px;--c:var(--ash)}
+.rp-tick::before{content:"";position:absolute;left:0;top:0;width:8px;height:10px;background:var(--c);clip-path:polygon(0 0,50% 100%,100% 0)}
+.rp-tick::after{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;pointer-events:none;color:var(--smoke)}
+.rp-tick[data-r]::after{content:attr(data-r);top:30px;font:400 11px/1 var(--f-title)}
+.rp-tick.is-first::after{content:attr(data-a);top:-14px;left:0;transform:none;font:var(--fs-label)/1 var(--f-body)}
+.rp-tick.is-end.is-first::after{top:30px;left:auto;right:0}
+.rp-tick.is-past{--c:var(--bone-dim)}
+.rp-tick.is-now{--c:var(--bone-hi);animation:rp-pop .12s}
+.rp-tick.is-rel::before{outline:1px solid var(--bone-hi)}
+.rp-tick.is-mv{border-bottom:2px solid var(--bone-hi)}
+.rp-tick.is-bl{border-bottom:2px solid var(--blood)}
+.rp-prog{left:0;right:44px;top:28px;height:2px;background:var(--bone-hi);transform-origin:0 50%}
+.rp-rate{right:2px;top:6px;width:40px;height:32px;border:1px solid var(--bone-dim);background:var(--char);font:400 14px/1 var(--f-title);color:var(--bone-hi)}
+.rp-prev svg{transform:scaleX(-1)}
+.rp-prev svg,.rp-nxt svg{width:22px;height:22px}
+@keyframes rp-pop{from{scale:1.3}}
+/* 리플레이 공용 조각 */
+.rp-rc{display:inline-flex;align-items:center;gap:3px;color:var(--bone-hi)}
+.rp-rc svg{width:14px;height:14px;flex:none}
+@keyframes rp-vin{from{opacity:0}to{opacity:1}}
+.rp-vl{position:relative;overflow:hidden;font:400 var(--fs-h1)/1.3 var(--f-display);letter-spacing:.06em;color:var(--bone-hi);word-break:keep-all}
+.rp-vw,.rp-vs{margin-top:8px;font:var(--fs-body)/1.55 var(--f-serif);color:var(--bone-dim);opacity:0;transition:opacity calc(200*var(--u)) calc(360*var(--u))}
+.rp-vs{color:var(--bone-hi);transition-delay:calc(900*var(--u))}
+@keyframes rp-lift{40%{scale:1.8}}
+@keyframes rp-flip{50%{scale:0 1}}
+@keyframes rp-fa{0%,49%{opacity:0}50%,100%{opacity:1}}

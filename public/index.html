@@ -11,17 +11,19 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23070606'/%3E%3Cpath d='M5 13l9 4v2l-9-3zM27 13l-9 4v2l9-3z' fill='%238e0f0f'/%3E%3C/svg%3E">
 <link rel="preconnect" href="__SOCKET_URL__" crossorigin>
 <link rel="preload" as="font" type="font/woff2" crossorigin href="/a/__FONT_T__">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="/a/__FONT_D__">
 <script>window.SOCKET_URL='__SOCKET_URL__'</script>
-<script>(function(){var d=document.documentElement,n=navigator,c=n.connection||{},q=c.saveData,r=(performance.getEntriesByType('navigation')[0]||{}).responseStart;d.dataset.perf=n.deviceMemory<=3||n.hardwareConcurrency<=4||q?'lite':'full';d.dataset.net=q||/2g/.test(c.effectiveType||'')||c.downlink<.4||r>2500?'slow':'fast';try{fetch(SOCKET_URL+'/healthz',{mode:'no-cors',cache:'no-store'})}catch(e){}})()</script>
+<script>(function(){var d=document.documentElement,n=navigator,c=n.connection||{},q=c.saveData,r=(performance.getEntriesByType('navigation')[0]||{}).responseStart;d.dataset.perf=n.deviceMemory<=3||n.hardwareConcurrency<=4||q?'lite':'full';try{if(localStorage.ww_perf==='lite')d.dataset.perf='lite'}catch(e){}d.dataset.net=q||/2g/.test(c.effectiveType||'')||c.downlink<.4||r>2500?'slow':'fast';try{fetch(SOCKET_URL+'/healthz',{mode:'no-cors',cache:'no-store'})}catch(e){}})()</script>
 <style>
 @font-face{font-family:"Hanbam T";src:url(/a/__FONT_T__) format("woff2");font-display:swap}
 @font-face{font-family:"Hanbam";src:url(/a/__FONT_D__) format("woff2");font-display:swap}
+@font-face{font-family:"Hanbam S";src:url(/a/__FONT_S__) format("woff2");font-display:swap}
 @font-face{font-family:"Hanbam Fallback";src:local("Apple SD Gothic Neo"),local("Malgun Gothic"),local("Noto Sans CJK KR"),local("Noto Sans KR");size-adjust:__SA__%;ascent-override:__AO__%;descent-override:__DO__%}
 __BASE_CSS__
 </style>
 <style id="lqip">__LQIP__</style>
 <script>__MANIFEST__</script>
-<script>window.ASSETS={ver:'__VER__',css:'/a/__GAME_CSS__',fx:'/a/__FX_JS__',replay:'/a/__REPLAY_JS__',chatx:'/a/__CHATX_JS__',audio:'/a/__AUDIO_JS__',fontD:'/a/__FONT_D__'}</script>
+<script>window.ASSETS={ver:'__VER__',css:'/a/__GAME_CSS__',fx:'/a/__FX_JS__',replay:'/a/__REPLAY_JS__',chatx:'/a/__CHATX_JS__',audio:'/a/__AUDIO_JS__',fontD:'/a/__FONT_D__',result:'/a/__RESULT_JS__'}</script>
 <script defer src="/a/__SIO__"></script>
 <script defer src="/a/__GAME_JS__"></script>
 </head>

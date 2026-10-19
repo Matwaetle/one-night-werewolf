@@ -62,11 +62,15 @@
   var pending = {};     // key -> Promise
   var keep = {};        // key -> Image (디코드된 비트맵 유지)
   var queue = [];       // {key,url,front,resolve}
-  var active = 0;
+  var active = 0, xtra = 0;
 
   function pump() {
-    while (active < ART.CONCURRENCY && queue.length) {
-      start(queue.shift());
+    var j;
+    // 앞순위 역할 아트(r:)는 슬롯이 다 찼어도 한 개 더 받는다
+    while ((j = queue[0]) && (active < ART.CONCURRENCY || (j.front && !xtra && j.key.charAt(0) === 'r'))) {
+      queue.shift();
+      if (active >= ART.CONCURRENCY) { j.x = 1; xtra = 1; }
+      start(j);
     }
   }
   function start(job) {
@@ -77,7 +81,7 @@
     var finish = function (ok) {
       if (fin) return;
       fin = true; clearTimeout(to);
-      active--;
+      active--; if (job.x) xtra = 0;
       if (ok) { done[job.key] = true; urls[job.key] = job.url; } else fails[job.key] = (fails[job.key] || 0) + 1;
       if (ok && job.key.indexOf('s:') === 0) keep[job.key] = img;
       delete pending[job.key];
@@ -86,6 +90,8 @@
       pump();
     };
     img.onerror = function () { finish(false); };
+    // decode()는 그려지지 않는 탭·백그라운드에서 끝나지 않을 수 있다 → 받기만 끝나면 잠시 뒤 성공으로 본다
+    img.onload = function () { setTimeout(function () { finish(true); }, 300); };
     img.src = job.url;
     if (img.decode) img.decode().then(function () { finish(true); }, function () {
       // decode() 거부는 오류일 수도, 일부 브라우저의 미지원 거부일 수도 있다
@@ -99,12 +105,12 @@
     if ((fails[key] || 0) >= 3) return Promise.resolve(false);
     if (pending[key]) {
       if (front) {   // 이미 대기 중이면 앞으로
-        for (var i = 0; i < queue.length; i++) if (queue[i].key === key) { queue.unshift(queue.splice(i, 1)[0]); break; }
+        for (var i = 0; i < queue.length; i++) if (queue[i].key === key) { queue.unshift(queue.splice(i, 1)[0]); queue[0].front = true; break; }
       }
       return pending[key];
     }
     var p = new Promise(function (resolve) {
-      var job = { key: key, url: u, resolve: resolve };
+      var job = { key: key, url: u, resolve: resolve, front: front };
       if (front) queue.unshift(job); else queue.push(job);
     });
     pending[key] = p;
@@ -113,16 +119,35 @@
   }
 
   // 로드 성공 후: 정적 이미지는 CSS 변수를 설정(그 전엔 CSS가 URL을 요청하지 않는다), 카드에 data-art 부여
+  // 같은 프레임에 몰린 로드는 rAF 한 번에 모아서 쓴다 (스타일 무효화 1회)
+  var got = {}, tick = 0;
   function onLoaded(key) {
     if (!doc) return;
-    if (key.indexOf('s:') === 0) {
-      var name = key.slice(2);
-      docEl.style.setProperty('--img-' + name, 'url("' + staticUrl(name) + '")');
-      var have = (attr('data-img') || '').split(' ').filter(Boolean);
-      if (have.indexOf(name) < 0) { have.push(name); docEl.setAttribute('data-img', have.join(' ')); }
-      if (name === 'home') docEl.setAttribute('data-home-art', '1');
-    }
-    ART.mark(doc);
+    got[key] = 1;
+    if (tick) return;
+    tick = 1;
+    // rAF는 숨김·가려진 탭에서 멈출 수 있으므로 타이머를 항상 함께 건다 (먼저 도착한 쪽이 flush, 나머지는 무시)
+    var t = setTimeout(flush, doc.hidden ? 50 : 120);
+    if (!doc.hidden && root.requestAnimationFrame) root.requestAnimationFrame(function () { clearTimeout(t); flush(); });
+  }
+  function flush() {
+    if (!tick) return;
+    tick = 0;
+    var keys = Object.keys(got), have = (attr('data-img') || '').split(' ').filter(Boolean), n = have.length;
+    got = {};
+    keys.forEach(function (k) {
+      var name = k.slice(2);
+      if (k.charAt(0) === 's') {
+        docEl.style.setProperty('--img-' + name, 'url("' + staticUrl(name) + '")');
+        if (have.indexOf(name) < 0) have.push(name);
+        if (name === 'home') docEl.setAttribute('data-home-art', '1');
+      }
+    });
+    if (have.length !== n) docEl.setAttribute('data-img', have.join(' '));
+    keys.forEach(function (k) {
+      if (k.charAt(0) === 'r') ART.mark(doc, '.card[data-role="' + k.slice(2) + '"][data-art="0"]');
+      else if (k === 's:atlas') ART.mark(doc, '.card[data-art="0"][data-size="xs"],.card[data-art="0"][data-size="sm"]');
+    });
   }
 
   // ---------- 공개 API ----------
@@ -169,11 +194,11 @@
   };
 
   // root 안의 .card에 로드된 아트면 data-art="1" 즉시 부여 (md/xl은 --art도 설정)
-  ART.mark = function (scope) {
+  ART.mark = function (scope, sel) {
     if (!doc) return;
     scope = scope || doc;
     var atlasOk = done['s:atlas'] === true;
-    var cards = scope.querySelectorAll ? scope.querySelectorAll('.card[data-role][data-art="0"]') : [];
+    var cards = scope.querySelectorAll ? scope.querySelectorAll(sel || '.card[data-role][data-art="0"]') : [];
     for (var i = 0; i < cards.length; i++) {
       var c = cards[i], role = c.getAttribute('data-role'), size = c.getAttribute('data-size');
       if (size === 'xs' || size === 'sm') {

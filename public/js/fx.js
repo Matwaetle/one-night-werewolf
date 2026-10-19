@@ -85,14 +85,18 @@
       var step = lite() ? 25 : 40, stopped = false, raf, t0;
       if (calm() || d.hidden || !text) { el.textContent = text; return function () {}; }
       el.textContent = '';
-      var a = d.createTextNode(''), rest = d.createElement('span'), rt = d.createTextNode(text);
-      rest.style.opacity = '0'; rest.appendChild(rt); el.appendChild(a); el.appendChild(rest);
+      // 절(공백·문장부호 단위)별로 180ms 페이드. 단어가 반쯤 보이는 순간이 없고, DOM은 절이 바뀔 때만 건드린다
+      var parts = text.match(/[^\s,.!?…·]+[\s,.!?…·]*|[\s,.!?…·]+/g) || [text], at = [], c = 0, k = 0, fr = d.createDocumentFragment();
+      parts.forEach(function (p) {
+        var s = d.createElement('span'); s.textContent = p; s.style.cssText = 'opacity:0;transition:opacity 180ms linear';
+        at.push(c * step); c += p.length; fr.appendChild(s);
+      });
+      el.appendChild(fr);
       function tick(now) {
         if (stopped) return;
         if (t0 == null) t0 = now;
-        var k = Math.min(text.length, Math.floor((now - t0) / step) + 1);
-        a.data = text.slice(0, k); rt.data = text.slice(k);
-        if (k < text.length) raf = requestAnimationFrame(tick); else el._fxStop = null;
+        while (k < parts.length && at[k] <= now - t0) el.children[k++].style.opacity = '1';
+        if (k < parts.length) raf = requestAnimationFrame(tick); else el._fxStop = null;
       }
       raf = requestAnimationFrame(tick);
       el._fxStop = function () {

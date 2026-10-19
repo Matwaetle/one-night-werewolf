@@ -80,6 +80,9 @@ const fx = need('fx.js', /^fx\.[0-9a-f]+\.js$/); if (fx) row('fx.js', size(fx), 
 const fD = need('hanbam-d 폰트', /^hanbam-d\.[0-9a-f]+\.woff2$/); if (fD) row('hanbam-d (디스플레이 폰트)', size(fD), 30 * KB);
 const rp = opt('replay.js', /^replay\.[0-9a-f]+\.js$/); if (rp.length) row('replay.js (JS+CSS+문양)', size(rp[0]), 15 * KB);
 
+const rs = opt('result.js (A1 결과 청크)', /^result\.[0-9a-f]+\.js$/); if (rs.length) row('result.js (A1 결과 청크)', size(rs[0]), 6 * KB);
+const fS = opt('hanbam-s (명조 서브셋)', /^hanbam-s\.[0-9a-f]+\.woff2$/); if (fS.length) row('hanbam-s (명조 서브셋)', size(fS[0]), 30 * KB);
+
 const cx = opt('chatx.js (F1 답글)', /^chatx.[0-9a-f]+.js$/); if (cx.length) row('chatx.js (JS+CSS)', size(cx[0]), 2 * KB);
 const au = opt('audio.js (F3 음악)', /^audio.[0-9a-f]+.js$/); if (au.length) row('audio.js (기본 켜짐(작게), 첫 제스처 뒤 지연)', size(au[0]), 4 * KB);
 
@@ -111,11 +114,16 @@ if (bonfire) row('모닥불 추가 (아틀라스+뒷면+지평선+그레인)', b
 
 /* 한 판 전체 (캐시 없음): 크리티컬 + 지연 + 키아트 + 모닥불 + 이번 덱의 큰 아트(가장 큰 것부터 최대 8장) */
 {
-  const later = [gc, fx, fD, rp[0], cx[0], au[0]].filter(Boolean).reduce((s, f) => s + size(f), 0);
+  const later = [gc, fx, fD, rp[0], cx[0], au[0], rs[0], fS[0]].filter(Boolean).reduce((s, f) => s + size(f), 0);
   bigs.sort((a, b) => b - a);
   const deck = bigs.slice(0, 8).reduce((s, x) => s + x, 0);
   if (deck) row('idle 선로딩 (큰 아트 최대 8장)', deck, 400 * KB);
-  row('캐시 없이 한 판 전체 (추정)', critical + later + imgTotals.key + bonfire + deck, 900 * KB);
+  // 최대 판: 모든 역할의 큰 아트(전부) + 가장 큰 판결 배경 + back-s (실측 ~900KB 에 맞춘다)
+  const full = bigs.reduce((s, x) => s + x, 0);
+  const vMax = Math.max(0, ...find(/^verdict-/).map(size));
+  const backS = find(/^back-s\./).reduce((s, f) => s + size(f), 0);
+  row('캐시 없이 한 판 전체 (추정, 최대 판)', critical + later + imgTotals.key + bonfire + full + vMax + backS, 900 * KB,
+    `[큰 아트 전부 ${(full / KB).toFixed(0)} + 판결 ${(vMax / KB).toFixed(0)} + back-s ${(backS / KB).toFixed(0)}]`);
 }
 
 console.log(rows.join('\n'));

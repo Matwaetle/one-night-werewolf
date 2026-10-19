@@ -738,3 +738,48 @@
 ---
 
 **총 문구 수:** 3절 표 450행입니다(행 하나가 여러 위치를 묶은 경우가 있습니다). 이 가운데 변경 없음은 36행, 바뀌는 행은 414행입니다. 새 키는 2개(필수)와 선택 키 2개입니다.
+
+---
+
+## 부록. 결과 화면·리플레이 문구 개정 (이 표가 위 표와 다르면 이 표가 맞습니다)
+
+조사 쌍 `${r:이었/였}`을 JOSA 표에 추가했습니다(받침 있으면 이었, 없으면 였). 예: `${r:이었/였}습니다` -> 늑대인간이었습니다 / 사냥꾼이었습니다.
+
+| 키 | 확정 문구 |
+|---|---|
+| T.msg.busy | 지금은 방을 만들 수 없습니다. 잠시 후 다시 시도해 주세요. |
+| T.replay.cause.robbed | ${role} ${a:이/가} 당신의 카드를 가져갔습니다. |
+| T.replay.cause.swapped | ${role} ${a:이/가} 당신의 카드를 ${t}의 카드와 바꿨습니다. |
+| T.replay.cause.rob | 당신은 ${t}의 카드를 가져왔습니다. |
+| T.replay.cause.drunk | 당신은 자신의 카드를 ${P:과/와} 바꿨습니다. |
+| T.replay.cause.end | 그래서 마지막 카드는 ${r}입니다. |
+| T.replay.self.end | 마지막 카드는 ${f}였습니다. |
+| T.replay.self.diff | ${b}인 줄 알았지만 마지막 카드는 ${f}였습니다. |
+| T.replay.self.same | 카드는 끝까지 ${f}였습니다. |
+| T.replay.self.blind | 바뀐 카드는 확인하지 못했습니다. 마지막 카드는 ${f}였습니다. |
+| T.replay.exec.card | ${t:은/는} ${r:이었/였}습니다. |
+| T.body.execCard | ${n:은/는} ${r:이었/였}습니다. |
+| T.replay.why.wolf_lived_you | 늑대인간인 당신은 처형되지 않았습니다. |
+| T.replay.why.wolf_died_you | 늑대인간인 당신이 처형되었습니다. |
+| T.replay.vote.by | ${list} → ${t} |
+| T.replay.dawn.bot | 카드가 바뀐 사람: ${list} |
+| T.replay.note.wake | 처음 받은 역할로 깨어납니다. |
+| T.replay.uiR.hop.robSelf | ${t}에게서 훔쳐 옴 |
+| T.replay.uiR.hop.robTarget | ${a:이/가} 훔쳐 감 |
+| T.replay.uiR.hop.swap | ${a:이/가} 바꿔 놓음 |
+| T.replay.uiR.hop.drunkSelf | ${P:과/와} 바꿈 |
+| T.replay.uiR.hop.drunkCenter | ${a:이/가} 자기 카드와 바꿈 |
+| T.replay.uiR.hop.copy | ${a:이/가} 복사함 |
+| T.replay.ui.diffNote | ` · 실제와 다름` |
+| T.stamp.exec | 처형 |
+| T.phase.dawn / T.replay.uiR.acts.dawn | 아침 |
+| T.body.dayAsk | 토론을 시작하세요. |
+| T.btn.voiceOn / voiceOff | 음성 안내 켜기 / 음성 안내 끄기 |
+| T.btn.unfold | 최종 카드 보기 |
+| T.body.pickExec | 처형할 사람을 고른 뒤 버튼을 길게 누르세요. |
+| T.body.votedFor | ${n}에게 투표했습니다. 다시 고르면 바꿀 수 있습니다. |
+| T.body.coverHint | 확인했다면 카드를 눌러 덮으세요. |
+| T.body.sleeping | 대기 중 (독 상태 표시 전용) |
+| T.body.dockHint | 내 카드 |
+| T.body.voteRuleBtn | 투표 규칙 보기 (투표 '?' 버튼 aria-label) |
+| T.body.centerMore | 가운데 +${n} |
