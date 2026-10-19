@@ -82,7 +82,7 @@
 | T.btn.execute | 처형 | 투표하기 | nm에 대상 이름이 붙습니다. "민수에게 투표하기" 어순은 4절의 선택 사항입니다 |
 | T.btn.ready | 심판하자 | 투표 준비하기 | 낮의 조기 투표 토글. 띠 문구 "투표 준비 r/n"과 목적어를 맞춥니다 |
 | T.btn.unready | 손을 내린다 | 준비 취소하기 | |
-| T.btn.judgeNow | 지금 심판한다 | 투표 시작하기 | 방장이 단계를 넘기는 메뉴입니다. execute(투표하기)와 구분됩니다 |
+| T.btn.judgeNow | 지금 심판한다 | 바로 투표 시작하기 | 방장이 단계를 넘기는 메뉴입니다. execute(투표하기)와 구분됩니다 |
 | T.btn.again | 다시, 밤으로 | 다시 하기 | |
 | T.btn.skip | 건너뛴다 | 건너뛰기 | |
 | T.btn.pause | 멈춘다 | 멈추기 | |
@@ -132,7 +132,7 @@
 | T.phase.result | 결말 | 결과 | |
 | T.phase.prologue | 서막 | 시작 | |
 | T.phase.verdict | 판결 | 결과 | |
-| T.phase.awake | 눈을 떠라 | 눈을 뜨세요 | 쓰는 곳이 없습니다(4절) |
+| T.phase.awake | 눈을 떠라 | 눈을 뜨세요. | 쓰는 곳이 없습니다(4절) |
 | T.phase.nightFalls | 밤이 왔다. | 밤이 되었습니다. | 쓰는 곳이 없습니다 |
 | T.phase.dayBreaks | 날이 밝았다. | 아침이 되었습니다. | 낮 배너 제목 |
 | T.phase.closeEyes | 눈을 감아라. | 눈을 감으세요. | 쓰는 곳이 없습니다 |
@@ -206,7 +206,7 @@
 | 위치 | 현재 | 새 문구 | 메모 |
 |---|---|---|---|
 | T.body.yourCard | 네 패다. | 당신의 역할은 아직 가려져 있습니다. | check-t1, dock aria. 역할 이름은 누르고 있을 때만 보이므로 문장에 넣지 않습니다. 오너 예시 문장은 4절 선택 키로 처리합니다 |
-| T.body.holdHint | 누르고 있어라. | 카드를 길게 눌러 확인하세요. | 오너 예시 그대로입니다 |
+| T.body.holdHint | 누르고 있어라. | 카드를 길게 누르면 역할이 보입니다. | 오너 예시 그대로입니다 |
 | T.body.keepAwake | 화면을 끄지 마라. | 화면이 꺼지지 않도록 해 주세요. | |
 | T.body.peekFirst | 처음 받은 패 | 처음 받은 카드 | |
 | T.body.peekLast | 마지막으로 본 패 | 마지막으로 확인한 카드 | |
@@ -919,3 +919,22 @@
 | T.body.heroKey | 승부를 가른 카드 | 위와 같음 |
 | T.replay.vote.allNone | 모두 투표하지 않아 아무도 처형되지 않았습니다. | 아무도 투표하지 않았을 때. 표가 있었지만 2표 이상이 없으면 vote.one |
 | T.body.leftAway | 자리를 오래 비워 방에서 나왔습니다. | 대기실에서 오래 자리를 비워 제외된 뒤 다시 들어올 때 cannotReturn 대신 표시 |
+
+
+## 최종 문구 수정 (카드 확인, 낮, 밤 정보)
+
+| 키 | 문구 |
+|---|---|
+| T.body.yourCard | 카드를 받았습니다. |
+| T.body.holdHint | 카드를 길게 누르면 역할이 보입니다. |
+| T.body.checkBand | 주변 사람에게 화면이 보이지 않게 하세요. |
+| T.body.dayTalk | 토론이 끝나면 아래 버튼을 눌러 주세요. |
+| T.body.dayReadyWait | 다른 사람을 기다리는 중입니다. |
+| T.body.raised | 준비 ${r}/${n} · 모두 준비하면 투표를 시작합니다. |
+| T.body.seenLine | 내 카드: ${t} |
+| (낮 한 줄) | 강도/불면증환자/도플갱어는 seenLine 뒤에 T.body.whoFrom / whoWoke / whoCopied 를 " · " 로 덧붙인다 (예산 때문에 별도 문구 키를 두지 않음) |
+| T.body.dockMaybe | 바뀌었을 수 있음 |
+| T.body.teamMoved | 밤사이 카드가 바뀌어 ${team} 소속이 되었습니다. |
+| T.btn.judgeNow | 바로 투표 시작하기 |
+| T.phase.awake | 눈을 뜨세요. |
+| T.body.waitMore | 시작하려면 ${need}명이 더 필요합니다. |

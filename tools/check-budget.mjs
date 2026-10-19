@@ -29,8 +29,9 @@ const GAME_WARN = 23.8 * KB;   // FEATURES_SPEC 0.4: 경고선(WARN), 상한 24K
 const row = (name, bytes, limit, note = '') => {
   const ok = bytes <= limit;
   if (!ok) bad = true;
-  const tag = !ok ? 'FAIL' : bytes >= limit * 0.97 ? 'WARN' : 'OK  ';
-  rows.push(`${tag} ${name.padEnd(40)} ${(bytes / KB).toFixed(2).padStart(7)}KB / ${(limit / KB).toFixed(1)}KB ${note}`);
+  const tag = !ok ? 'FAIL' : bytes > limit * 0.95 ? 'WARN' : 'OK  ';
+  const head = ok && bytes > limit * 0.95 ? ' WARN headroom <5%' : '';
+  rows.push(`${tag} ${name.padEnd(40)} ${(bytes / KB).toFixed(2).padStart(7)}KB / ${(limit / KB).toFixed(1)}KB ${note}${head}`);
   return bytes;
 };
 const info = (name, text) => rows.push(`INFO ${name.padEnd(40)} ${text}`);
@@ -134,20 +135,26 @@ if (bonfire) row('모닥불 추가 (아틀라스+뒷면+지평선+그레인)', b
   try {
     const mp = path.join(ROOT, 'review/metrics.json');
     if (fs.existsSync(mp)) {
-      const g = JSON.parse(fs.readFileSync(mp, 'utf8'))?.network?.game?.total;
+      const mj = JSON.parse(fs.readFileSync(mp, 'utf8'));
+      const g = mj?.network?.game?.total;
+      // 콘솔 오류가 있거나 replay/final 이 미캡처면 실측은 무효 — OK 로 인증하지 않는다 (WARN, 재캡처 전까지 빌드는 통과)
+      const invalid = (Array.isArray(mj?.consoleErrors) && mj.consoleErrors.length > 0)
+        || (Array.isArray(mj?.notCaptured) && mj.notCaptured.some((x) => /replay|final/i.test(String(x))));
+      const okTag = (ok) => (!ok ? 'FAIL' : invalid ? 'WARN' : 'OK  ');
+      const inv = invalid ? ' (실측 무효: 콘솔 오류/미캡처)' : '';
       const real = typeof g?.httpBytes === 'number' ? g.httpBytes : g?.bytes;
       if (typeof real === 'number') {
         const lim = 900 * KB, ok = real <= lim;
         if (!ok) bad = true;
-        rows.push(`${ok ? 'OK  ' : 'FAIL'} ${'실측 한 판 HTTP (캐시 없음)'.padEnd(40)} ${(real / KB).toFixed(1)}KB / ${(lim / KB).toFixed(1)}KB [추정 ${(fullEst / KB).toFixed(1)}KB]`);
+        rows.push(`${okTag(ok)} ${'실측 한 판 HTTP (캐시 없음)'.padEnd(40)} ${(real / KB).toFixed(1)}KB / ${(lim / KB).toFixed(1)}KB [추정 ${(fullEst / KB).toFixed(1)}KB]${inv}`);
         // 추정 대비 1.15배 초과는 art.js 수정 재측정 전까지 경고만 한다
         const rl = fullEst * 1.15;
-        rows.push(`${real <= rl ? 'OK  ' : 'WARN'} ${'실측/추정 비율 (<=1.15)'.padEnd(40)} ${(real / KB).toFixed(1)}KB / ${(rl / KB).toFixed(1)}KB`);
+        rows.push(`${real <= rl && !invalid ? 'OK  ' : 'WARN'} ${'실측/추정 비율 (<=1.15)'.padEnd(40)} ${(real / KB).toFixed(1)}KB / ${(rl / KB).toFixed(1)}KB${inv}`);
         const ws = g?.wsBytes;
         if (typeof ws === 'number') {
           const wl = 64 * KB, wok = ws <= wl;
           if (!wok) bad = true;
-          rows.push(`${wok ? 'OK  ' : 'FAIL'} ${'실측 WebSocket'.padEnd(40)} ${(ws / KB).toFixed(1)}KB / ${(wl / KB).toFixed(1)}KB`);
+          rows.push(`${okTag(wok)} ${'실측 WebSocket'.padEnd(40)} ${(ws / KB).toFixed(1)}KB / ${(wl / KB).toFixed(1)}KB${inv}`);
         }
       }
     }

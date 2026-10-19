@@ -40,7 +40,7 @@
   function roleUrl(id, lite) {
     var m = ART.manifest || {};
     var bg = m.art || m.big, big = bg && bg[id], sm = m.lite && m.lite[id];
-    return url(lite && /^(slow|mid)$/.test(attr('data-net')) ? (sm || big) : (big || sm));
+    return url(lite && isSlow() ? (sm || big) : (big || sm));
   }
   function rurl(id) { return urls['r:' + id] || roleUrl(id); }   // 실제로 받은 주소 우선
   function staticUrl(name) {

@@ -138,6 +138,7 @@
   box-shadow:inset 0 1px 0 var(--ink),inset 0 -1px 0 var(--ink);
 }
 .card[data-size="xl"] .card-name{ font-size:calc(var(--cw)*.088); }
+.card:is([data-size="md"],[data-size="xl"]) .card-name{ padding:0 8%; }
 .card[data-team="wolf"] .card-name{ background:var(--blood); color:var(--bone-hi); box-shadow:none; }
 .card[data-team="tanner"] .card-name{
   background:var(--sepia); color:var(--bone-hi);
@@ -151,11 +152,11 @@
 /* sm: 이름 body 13px, 리본 아래로 칩 자리 확보 */
 .card[data-size="sm"] .card-name{
   left:0; right:0; clip-path:none;
-  font:600 12px/1 var(--f-body); letter-spacing:-.02em;
+  font:400 12px/1 var(--f-display); letter-spacing:0;
 }
-.card[data-long="1"] .card-name{ font-size:clamp(8px,calc(var(--cw)*.13),12px); letter-spacing:-.04em; }
+.card[data-long="1"] .card-name{ font-size:clamp(8px,calc(var(--cw)*.13),12px); letter-spacing:0; }
 .card[data-size="sm"] .card-name{ top:69%; height:16%; z-index:4; line-height:1; padding-top:1px; font-size:clamp(9px,calc(var(--cw)*.14),12px); }
-.card[data-long="1"][data-size="sm"] .card-name{ font-size:clamp(8px,calc(var(--cw)*.12),11px); letter-spacing:-.05em; }
+.card[data-long="1"][data-size="sm"] .card-name{ font-size:clamp(8px,calc(var(--cw)*.12),11px); letter-spacing:0; }
 .card[data-size="sm"] .card-sg{ width:14px; height:14px; bottom:1%; }
 .card[data-size="sm"] .card-sg svg{ width:12px; height:12px; }
 .card[data-size="sm"] .card-tm{ width:11px; height:11px; min-width:0; right:4%; top:3%; padding:0; }

@@ -120,7 +120,7 @@ function build(R, meId) {
     const hh = fm(RP.hunt.title[last === 'doppelganger' ? 'copy' : P[h].original === 'hunter' && last === 'hunter' ? 'both' : 'last'], { a: nm(h) });
     if (d.by === 'hunter') { o.l1 = fm(RP.hunt.top, { h: hh, t: nm(t) }); o.l2 = fm(RP.hunt.bot, { t: nm(t), r: cc(E[t]) }); o.focus = [{ slot: t, role: eff(E[t]) }]; tr(o, h, t, { bl: 1, w: 1, s: 1 }); }
     else { o.l1 = t >= 0 ? fm(RP.hunt.top0, { h: hh, t: nm(t) }) : fm(RP.hunt.topNone, { h: hh }); if (t >= 0) tr(o, h, t, { s: 1 }); }
-    if (!ruled) { ruled = 1; o.l2 = o.l2 ? o.l2 + RP.hunt_rule_join + RP.hunt.rule : RP.hunt.rule; }
+    if (!ruled) { ruled = 1; o.l2 = o.l2 ? o.l2 + ' ' + RP.hunt.rule : RP.hunt.rule; }
   });
 
   const W = R.winners || [], vk = W.includes('village') ? (R.wolvesInPlay ? 'village' : 'villageNoWolf') : W.includes('wolf') ? (R.wolvesInPlay ? 'wolf' : 'minion') : W.includes('tanner') ? 'tanner' : 'none';
@@ -162,7 +162,7 @@ function build(R, meId) {
   const cnt = {}, seen = {};
   B.forEach((b) => { b.ga = GA[b.act] || b.act; cnt[b.ga] = (cnt[b.ga] || 0) + 1; });
   let total = 0;
-  B.forEach((b) => { seen[b.ga] = (seen[b.ga] || 0) + 1; b.gi = seen[b.ga]; b.gn = cnt[b.ga]; b.read = Math.max(b.floor, 70 * T.syl(b.l1 + b.l2 + (b.l3 || '') + (b.l3n || ''))) + (b.extra || 0); total += b.read + 1500; });
+  B.forEach((b) => { seen[b.ga] = (seen[b.ga] || 0) + 1; b.gi = seen[b.ga]; b.gn = cnt[b.ga]; b.read = Math.max(b.floor, 70 * T.syl(b.l1 + b.l2 + (b.l3 || '') + (b.l3n || ''))) + (b.extra || 0); total += b.read + 1100; });
   const jr = D.map((_, i) => [{ c: i }]), lines = [];
   ev.forEach((e) => (e.mv || []).forEach((m) => jr[m[1]].push({ c: m[0], st: e.r || e.st, by: e.by[0], self: m[1] === e.by[0], t: (e.tg || [])[0] })));
   B.forEach((b) => {
@@ -308,8 +308,8 @@ function capGo(b) {
 
 /* ---------- playback ---------- */
 const stop = () => { S.tm.forEach(clearTimeout); S.tm = []; };
-const snd = (m, v) => { const N = root.SND; if (N && N.ctx && N[m]) { try { N[m](v === 1 ? true : v === 0 ? false : v); } catch (e) {} } };
-const duck = (db) => { const N = root.SND; if (N && N.ctx && N.duck) { try { N.duck('rp', db); } catch (e) {} } };
+const snd = (m, v) => { try { root.SND.ctx && root.SND[m](v === 1 ? true : v === 0 ? false : v); } catch {} };
+const duck = (db) => { try { root.SND.ctx && root.SND.duck('rp', db); } catch {} };
 async function play(i) {
   if (!S || !S.rdy) return;
   const my = ++S.tok, B = S.B.beats, b = B[i], a = b.act, F = root.FX, sq = S.i >= 0 && i === S.i + 1, f0 = () => { scene(i, 0); hs(a !== 'pro'); };
@@ -425,7 +425,7 @@ function open(R, meId, o) {
   document.body.setAttribute('data-replay', '1');
   S.dock = dk; S.dockHTML = dk.innerHTML; S.dockHid = dk.hidden; dk.hidden = false;
   dk.innerHTML = '<button class="btn-sub rp-prev" aria-label="' + UI.prev + '">' + ico('ic-chev') + '</button><button class="btn-main rp-main"><span class="lbl"></span><b class="nm"></b></button><button class="btn-sub rp-nxt" aria-label="' + UI.next + '">' + ico('ic-chev') + '</button>';
-  S.mainBtn = dk.querySelector('.rp-main'); S.hud = hud;
+  S.mainBtn = dk.querySelector('.rp-main'); S.hud = hud; ui();
   if (hud) {
     hud.querySelectorAll('.hud-skip').forEach((e) => e.classList.add('rp-hid'));
     const sk = S.skipBtn = mk('button', 'hud-skip rp-skip', UI.hudSkip); hud.insertBefore(sk, hud.firstChild);
@@ -442,38 +442,37 @@ function open(R, meId, o) {
     if (f) { e.preventDefault(); f(); }
   });
   on(document, 'visibilitychange', () => { if (document.hidden && S.run === 'play') toggle(); });
-  on(window, 'resize', () => { if (!S.rdy) return; if (S.run === 'play') toggle(); layout(); nt(() => scene(S.i, 3)); });
+  const s1 = S, gd = (f) => () => { if (S === s1) try { f(); } catch { done(); } };
+  on(window, 'resize', () => { if (S.rdy) { if (S.run === 'play') toggle(); layout(); nt(() => scene(S.i, 3)); } });
   rate(innerWidth < 600 ? 2 : 1); duck(-9);   // 좁은 화면은 기본 2배속
-  const s1 = S, go = () => { if (S !== s1) return; if (o.paused) { S.run = 'pause'; S.i = o.start || 0; nt(() => scene(S.i, 3)); ui(); } else play(o.start || 0); };
+  const go = () => { if (S !== s1) return; if (o.paused) { S.run = 'pause'; S.i = o.start || 0; nt(() => scene(S.i, 3)); ui(); } else play(o.start || 0); };
   const fr = {}, jobs = () => {   // 카드 앞면·판결 DOM 은 첫 장면 뒤 한가할 때 조각으로 채운다
     s1.filled = 1; const vb = B.beats[N - 1], ve = s1.vd;
     return [...s1.cards.map((el, i) => () => { const f = el.querySelector('.rp-front'); f.innerHTML = fr[D[i]] = fr[D[i]] || card(D[i], { size: 'sm', face: 1, flat: 1 }); el._cd = f.firstChild; }), () => {
       ve.setAttribute('data-team', vb.vteam); ve.children[0].firstChild.textContent = vb.l1; ve.children[1].innerHTML = vb.l2; ve.children[2].innerHTML = vb.l3; ve.children[3].textContent = vb.win == null ? '' : vb.win ? T.stamp.win : T.stamp.lose; ve.style.setProperty('--sd', vb.l3 ? 1760 + 70 * T.syl(vb.l3) : 960);
     }, ...vb.vfocus.map((x) => () => fcard(x.role))];
   }, fill = S.fill = () => { if (S === s1 && !s1.filled) jobs().forEach((j) => j()); };
-  requestAnimationFrame(() => {
-    if (S !== s1) return;
+  requestAnimationFrame(gd(() => {
     const lb = B.beats.reduce((x, y) => (y.l1 + y.l2 + (y.l3n || '')).length > (x.l1 + x.l2 + (x.l3n || '')).length ? y : x);   // 가장 긴 자막 높이를 한 번 재서 탁자 위치를 고정한다
     capTxt(lb); S.capMax = cp.offsetHeight; capTxt({ l1: '', l2: '' });
     S.cw = S.cards[0].offsetWidth; main.style.setProperty('--rpc', S.capMax + 'px');
-    requestAnimationFrame(() => {   // 한 프레임 쉬고 배치와 첫 장면
-      if (S !== s1) return;
+    requestAnimationFrame(gd(() => {   // 한 프레임 쉬고 배치와 첫 장면
       layout(); S.rdy = 1;
       if (typeof ResizeObserver !== 'undefined') { S.ro = new ResizeObserver(() => { const h = cp.offsetHeight; if (S === s1 && h > s1.capMax) { s1.capMax = h; layout(); } }); S.ro.observe(cp); }
       S.i = o.start || 0; if (o.start || o.paused) fill(); go();
       const fq = (f) => [...new Set([].concat(...B.beats.filter(f).map((x) => (x.vfocus || x.focus).map((y) => y.role))))];
       S.late = fq((x) => JUDGE[x.act]);
       const js = s1.filled ? [] : jobs(); B.beats.forEach((x) => x.focus.forEach((y) => js.push(() => fcard(y.role))));   // 큰 아트·초점 카드는 첫 장면 뒤 한가할 때 4ms 남는 동안만 조각조각 만든다
-      const go = (dl) => {
+      const pump = (dl) => {
         if (S !== s1) return;
         do { if (js.length) js.shift()(); } while (js.length && (!dl || dl.timeRemaining() > 4));
-        if (js.length) return ric(go);
+        if (js.length) return ric(pump);
         if (root.ART && root.ART.want) root.ART.want(fq((x) => !JUDGE[x.act]));
       };
-      ric(go);
+      ric(pump);
       main.dispatchEvent(new CustomEvent('rp-ready', { bubbles: true }));
-    });
-  });
+    }));
+  }));
   return true;
 }
 function close() {
@@ -507,7 +506,7 @@ function enhanceBoard(listEl, R, meId, onJump) {
       return hp(x.st === 'robber' ? (x.self ? 'robSelf' : 'robTarget') : x.st === 'drunk' ? (x.self ? 'drunkSelf' : 'drunkCenter') : 'swap', { a: ac, t: x.t < n ? B.nm(x.t) : '', P: AL[x.t - n] }, rc(B.effRole(x.c), B.cardName(x.c)));
     }).join(''));
     row.appendChild(path);
-    if (s < n) { const b = B.belief[s], df = !b.blind && b.role !== B.effRole(R.night.end[s]), bl = mk('span', 'rec-belief' + (df ? ' is-diff' : ''), UI.journey + UI.journeySep + (b.blind ? '<em>' + esc(UI.unknown) + '</em>' : '<i>' + esc(rn(b.role)) + '</i>') + (df ? '<span class="rec-diff">' + esc(UI.diffNote) + '</span>' : '')); bl.setAttribute('data-diff', df ? 1 : 0); row.appendChild(bl); }
+    if (s < n) { const b = B.belief[s], df = !b.blind && b.role !== B.effRole(R.night.end[s]), bl = mk('span', 'rec-belief' + (df ? ' is-diff' : ''), UI.journey + ' · ' + (b.blind ? '<em>' + esc(UI.unknown) + '</em>' : '<i>' + esc(rn(b.role)) + '</i>') + (df ? '<span class="rec-diff">' + esc(UI.diffNote) + '</span>' : '')); bl.setAttribute('data-diff', df ? 1 : 0); row.appendChild(bl); }
     const fb = B.beats.find((x) => x.rel.includes(s));
     if (fb) { row.setAttribute('role', 'button'); row.tabIndex = 0; row.onclick = () => jump(fb.i, s); row.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jump(fb.i, s); } }; }
   });

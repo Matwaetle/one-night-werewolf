@@ -69,7 +69,7 @@
   function loadAssets() {
     if (/\.css$/.test(A.css || '')) { const l = D.createElement('link'); l.rel = 'stylesheet'; l.href = A.css; cssOk = 0; l.onload = l.onerror = () => { cssOk = 1; sched(); }; D.head.appendChild(l); }
     addScript(A.fx, () => {});
-    idle(() => { loadChatx(); loadResult(); if (bgmOn) ldA(); }, 3000);
+    idle(loadResult, 3000); idle(loadChatx, 5000); idle(() => { if (bgmOn) ldA(); }, 7000);
     idle(() => { try { D.fonts.load('400 18px Hanbam', TH.sign); } catch (e) { /* 무시 */ } }, 3000);
   }
   function loadChatx() {   // 채팅 보조 모듈(답글): 채팅을 껐으면 불러오지 않는다
@@ -200,7 +200,9 @@
   sock.on('kicked', () => { LS.del('ww_room'); toHome(); toast(TB.kicked, 'danger'); });
 
   const rclose = () => { try { W.REPLAY && REPLAY.close(); } catch (e) { /* 무시 */ } $$('.msg[data-kind=end][hidden]').forEach((e) => { e.hidden = false; }); };
-  W.addEventListener('unhandledrejection', (e) => { console.error(e.reason); if (body.dataset.replay && /\/replay\./.test(String(e.reason && e.reason.stack || ''))) { rclose(); body.removeAttribute('data-replay'); sched(); } });
+  const rbad = (t) => { if (body.dataset.replay && /\/replay\./.test(t)) { rclose(); body.removeAttribute('data-replay'); sched(); } };
+  W.addEventListener('unhandledrejection', (e) => rbad(String(e.reason && e.reason.stack || '')));
+  W.addEventListener('error', (e) => rbad(e.filename || ''));
   function toHome() {
     S = null; R = null; ui.seatKey = ''; closeModal(); if (ui.shell) closeSheet();
     rclose();
@@ -236,12 +238,12 @@
       later(first ? 0 : 1200 + dl, () => speak(NIGHT_TEXT._check));
     } else if (to === 'day') {
       ui.swapHint = LS.get('hb.swap') !== '1'; LS.set('hb.swap', '1');
-      fx('heartbeat', 0); speak(T.narr.dawn); idle(() => ART.prefetchDeck(S.gameDeck), 4000); later(Math.max(0, 8000 - dayEl()), sched);
+      fx('heartbeat', 0); idle(() => loadResult(), 6000); idle(() => loadReplay(), 15000); speak(T.narr.dawn); idle(() => ART.prefetchDeck(S.gameDeck), 4000); later(Math.max(0, 8000 - dayEl()), sched);
       if (desk()) { ui.tab = 'chat'; ui.stick = 1; }
       if (TB.dockCoach && !isPeeked() && !ui.dn['coach' + S.gameId]) { ui.dn['coach' + S.gameId] = 1; later(first ? 600 : 3400, () => toast(TB.dockCoach)); }
       if (!first) { fx('lidsClose', 0); later(600, () => { fx('lidsOpen', 700); banner('day', T.phase.dayBreaks, '', 3200); }); }
     } else if (to === 'vote') {
-      fx('heartbeat', 0); loadReplay(); loadResult();
+      fx('heartbeat', 0); idle(() => { loadResult(); loadReplay(); }, 2500);
       if (!first) { fx('flash', 'blood', 80); banner('vote', TH.judge, '', 2000); }
     } else if (to === 'result') {
       fx('heartbeat', 0); wake(false); startResult(first);
@@ -366,7 +368,7 @@
       V.btn = ui.vsel && ui.vsel !== S.myVote ? { lbl: TBT.execute, nm: pname(ui.vsel), hold: 600, act: 'vote' } : { lbl: TBT.execute, nm: S.myVote ? pname(S.myVote) : '', dis: 1 };
       if (S.myVote && (!ui.vsel || ui.vsel === S.myVote)) { V.band = fmt(TB.votedFor, { n: pname(S.myVote) }); V.btn = { lbl: TB.votedBtn, nm: '', dis: 1 }; }
     } else if (mode === 'result') {
-      V.btn = isHost() ? { lbl: TBT.again, act: 'again' } : { lbl: TB.waitChiefNext, dis: 1 };
+      V.btn = isHost() ? { lbl: TBT.again, act: 'again' } : { lbl: TB.waitChief, dis: 1 };
     }
     return V;
   }
@@ -656,20 +658,21 @@
     const b = $('.band'), q = $('.band-q', b), r = $('.band-rule', b);
     set($('.band-text', b), 'textContent', V.band);
     q.hidden = !V.rule; q.setAttribute('aria-expanded', ui.rule ? 'true' : 'false'); r.hidden = !(V.rule && ui.rule);
-    b.hidden = V.mode === 'result';
+    const bh = V.mode === 'result', bc = b.hidden !== bh; b.hidden = bh;
     const day = V.mode === 'day' && !unknown(), l = day ? lastSeen() : null, sn = $('.day-seen', b), oth = [];   // 낮: 밤에 본 것 한 줄 (내 카드 · 다른 사람/가운데 카드, 첫 판에는 바뀌었을 수 있다는 안내를 덧붙인다)
     if (day) (S.myLog || []).forEach((it) => (it.reveal || []).forEach((r) => {
-      if (!ROLES[r.role] || (r.at === 'p' && r.id === S.me)) return;
+      if (!ROLES[r.role] || (r.at === 'p' && r.id === S.me) || (l && l.who === 1 && r.at === 'p' && r.id === l.id)) return;
       oth.push(fmt(TB.seenOther, { w: whoOf({ k: r.at, id: r.id, idx: r.idx }), r: ROLES[r.role].name }));
     }));
-    const tx = [l && fmt(TB.seenLine, { t: ROLES[l.role].name })].concat(oth.slice(0, 2), oth.length > 2 ? fmt(TB.seenMore, { n: oth.length - 2 }) : []).filter(Boolean).join(' · ');
-    const hint = V.mode === 'day' && ui.swapHint && TB.daySwapHint, h = esc(tx) + (hint ? '<span class="ds-h">' + esc(hint) + '</span>' : '');   // 밤에 본 것은 그대로, 안내문은 따로 한 줄 (잘리면 안내문이 잘린다)
+    const lt = l && ROLES[l.role].name, lk = !l ? '' : fmt(TB.seenLine, { t: lt }) + (l.sub ? ' · ' + l.sub : '');
+    const tx = [lk].concat(oth.slice(0, 2), oth.length > 2 ? fmt(TB.seenMore, { n: oth.length - 2 }) : []).filter(Boolean).join(' · ');
+    const hint = V.mode === 'day' && ui.swapHint && !(l && l.who === 0 && S.myCard === 'insomniac') && TB.daySwapHint, h = esc(tx) + (hint ? '<span class="ds-h">' + esc(hint) + '</span>' : '');   // 밤에 본 것은 그대로, 안내문은 따로 한 줄 (잘리면 안내문이 잘린다)
     const was = sn.hidden, ch = (sn._h || '') !== h; if (ch) { sn._h = h; sn.innerHTML = h; } sn.hidden = !h;
-    if (ch || was !== sn.hidden) requestAnimationFrame(() => { measure(); relayout(); });
+    if (ch || bc || was !== sn.hidden) requestAnimationFrame(() => { measure(); relayout(); });
   }
   const unknown = () => !!(ui.unk || (S.myCard === 'drunk' && (S.myLog || []).length));
   const isPeeked = () => LS.get('hb.peeked') === '1';
-  const seen = (role, who, id) => ({ role, lbl: who === 1 ? TB.whoNew : who ? TB.whoMine : TB.whoNow, sub: who === 1 ? fmt(TB.whoFrom, { n: pname(id) }) : who ? fmt(TB.whoCopied, { n: pname(id) }) : TB.whoWoke });   // who: 1 강도(from=id) · 2 도플갱어(id) · 0 불면증환자
+  const seen = (role, who, id) => ({ who, id, role, lbl: who === 1 ? TB.whoNew : who ? TB.whoMine : TB.whoNow, sub: who === 1 ? fmt(TB.whoFrom, { n: pname(id) }) : who ? fmt(TB.whoCopied, { n: pname(id) }) : TB.whoWoke });   // who: 1 강도(from=id) · 2 도플갱어(id) · 0 불면증환자
   function lastSeen() {   // { role, lbl, sub }: 마지막으로 확인한 카드와 그 출처
     let l = null; const lg = S.myLog || [];
     lg.forEach((it) => (it.reveal || []).forEach((r) => { if (r.at === 'p' && r.id === S.me) l = seen(r.role, r.from ? 1 : 0, r.from); }));
@@ -687,9 +690,9 @@
     const cr = S.phase === 'day' || S.phase === 'vote', ck = V.card === 0 && S.myCard ? (unknown() ? 'u' : 'b') + (cr ? 'c' : '') + (isPeeked() ? '' : 'h') : 'v';
     if (card._k !== ck && !press) {
       card._k = ck; card.style.visibility = ck === 'v' ? 'hidden' : '';
-      card.setAttribute('aria-label', ck === 'v' ? '' : TB.yourCard + ' ' + TB.holdHint);
+      card.setAttribute('aria-label', ck === 'v' ? '' : cr ? TB.daySwapHint : TB.yourCard + ' ' + TB.holdHint);
       card.innerHTML = ck === 'v' ? '' : ART.card(null, { size: 'xs', cls: unknown() ? 'is-unknown' : '' }) +
-        (cr ? '<svg class="crack" aria-hidden="true"><use href="#ic-crack"/></svg>' : '') + (isPeeked() ? '' : '<span class="dock-hint">' + esc(TB.dockHint) + '</span>');
+        (cr ? '<svg class="crack" aria-hidden="true"><use href="#ic-crack"/></svg>' : '') + (isPeeked() ? '' : '<span class="dock-hint">' + esc(cr ? TB.dockMaybe : TB.dockHint) + '</span>');
       ART.mark(card);
     }
     alt.hidden = !V.alt; set(alt, 'textContent', V.alt ? V.alt.t : ''); alt.dataset.act = V.alt ? V.alt.act : '';
@@ -857,7 +860,6 @@
     ni.value = LS.get('ww_name') || '';
     [['#createBtn', 'primary'], ['#joinBtn', 'join'], ['#otherLink', 'other'], ['#lawLink', 'law']].forEach((x) => { $(x[0]).dataset.act = x[1]; });
     ni.addEventListener('focus', ping, { once: true });
-    D.addEventListener('visibilitychange', () => { if (!D.hidden && !sock.connected) ping(); });
     ci.addEventListener('input', () => { const v = ci.value.toUpperCase().replace(/[^A-Z]/g, ''); if (v !== ci.value) ci.value = v; });
     $('#homeForm').addEventListener('submit', (e) => { e.preventDefault(); primary(); });
     $('#homeForm').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); if (e.target === ci && ci.value.length === 4) ACT.join(); else primary(); } });

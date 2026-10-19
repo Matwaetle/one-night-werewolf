@@ -164,7 +164,7 @@ html[data-perf=lite] .home-eyes i{animation:none!important;opacity:.6}
   .home{grid-template-columns:60% 40%;grid-template-rows:100dvh}
   .home-top{align-items:flex-start;justify-content:flex-start;padding:56px}
   .home-title{text-align:left}
-  .home-form{align-self:center;padding:24px 56px 24px 24px}
+  .home-form{align-self:center;padding:24px;background:rgba(10,9,8,.82);border:1px solid var(--bone-dim);box-shadow:2px 2px 0 #000}
 }
 
 /* ---------- 시트 (속삭임 · 기록) z 20 ---------- */
@@ -176,7 +176,8 @@ body[data-phase=home] #sheet{display:none}
 .sheet-head{display:flex;flex:none;border-bottom:var(--hair)}
 .sheet-tab{flex:1;min-height:48px;font-size:var(--fs-small);font-weight:600;letter-spacing:.02em;white-space:nowrap;color:var(--smoke)}
 .sheet-tab[aria-selected=true]{color:var(--bone-hi);box-shadow:inset 0 -2px 0 var(--bone-hi)}
-.sheet-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:8px 16px;-webkit-mask-image:linear-gradient(transparent,#000 14px);mask-image:linear-gradient(transparent,#000 14px)}
+.sheet-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:8px 16px calc(16px + var(--sab))}
+.sheet-body::before{content:"";position:sticky;top:0;display:block;height:14px;margin:0 -16px -14px;background:linear-gradient(var(--char),transparent);pointer-events:none;z-index:1}
 .msg{margin:0;padding:3px 0;font-size:var(--fs-body);line-height:1.5;color:var(--bone-hi);overflow-wrap:break-word}
 .msg-n{margin-right:8px;font-size:var(--fs-small);color:var(--bone-dim)}
 .msg{word-break:keep-all}
@@ -278,3 +279,4 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
 .msg[hidden]{display:none}
 body:has(#toast:not([hidden])) .ticker{opacity:0}
 @media(min-width:1024px){:root{--fs-small:15px;--fs-label:14px}#sheet,#sheet[data-h]{top:0}.sheet-head{min-height:var(--hud-h)}.dock-card{--cw:48px;align-self:center;margin-top:0}.band,.band-text{font-size:16px}}
+@media(min-width:900px){.dock-card .card{--cw:38px}.dock-card{align-self:center}}

@@ -139,3 +139,9 @@ try {
 } catch (e) { console.error('FAIL greps:', e.message); process.exitCode = 1; }
 
 console.log(process.exitCode ? 'replay test FAILED' : 'replay test ok: ' + checked + ' fixtures');
+
+// Static TDZ guard: open() rAF block must not call go() before `const go` is declared.
+{
+  const src = fs.readFileSync(path.join(ROOT, 'public/js/replay.js'), 'utf8');
+  assert(!/fill\(\);\s*go\(\);[\s\S]{0,600}const go\s*=/.test(src), 'replay.js: go() called before const go (TDZ)');
+}

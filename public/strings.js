@@ -110,7 +110,7 @@
       execute: '투표하기',
       ready: '투표 준비하기',
       unready: '준비 취소하기',
-      judgeNow: '투표 시작하기',
+      judgeNow: '바로 투표 시작하기',
       again: '다시 하기',
       skip: '건너뛰기',
       pause: '멈추기',
@@ -155,7 +155,7 @@
       vote: '투표',
       result: '결과',
       verdict: '결과',
-      awake: '눈을 뜨세요',
+      awake: '눈을 뜨세요.',
       dayBreaks: '아침이 되었습니다.',
       closeEyes: '눈을 감으세요.',
     },
@@ -192,7 +192,7 @@
       copyTitle: '초대 링크',
       copyHint: '링크를 공유하면 바로 참가할 수 있습니다.',
       fire: '참가자 ${n}/10',
-      waitMore: '${need}명이 더 필요합니다.',
+      waitMore: '시작하려면 ${need}명이 더 필요합니다.',
       me: '나',
       away: '연결 끊김',
       kickAsk: '${n:을/를} 강퇴할까요?',
@@ -211,16 +211,16 @@
       noWolfWarn: '늑대인간 카드가 없습니다.',
       waitChief: '방장 대기 중',
       // 카드 확인
-      yourCard: '내 카드를 확인하세요.',
+      yourCard: '카드를 받았습니다.',
       yourCardIs: '내 카드는 ${r}입니다.',
-      holdHint: '카드를 길게 눌러 역할을 확인하세요.',
+      holdHint: '카드를 길게 누르면 역할이 보입니다.',
       readyMark: '준비 완료',
-      dayTalk: '준비가 되면 투표 준비하기를 눌러 주세요.',
-      dayReadyWait: '준비를 마쳤습니다. 다른 사람을 기다리고 있습니다.',
+      dayTalk: '토론이 끝나면 아래 버튼을 눌러 주세요.',
+      dayReadyWait: '다른 사람을 기다리는 중입니다.',
       // @client:result-start
       youWin: '승리했습니다.',
       youLose: '패배했습니다.',
-      teamMoved: '${from} 카드가 밤사이 바뀌어 ${team:으로/로} 넘어갔습니다.',
+      teamMoved: '밤사이 카드가 바뀌어 ${team} 소속이 되었습니다.',
       youHappened: '내 카드의 행방',
       heroDead: '${n}',
       heroDeadMe: '나 · 처형',
@@ -235,12 +235,12 @@
       got: '${n}표 받음',
       // @client:result-end
       pickTarget: '대상을 선택하세요',
-      roomCodeLbl: '방 코드',
       altarPick: '가운데 카드 보기 (${n}/2)',
       otherTab: '다른 창에서 이 게임에 접속했습니다.',
       loadFail: '게임을 불러오지 못했습니다. 연결을 확인해 주세요.',
       daySwapHint: '내 카드가 밤사이 바뀌었을 수 있습니다.',
-      seenLine: '밤에 본 것: ${t}',
+      seenLine: '내 카드: ${t}',
+      dockMaybe: '바뀌었을 수 있음',
       keepAwake: '화면이 꺼지지 않도록 해 주세요.',
       peekFirst: '처음 받은 카드',
       chatOffToast: '채팅을 껐습니다.',
@@ -290,7 +290,7 @@
       dawn: '아침이 되었습니다.',
       dayAsk: '토론을 시작하세요.',
       deckAll: '카드 구성 (가운데 3장 포함)',
-      raised: '준비 ${r}/${n} · 모두 준비하면 투표가 시작됩니다.',
+      raised: '준비 ${r}/${n} · 모두 준비하면 투표를 시작합니다.',
       // 투표
       pickExec: '처형할 사람을 고른 뒤 투표하기 버튼을 길게 누르세요.',
       myVote: '내 투표: ${n}',
@@ -299,10 +299,9 @@
       noBlood: '아무도 처형되지 않았습니다.',
       votedFor: '${n}에게 투표했습니다. 다시 고르면 바뀝니다.',
       votedBtn: '투표 완료',
-      checkBand: '다른 사람에게 보이지 않게 확인하세요.',
+      checkBand: '주변 사람에게 화면이 보이지 않게 하세요.',
       // 결과
       cols: { name: '이름', first: '처음 카드', last: '최종 카드', vote: '투표', votes: '득표', end: '결과' },
-      waitChiefNext: '방장 대기 중',
       // 시스템
       error: '오류가 발생했습니다. 다시 시도해 주세요.',
       reconnecting: '다시 연결하는 중… ${n}초',
@@ -421,7 +420,6 @@
     //  ${r} ${r2} ${rb} ${rc} ${f} = 역할명(effRole), ${team} = TEAM_NAME, ${list} = 클라이언트가 합친 나열, ${n} = 수.
     replay: {
       // @client:replay-start
-      hunt_rule_join: ' ',
       sep: ', ',
       dot: ' · ',
       you: '나',
@@ -548,7 +546,6 @@
       // @client:replay-start
       uiR: {
         hop: { start: '처음', robSelf: '${t}에게서 훔쳐 옴', robTarget: '${a:이/가} 훔쳐 감', swap: '${a:이/가} 바꿔 놓음', drunkSelf: '${P:과/와} 바꿈', drunkCenter: '${a:이/가} 가져감', copy: '${t}의 카드를 복사함' },
-        journeySep: ' · ',
         mine: '내 행동',
         hudSkip: '건너뛰기',
         pause: '멈추기',
@@ -563,7 +560,6 @@
         ruler: '재생 위치',
         journey: '알고 있던 카드',
         stayed: '바뀌지 않음',
-        nowCard: '지금 카드 ${r}',
         result: '결과 보기',
       },
       // @client:replay-end

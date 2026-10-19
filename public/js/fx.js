@@ -73,13 +73,13 @@
     },
     probe: function (k) {   // 로비 · 첫 밤 4초 동안 긴 작업과 프레임을 재서 느린 기기는 lite 로 내린다
       var n = 0, l = 0, po, fr = [], t0 = performance.now(), key = 'p' + k;
-      if (de.dataset[key] || de.dataset.perf === 'lite' && !de.dataset.pf) return; de.dataset[key] = 1;
+      if (de.dataset[key] || de.dataset.perf === 'lite') return; de.dataset[key] = 1;
       try { po = new PerformanceObserver(function (o) { o.getEntries().forEach(function (e) { n += e.duration; }); }); po.observe({ type: 'longtask' }); } catch (e) { /* 무시 */ }
       requestAnimationFrame(function lap(t) {
         if (d.hidden) l = 0; else { if (l) fr.push(t - l); l = t; }
         if (t - t0 < 4000) return requestAnimationFrame(lap);
         fr.sort(function (x, y) { return x - y; }); if (po) po.disconnect();
-        if (n > 180 || fr[fr.length * 0.9 | 0] > 34) { de.dataset.perf = 'lite'; if (!de.dataset.pf && n <= 250) { de.dataset.pf = 1; return; } try { localStorage.setItem('ww_perf', JSON.stringify({ v: 'lite', t: Date.now() })); } catch (e) { /* 무시 */ } }
+        if (n > 120 || fr[fr.length * 0.9 | 0] > 34) { de.dataset.perf = 'lite'; try { localStorage.setItem('ww_perf', JSON.stringify({ v: 'lite', t: Date.now() })); } catch (e) { /* 무시 */ } }
       });
     },
     /* ---------- 눈꺼풀 ---------- */
@@ -248,7 +248,7 @@
        quiet이면 도장만(여러 명 처형 시 두 번째부터) ---------- */
     execute: function (card, slot, mid, quiet) {
       var fin = function () { if (mid) { try { mid(); } catch (e) {} } return slot ? FX.stamp(slot, (window.T && T.stamp && T.stamp.dead) || '', 'blood') : Promise.resolve(); };
-      var hit = function () { if (quiet) return; FX.shake(6, 4); FX.flash('blood', 120); if (!calm()) FX.buzz(12); };
+      var hit = function () { if (quiet) return; FX.shake(6, 4, $('#stage')); FX.flash('blood', 120); if (!calm()) FX.buzz(12); };
       if (!card || !canAnim || calm() || d.hidden) { var p = fin(); hit(); return p; }
       if (lite()) {
         return new Promise(function (res) { if (mid) { try { mid(); } catch (e) {} } run(card, [{ opacity: 0.3 }, { opacity: 1 }], { duration: 160 }, res); })
