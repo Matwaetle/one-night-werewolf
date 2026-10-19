@@ -17,7 +17,9 @@ const BIN = /\.(webp|woff2)$/;
 const wire = (f) => { const b = fs.readFileSync(f); return BIN.test(f) ? b.length : br(b); };   // 이미 압축된 형식은 원본 크기
 
 const aDir = path.join(DIST, 'a');
-const list = fs.existsSync(aDir) ? fs.readdirSync(aDir) : [];
+let prevKept = [];
+try { prevKept = JSON.parse(fs.readFileSync(path.join(DIST, 'a-prev.json'), 'utf8')); } catch { /* 없음 */ }   // 이전 빌드에서 이월된 파일은 예산 대상이 아니다
+const list = (fs.existsSync(aDir) ? fs.readdirSync(aDir) : []).filter((f) => !prevKept.includes(f));
 const find = (re) => list.filter((f) => re.test(f));
 const size = (n) => wire(path.join(aDir, n));
 
@@ -70,10 +72,13 @@ const gameWarn = (f) => (size(f) > GAME_WARN ? 'WARN (>23.8KB: FEATURES_SPEC 0.4
 const fT = need('hanbam-t 폰트', /^hanbam-t\.[0-9a-f]+\.woff2$/);
 const sio = need('socket.io 클라이언트', /^sio\.[0-9a-f]+\.js$/);
 const game = need('game.js', /^game\.[0-9a-f]+\.js$/);
+const fD0 = find(/^hanbam-d\.[0-9a-f]+\.woff2$/)[0];
 const tS = fT ? row('hanbam-t (제목 폰트)', size(fT), 10 * KB) : 0;
 const sS = sio ? row('sio (≈15KB, 상한 17KB)', size(sio), 17 * KB) : 0;
 const gS = game ? row('game.js', size(game), 24 * KB, gameWarn(game)) : 0;
-const critical = row('크리티컬 패스 합계 (html+font+sio+game)', htmlBr + tS + sS + gS, 75 * KB);
+const dPre = /<link[^>]*rel=["']?preload["']?[^>]*hanbam-d/i.test(html) || /<link[^>]*hanbam-d[^>]*rel=["']?preload["']?/i.test(html);   // app+base 는 프리로드를 뺀다
+const dCrit = dPre && fD0 ? size(fD0) : 0;
+const critical = row('크리티컬 패스 합계 (html+font+sio+game' + (dPre ? '+hanbam-d' : '') + ')', htmlBr + tS + sS + gS + dCrit, 75 * KB);
 
 /* 지연 로드 */
 const gc = need('game.css', /^game\.[0-9a-f]+\.css$/); if (gc) row('game.css', size(gc), 9 * KB);
@@ -123,8 +128,20 @@ if (bonfire) row('모닥불 추가 (아틀라스+뒷면+지평선+그레인)', b
   const full = bigs.reduce((s, x) => s + x, 0);
   const vMax = Math.max(0, ...find(/^verdict-/).map(size));
   const backS = find(/^back-s\./).reduce((s, f) => s + size(f), 0);
-  row('캐시 없이 한 판 전체 (추정, 최대 판)', critical + later + imgTotals.key + bonfire + full + vMax + backS, 900 * KB,
+  const fullEst = row('캐시 없이 한 판 전체 (추정, 최대 판)', critical + later + imgTotals.key + bonfire + full + vMax + backS, 900 * KB,
     `[큰 아트 전부 ${(full / KB).toFixed(0)} + 판결 ${(vMax / KB).toFixed(0)} + back-s ${(backS / KB).toFixed(0)}]`);
+  // 실측(review/metrics.json)이 있으면 추정의 1.15배를 넘지 않는지 본다
+  try {
+    const mp = path.join(ROOT, 'review/metrics.json');
+    if (fs.existsSync(mp)) {
+      const real = JSON.parse(fs.readFileSync(mp, 'utf8'))?.network?.game?.total?.bytes;
+      if (typeof real === 'number') {
+        const lim = 900 * KB, ok = real <= lim;
+        if (!ok) bad = true;
+        rows.push(`${ok ? 'OK  ' : 'FAIL'} ${'실측 한 판 (캐시 없음)'.padEnd(40)} ${(real / KB).toFixed(1)}KB / ${(lim / KB).toFixed(1)}KB [추정 ${(fullEst / KB).toFixed(1)}KB]`);
+      }
+    }
+  } catch { /* metrics 없음/깨짐: 건너뜀 */ }
 }
 
 console.log(rows.join('\n'));

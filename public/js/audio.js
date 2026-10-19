@@ -15,7 +15,7 @@
 
   function g(v, d) { var n = ctx.createGain(); n.gain.value = v; if (d) n.connect(d); return n; }
   function fl(t, fr, q, d) { var n = ctx.createBiquadFilter(); n.type = t; n.frequency.value = fr; n.Q.value = q || 1; if (d) n.connect(d); return n; }
-  function lf(hz, dp, prm, n) { var o = ctx.createOscillator(), d = g(dp, prm); o.frequency.value = hz; o.connect(d); o.start(); n.push(o); }
+  function lf(hz, dp, prm, n) { var o = ctx.createOscillator(), d = g(dp, prm); o.frequency.value = hz; o.connect(d); o.start(); o.lfo = 1; n.push(o); }
   // 지속 층: [종류('n'=노이즈), 주파수, 필터, 필터Hz, Q, 이득, LFO대상('f'|'g'), LFO Hz, LFO 깊이, detune] -> [소스, 이득노드]
   function ly(b, a, n) {
     var s, v = g(a[5], b), f;
@@ -62,7 +62,7 @@
       ly(b, ['sawtooth', 36.7, 'lowpass', 140, 2, 0.06], n); ly(b, ['sine', 73.4, 0, 0, 0, 0.03], n);
       if (!L()) ev(s, t + 8, function (z) { tn('sine', 77.8, z, 0.015, 12, b, 6); return 20; });
     } else if (nm === 'day') {
-      ly(b, ['n', 0, 'bandpass', 1200, 1, 0.015], n);
+      if (!L()) ly(b, ['n', 0, 'bandpass', 1200, 1, 0.015], n);
       ly(b, ['sine', 110, 0, 0, 0, 0.03, 'g', 0.2, 0.009], n); ly(b, ['sine', 164.8, 0, 0, 0, 0.02, 'g', 0.2, 0.006], n);
       pn(s, t, [293.7, 349.2, 440, 493.9], 9, 15);
       ev(s, t, function (z) {                              // ends 30초 전부터 1초마다 맥박
@@ -94,7 +94,8 @@
   function tick() {
     if (!cur || ctx.state !== 'running') return;
     var n = ctx.currentTime;
-    if (cp && L()) { try { mst.disconnect(); mst.connect(ctx.destination); cp.disconnect(); if (ech) ech.disconnect(); } catch (e) { /* 무시 */ } cp = ech = null; }
+    if (cp && L()) { try { mst.disconnect(); mst.connect(ctx.destination); cp.disconnect(); if (ech) ech.disconnect(); } catch (e) { /* 무시 */ } cp = ech = null;
+      cur.n.forEach(function (o) { if (o.lfo) try { o.stop(); } catch (e) { /* 무시 */ } }); }
     cur.e.forEach(function (e) { if (e.t < n) e.t = n; while (e.t < n + 1.2) e.t += Math.max(0.05, e.f(e.t)); });
   }
   
@@ -169,7 +170,7 @@
   S.pause = wrap(function () { if (S.ctx) Pr(S.ctx.suspend()); });
   S.resume = wrap(function () { if (S.ctx && en) Pr(S.ctx.resume()); });
   S.segHTML = function () {
-    var B = T.body, h = '<div class="seg" role="group" aria-label="' + T.esc(B.bgmVol) + '">';
+    var B = T.body, v = B.bgmVol || '배경음악 크기', h = '<span class="seg-l">' + T.esc(v) + '</span><div class="seg" role="group" aria-label="' + T.esc(v) + '">';
     B.bgmLv.forEach(function (l, i) { h += '<button type="button" class="seg-btn" data-snd-vol="' + (i + 1) + '" aria-pressed="' + (vl === i + 1) + '">' + T.esc(l) + '</button>'; });
     return h + '</div>';
   };

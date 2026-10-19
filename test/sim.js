@@ -501,6 +501,8 @@ async function runScenario(s) {
     if (!again.ok) throw new Error('start 재전송이 같은 ack 가 아니다');
     await waitPhase(bots, 'result', 40000);
     const r = host.state.result;
+    await sleep(80);
+    { const el = host.chats.filter((m) => m.system && m.kind === 'end'); if (el.length !== 1) throw new Error('endLine 채팅에 kind:end 가 정확히 한 번 있어야 한다: ' + el.length); }
     for (const b of bots) if (!isDeepStrictEqual(b.state.result, r)) throw new Error('플레이어마다 결과가 다르다');
     for (const b of bots) if (b.gameIds.size !== 1) throw new Error(`gameId 가 판 안에서 바뀌었다 ${[...b.gameIds]}`);
     checkResult(r, host.state.gameDeck);
@@ -711,6 +713,7 @@ async function chatChecks() {
     assert(a3 && a3.ok === true, '같은 cid 재전송은 ok:true: ' + JSON.stringify(a3));
     await sleep(80);
     assert(a.chats.filter((m) => m.text === 'ack첫').length === 1, '같은 cid 는 한 번만 게시');
+    assert(a.chats.find((m) => m.text === 'ack첫').cid === 'c1', '브로드캐스트 메시지에 보낸 사람의 cid 가 실린다');
     assert(!a.chats.some((m) => m.text === 'ack둘'), '거부된 메시지는 게시되지 않음');
     await sleep(450);
     const a4 = await ack(b, { text: 'ack답글', re: 99999 });

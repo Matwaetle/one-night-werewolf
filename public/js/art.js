@@ -63,6 +63,12 @@
   var keep = {};        // key -> Image (디코드된 비트맵 유지)
   var queue = [];       // {key,url,front,resolve}
   var active = 0, xtra = 0;
+  var asked = {};       // 요청한 URL 집합 (같은 주소·같은 역할을 두 크기로 받지 않는다)
+  var roleU = {};       // 'r:id' -> 처음 요청한 주소
+  var late = {};        // key -> 12초 넘겼지만 아직 받는 중 (끊지 않는다)
+  function is404(u) {
+    try { var e = performance.getEntriesByName(u, 'resource'); e = e[e.length - 1]; return !!e && e.responseStatus === 404; } catch (x) { return false; }
+  }
 
   function pump() {
     var j;
@@ -77,12 +83,15 @@
     active++;
     var img = new Image();
     img.decoding = 'async';
-    var fin = false, to = setTimeout(function () { img.onerror = img.onload = null; img.src = ''; finish(false); }, 12000);
+    var fin = false, rel = false;
+    var release = function () { if (rel) return; rel = true; active--; if (job.x) xtra = 0; };
+    // 시간 초과: 받던 이미지는 끊지 않는다. 슬롯만 돌려주고 기다리는 쪽에는 실패로 알린다(pending-late)
+    var to = setTimeout(function () { if (fin) return; late[job.key] = 1; release(); job.resolve(false); pump(); }, 12000);
     var finish = function (ok) {
       if (fin) return;
-      fin = true; clearTimeout(to);
-      active--; if (job.x) xtra = 0;
-      if (ok) { done[job.key] = true; urls[job.key] = job.url; } else fails[job.key] = (fails[job.key] || 0) + 1;
+      fin = true; clearTimeout(to); release(); delete late[job.key];
+      if (ok) { done[job.key] = true; urls[job.key] = job.url; }
+      else fails[job.key] = is404(job.url) ? 3 : (fails[job.key] || 0) + 1;
       if (ok) keep[job.key] = img;
       delete pending[job.key];
       job.resolve(ok);
@@ -92,6 +101,7 @@
     img.onerror = function () { finish(false); };
     // decode()는 그려지지 않는 탭·백그라운드에서 끝나지 않을 수 있다 → 받기만 끝나면 잠시 뒤 성공으로 본다
     img.onload = function () { setTimeout(function () { finish(true); }, 300); };
+    asked[job.url] = 1;
     img.src = job.url;
     if (img.decode) img.decode().then(function () { finish(true); }, function () {
       // decode() 거부는 오류일 수도, 일부 브라우저의 미지원 거부일 수도 있다
@@ -103,6 +113,7 @@
     if (!u || !doc) return Promise.resolve(false);
     if (key in done) return Promise.resolve(true);
     if ((fails[key] || 0) >= 3) return Promise.resolve(false);
+    if (key.charAt(0) === 'r') { if (roleU[key]) u = roleU[key]; else roleU[key] = u; }   // 한 역할은 한 가지 크기만
     if (pending[key]) {
       if (front) {   // 이미 대기 중이면 앞으로
         for (var i = 0; i < queue.length; i++) if (queue[i].key === key) { queue.unshift(queue.splice(i, 1)[0]); queue[0].front = true; break; }
@@ -136,7 +147,8 @@
     grain: function (u) { return '.grain{background:url(' + u + ') 0 0/128px 128px repeat}html[data-img~=grain]:not([data-perf=lite]) #modal .modal-box:is(.law,.paper)::after{background:url(' + u + ') 0 0/128px 128px repeat}'; },
     home: function (u) { return '.bg-art::before{background:url(' + u + ') center top/cover no-repeat}'; },
     horizon: function (u) { return 'body:not([data-phase=home]) .bg-art::before{background:url(' + u + ') center bottom/cover no-repeat}'; },
-    back: function (u) { return '.card-back::after{background-image:url(' + u + ')}'; },
+    back: function (u) { return '.card:is([data-size=md],[data-size=xl]) .card-back::after{background-image:url(' + u + ')}'; },
+    backS: function (u) { return '.card:is([data-size=xs],[data-size=sm]) .card-back::after{background-image:url(' + u + ')}'; },
     atlas: function (u) { return '.card[data-size=xs] .card-art,.card[data-size=sm] .card-art{background-image:url(' + u + ')}'; }
   };
   function sheet() {
@@ -169,10 +181,10 @@
   // ---------- 공개 API ----------
   // 모닥불 진입 때 W6이 호출: ART.warm() = back, atlas, horizon, grain (slow면 horizon 생략)
   ART.warm = function (names) {
-    names = names || ['back', 'atlas', 'horizon', 'grain'];
+    names = names || ['backS', 'atlas', 'back', 'horizon', 'grain'];
     var out = [];
     names.forEach(function (n) {
-      if (isSlow() && n === 'horizon') return;
+      if (isSlow() && (n === 'horizon' || n === 'back')) return;
       var u = staticUrl(n);
       if (u) out.push(load('s:' + n, u, false));
     });
@@ -181,11 +193,26 @@
   ART.has = function (id) { return done['r:' + id] === true; };
 
   // 큰 아트 로드 요청(동시 2개, 이미 있으면 무시). 가장 먼저 부른 것이 아니라 가장 최근 호출이 앞선다(최우선).
-  ART.want = function (ids) {
+  // opts.low: 앞순위가 아닌 보통 순위로 줄 세운다. 이미 작은 판을 받은 역할은 느린 망이 아니면 큰 판으로만 올린다(md/xl 카드용).
+  ART.want = function (ids, opts) {
     if (!ids) return;
+    var front = !(opts && opts.low);
     (Array.isArray(ids) ? ids : [ids]).slice().reverse().forEach(function (id) {
-      var u = roleUrl(id);
-      if (u) load('r:' + id, u, true);
+      var u = roleUrl(id), k = 'r:' + id;
+      if (!u) return;
+      if (done[k] === true && urls[k] && urls[k] !== u && !asked[u] && !isSlow()) {
+        load('u:' + id, u, front).then(function (ok) {
+          if (!ok) return;
+          urls[k] = u;
+          var cs = doc.querySelectorAll('.card[data-role="' + id + '"][data-art="1"]');
+          for (var i = 0; i < cs.length; i++) {
+            var sz = cs[i].getAttribute('data-size'), a = cs[i].querySelector('.card-art');
+            if ((sz === 'md' || sz === 'xl') && a) a.style.setProperty('--art', 'url("' + u + '")');
+          }
+        });
+        return;
+      }
+      load(k, u, front);
     });
   };
   ART.cancel = function () { queue.forEach(function (j) { delete pending[j.key]; j.resolve(false); }); queue = []; };

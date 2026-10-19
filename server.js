@@ -256,8 +256,8 @@ function scheduleCleanup(room) {
   }, ROOM_TTL);
 }
 
-function sysChat(room, text) {
-  pushChat(room, { system: true, text, ts: Date.now() });
+function sysChat(room, text, extra) {
+  pushChat(room, Object.assign({ system: true, text, ts: Date.now() }, extra || null));
 }
 function pushChat(room, msg) {
   msg.mid = ++room.chatSeq;
@@ -859,7 +859,7 @@ function resolve(room) {
   };
   if (nightOk) room.result.night = { deal: g.deal, ev: g.ev, end: g.pos.slice() };
   room.phase = 'result';
-  sysChat(room, M('endLine', { verdict: verdictLine(winners, wolves.length) }));
+  sysChat(room, M('endLine', { verdict: verdictLine(winners, wolves.length) }), { kind: 'end' });
   sendNow(room);
 }
 
@@ -1137,12 +1137,17 @@ io.on('connection', (socket) => {
     if (!t) return reply(cb, { ok: false, error: M('badRequest') });
     const p = room.players.get(pid);
     const cidOk = typeof cid === 'string' && cid.length <= 24;
-    if (cidOk && p && p.lastCid === cid) return reply(cb, { ok: true });
+    if (cidOk && p && p.cids && p.cids.has(cid)) return reply(cb, { ok: true });
     const now = Date.now();
     if (p && p.lastChat && now - p.lastChat < 400) return reply(cb, { ok: false, error: M('chatFast') });
     if (p) p.lastChat = now;
-    if (p && cidOk) p.lastCid = cid;
+    if (p && cidOk) {
+      if (!p.cids) p.cids = new Set();
+      p.cids.add(cid);
+      while (p.cids.size > 8) p.cids.delete(p.cids.values().next().value);
+    }
     const msg = { id: pid, name: pn(room, pid), text: t, ts: now };
+    if (cidOk) msg.cid = cid;
     const o = Number.isInteger(re) && re > 0 ? room.chat.find((m) => m.mid === re && !m.system) : null;
     if (o) {
       const s = String(o.text).replace(/\s+/g, ' '), cp = Array.from(s);

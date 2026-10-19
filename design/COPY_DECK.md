@@ -807,3 +807,30 @@
 | T.body.raised | 투표 준비 ${r}/${n} · 모두 준비하면 바로 투표합니다. | |
 | T.body.votedFor | ${n}에게 투표했습니다. 다시 고르면 바뀝니다. | |
 | T.btn.leave | 방 나가기 | |
+
+## 개정 (서버+문구 패스)
+
+| 키 | 최종 문구 |
+|---|---|
+| T.body.daySwapHint | 내 카드가 밤사이 바뀌었을 수 있습니다. |
+| T.body.yourCard | 내 역할은 아직 가려져 있습니다. |
+| T.body.holdHint | 모든 카드의 뒷면은 같습니다. 길게 눌러 확인하세요. (cardHint는 더 이상 렌더하지 않음) |
+| T.body.youHappened | 내 카드의 행방 |
+| T.body.heroDead | ${n} (이름만. 처형은 스탬프가 표시) |
+| T.body.whoMine / whoNew / whoNow | 내 카드 / 내 새 카드 / 지금 내 카드 |
+| T.body.hunterLine | 사냥꾼 ${a}의 능력으로 ${b}도 함께 처형되었습니다. |
+| T.replay.hunt.rule | 사냥꾼이 처형되면 사냥꾼이 투표한 사람도 함께 처형됩니다. |
+| T.replay.cause.robbed | ${role} ${a:이/가} 내 카드를 가져갔습니다. |
+| T.replay.cause.swapped | ${role} ${a:이/가} 내 카드를 ${t}의 카드와 바꿨습니다. |
+| T.replay.cause.end | 최종 카드는 ${r:이었/였}습니다. |
+| T.replay.pro.top | 처음 나눠 받은 카드입니다. |
+| T.replay.ui.acts | 카드 배치 / 밤 / 낮 / 투표 / 결과 (ruler 라벨 dawn도 낮) |
+| T.body.deckCount | 카드 ${n}장 / 필요 ${m}장 (로비 푸터. 긴 안내문은 덱 시트에서만) |
+| T.body.seenOther | ${w}: ${r} |
+| T.body.seenMore | 외 ${n}장 |
+| T.body.reconnectSlow | 연결이 오래 걸리고 있습니다. |
+| T.body.reload / goHome | 새로 고치기 / 홈으로 가기 |
+| T.body.resFallback / resRetry | 결과를 불러오지 못했습니다. / 다시 불러오기 |
+| T.body.waking | 서버를 깨우는 중입니다. |
+| T.body.bgmVol | 배경음악 크기 |
+| T.replay.self.noneButMoved | 밤새 카드가 오갔지만 모두 처음 카드로 돌아왔습니다. |

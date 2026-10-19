@@ -132,7 +132,6 @@
         const o = [b === 'blind' ? fmt(SF.blind, { f }) : b === p.effective ? fmt(SF.same, { f }) : fmt(SF.diff, { b: ROLES[b].name, f })];
         if (SF.end && p.effective !== p.original) o.push(fmt(SF.end, { f, o: ROLES[p.original].name }));
         if (p.final === 'doppelganger' && R.doppelCopy) o.push(fmt(SF.doppel, { r: ROLES[R.doppelCopy].name }));
-        o.push(fmt(p.win ? SF.win : SF.lose, { team: TEAM_NAME[p.team] }));
         return o.join(' ');
       }
       function verdictKey() {

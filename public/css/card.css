@@ -181,6 +181,7 @@
   background-color:var(--ink);
   background-image:repeating-linear-gradient(115deg,rgba(217,203,176,.05) 0 1px,transparent 1px 4px);
   box-shadow:inset 0 0 0 var(--bi) var(--ink),inset 0 0 0 calc(var(--bi) + 1px) var(--bone-dim);
+  outline:1px solid var(--ink); outline-offset:-3px;   /* 앞면 판목 틀과 같은 덱으로 읽히게 */
 }
 .card-bm{
   position:absolute; left:20%; top:25%; width:60%; height:50%;
@@ -191,7 +192,8 @@
   content:""; position:absolute; inset:calc(var(--bi) + 1px); opacity:0; transition:opacity 180ms linear;
   background:50% 0/cover no-repeat;
 }
-html[data-img~="back"] .card-back::after{ opacity:1; }
+html[data-img~="back"] .card:is([data-size="md"],[data-size="xl"]) .card-back::after,
+html[data-img~="backS"] .card:is([data-size="xs"],[data-size="sm"]) .card-back::after{ opacity:1; }
 .card[data-size="md"] .card-back,.card[data-size="xl"] .card-back{
   --bi:calc(var(--cw)*.035);
   --fl:linear-gradient(45deg,transparent calc(50% - .5px),var(--bone-dim) calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px));
@@ -202,6 +204,7 @@ html[data-img~="back"] .card-back::after{ opacity:1; }
   background-position:left var(--fo) top var(--fo),right var(--fo) top var(--fo),left var(--fo) bottom var(--fo),right var(--fo) bottom var(--fo),0 0;
   background-repeat:no-repeat,no-repeat,no-repeat,no-repeat,repeat;
   box-shadow:inset 0 0 0 var(--bi) var(--bone-dim),inset 0 0 0 calc(var(--bi) + 2px) var(--ink),inset 0 0 0 calc(var(--bi) + 3px) var(--bone-dim);
+  outline:1px solid var(--ink); outline-offset:-6px;
 }
 .card[data-size="md"] .card-back::after,.card[data-size="xl"] .card-back::after{ inset:calc(var(--bi) + 8px); }
 /* xl 뒷면: 앞면과 같은 뼈색 틀 + 안쪽 이중 괘선 */
@@ -229,10 +232,9 @@ html[data-img~="back"] .card-back::after{ opacity:1; }
 @keyframes card-flash{ 0%,48%{opacity:0} 50%{opacity:.5} 62%,100%{opacity:0} }
 
 .card.is-dim{ opacity:.35; }
-.card.is-selectable::before{ animation:card-pulse 1.6s ease-in-out infinite alternate; }
-@keyframes card-pulse{ from{opacity:.3} to{opacity:.9} }
+.card.is-selectable{cursor:pointer}
+.card.is-selectable::before{ animation:fx-pulse 1.6s ease-in-out infinite alternate; }
 html[data-perf=lite] .card.is-selectable::before{ animation:none; opacity:.6; }
-.card.is-selectable{ cursor:pointer; }
 
 .card.is-selected{
   transform:translateY(-6px); box-shadow:0 6px 0 #000;

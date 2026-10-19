@@ -1,19 +1,297 @@
 {
-  "generatedAt": "2026-10-19T15:53:51.401Z",
+  "generatedAt": "2026-10-19T16:33:08.450Z",
   "conditions": {
     "serverTimeScale": 0.35,
     "browser": "Chrome/155.0.8059.82"
   },
+  "network": {
+    "home": {
+      "dataNet": "fast",
+      "effectiveType": "3g",
+      "keyArtRequestedWithin4s": true,
+      "formInteractiveMs": 750,
+      "socketReadyMs": 1092,
+      "firstContentfulPaintMs": 516,
+      "responseStartMs": 2,
+      "beforeFormInteractive": {
+        "requests": 12,
+        "httpBytes": 76207,
+        "wsBytes": 0,
+        "bytes": 76207
+      },
+      "beforeSocketReady": {
+        "requests": 12,
+        "httpBytes": 99047,
+        "wsBytes": 167,
+        "bytes": 99214
+      },
+      "afterSettled4s": {
+        "requests": 12,
+        "httpBytes": 137124,
+        "wsBytes": 167,
+        "bytes": 137291
+      },
+      "heaviestRequests": [
+        {
+          "url": "/a/key-m.e9c2ca42.webp",
+          "bytes": 38077,
+          "type": "Image"
+        },
+        {
+          "url": "/a/game.51f9d79f.js",
+          "bytes": 24599,
+          "type": "Script"
+        },
+        {
+          "url": "/a/hanbam-d.ae515f14.woff2",
+          "bytes": 20901,
+          "type": "Font"
+        },
+        {
+          "url": "/a/sio.040056a1.js",
+          "bytes": 13627,
+          "type": "Script"
+        },
+        {
+          "url": "/a/game.e82db039.css",
+          "bytes": 9415,
+          "type": "Stylesheet"
+        },
+        {
+          "url": "/",
+          "bytes": 9344,
+          "type": "Document"
+        },
+        {
+          "url": "/a/hanbam-t.efa0cee4.woff2",
+          "bytes": 7476,
+          "type": "Font"
+        },
+        {
+          "url": "/a/result.a7b02f62.js",
+          "bytes": 4204,
+          "type": "Script"
+        }
+      ]
+    },
+    "game": {
+      "note": "홈 로드부터 결말 재현 종료까지 한 판 ",
+      "total": {
+        "requests": 37,
+        "httpBytes": 832772,
+        "wsBytes": 44060,
+        "bytes": 876832
+      },
+      "afterFirstHomeLoad": {
+        "requests": 25,
+        "bytes": 739541
+      },
+      "byResourceType": {
+        "Document": 9344,
+        "Font": 28377,
+        "Script": 68043,
+        "Fetch": 260,
+        "Stylesheet": 9415,
+        "Image": 717333
+      },
+      "wsFrames": 82,
+      "durationSec": 103
+    },
+    "websocketThrottleNote": "Chrome CDP 네트워크 제한은 WebSocket 프레임에 적용되지 않는다. HTTP(문서/에셋/폴링)에만 지연·대역폭이 걸린다."
+  },
+  "cpu": {
+    "cpuThrottle": 6,
+    "nightTransitions": {
+      "seconds": 36.8,
+      "longTasks": 4,
+      "longTaskTotalMs": 552,
+      "longTaskMaxMs": 296,
+      "longTaskList": [
+        {
+          "atMs": 1684,
+          "durMs": 296
+        },
+        {
+          "atMs": 4756,
+          "durMs": 83
+        },
+        {
+          "atMs": 17774,
+          "durMs": 107
+        },
+        {
+          "atMs": 36743,
+          "durMs": 66
+        }
+      ],
+      "fpsAvg": 140,
+      "frameP95Ms": 7,
+      "framesOver50ms": 5
+    },
+    "replay": {
+      "seconds": 45.3,
+      "longTasks": 13,
+      "longTaskTotalMs": 1170,
+      "longTaskMaxMs": 392,
+      "longTaskList": [
+        {
+          "atMs": 3560,
+          "durMs": 51
+        },
+        {
+          "atMs": 7779,
+          "durMs": 80
+        },
+        {
+          "atMs": 10039,
+          "durMs": 55
+        },
+        {
+          "atMs": 11828,
+          "durMs": 56
+        },
+        {
+          "atMs": 13376,
+          "durMs": 52
+        },
+        {
+          "atMs": 13879,
+          "durMs": 66
+        },
+        {
+          "atMs": 17111,
+          "durMs": 51
+        },
+        {
+          "atMs": 18110,
+          "durMs": 59
+        },
+        {
+          "atMs": 26133,
+          "durMs": 73
+        },
+        {
+          "atMs": 28365,
+          "durMs": 70
+        },
+        {
+          "atMs": 38374,
+          "durMs": 60
+        },
+        {
+          "atMs": 40363,
+          "durMs": 105
+        },
+        {
+          "atMs": 43759,
+          "durMs": 392
+        }
+      ],
+      "fpsAvg": 131.6,
+      "frameP95Ms": 7,
+      "framesOver50ms": 17
+    },
+    "wholeGame": {
+      "seconds": 93.2,
+      "longTasks": 22,
+      "longTaskTotalMs": 2633,
+      "longTaskMaxMs": 479,
+      "longTaskList": [
+        {
+          "atMs": 1684,
+          "durMs": 296
+        },
+        {
+          "atMs": 4756,
+          "durMs": 83
+        },
+        {
+          "atMs": 17774,
+          "durMs": 107
+        },
+        {
+          "atMs": 36743,
+          "durMs": 66
+        },
+        {
+          "atMs": 45358,
+          "durMs": 104
+        },
+        {
+          "atMs": 45467,
+          "durMs": 67
+        },
+        {
+          "atMs": 45535,
+          "durMs": 174
+        },
+        {
+          "atMs": 45710,
+          "durMs": 479
+        },
+        {
+          "atMs": 46208,
+          "durMs": 87
+        },
+        {
+          "atMs": 49890,
+          "durMs": 51
+        },
+        {
+          "atMs": 54109,
+          "durMs": 80
+        },
+        {
+          "atMs": 56369,
+          "durMs": 55
+        },
+        {
+          "atMs": 58158,
+          "durMs": 56
+        },
+        {
+          "atMs": 59706,
+          "durMs": 52
+        },
+        {
+          "atMs": 60209,
+          "durMs": 66
+        },
+        {
+          "atMs": 63441,
+          "durMs": 51
+        },
+        {
+          "atMs": 64440,
+          "durMs": 59
+        },
+        {
+          "atMs": 72463,
+          "durMs": 73
+        },
+        {
+          "atMs": 74695,
+          "durMs": 70
+        },
+        {
+          "atMs": 84704,
+          "durMs": 60
+        },
+        {
+          "atMs": 86693,
+          "durMs": 105
+        },
+        {
+          "atMs": 90089,
+          "durMs": 392
+        }
+      ],
+      "fpsAvg": 134.2,
+      "frameP95Ms": 7,
+      "framesOver50ms": 25
+    }
+  },
   "consoleErrors": [],
-  "notCaptured": [
-    "mobile-375x812: rules-modal - Waiting failed: 15000ms exceeded",
-    "mobile-375x812: create - Waiting failed: 60000ms exceeded",
-    "mobile-375x812: 방 코드를 읽지 못함 \"\"",
-    "mobile-375x812: 진행 중단 - no room code",
-    "small-360x640: rules-modal - Waiting failed: 15000ms exceeded",
-    "small-360x640: create - Waiting failed: 60000ms exceeded",
-    "small-360x640: 방 코드를 읽지 못함 \"\"",
-    "small-360x640: 진행 중단 - no room code"
-  ],
-  "shotCount": 54
+  "notCaptured": [],
+  "shotCount": 104
 }

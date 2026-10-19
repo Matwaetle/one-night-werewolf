@@ -64,7 +64,7 @@ function check(name, fx) {
   if (me_ >= 0) assert(strip(last.l3).includes('카드') && !strip(last.l3).includes('소속입니다'), name + ': self line wording: ' + strip(last.l3));
   if (me_ >= 0) {
     const nm = (e) => e.mv && e.mv.some((m) => m[1] === me_);
-    const want = N.ev.filter(nm).length, got = (strip(last.l3).match(/마지막 카드는/g) || []).length;
+    const want = N.ev.filter(nm).length, got = (strip(last.l3).match(/(?:최종|마지막) 카드는/g) || []).length;
     assert.strictEqual(want > 0 ? got >= 1 : true, true, name + ': cause sentences in self line ' + got + ' != ' + want + ': ' + strip(last.l3));
     for (const b of bs) if (b.act === 'seat') {
       const same = ROLES[B.effRole(b.s)].team === R.players[b.s].team;

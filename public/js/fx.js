@@ -35,6 +35,52 @@
   function wait(ms) { return new Promise(function (r) { later(r, ms); }); }
 
   var FX = {
+    speak: function (text, snd) {
+      if (!('speechSynthesis' in window)) return;
+      try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.lang = 'ko-KR'; u.rate = 0.95; u.onstart = function () { snd('duck', 'tts', -8); }; u.onend = u.onerror = function () { snd('duck', 'tts', 0); }; speechSynthesis.speak(u); } catch (e) { /* 무시 */ }
+    },
+    resFb: function (R) {   // 결말 모듈을 끝내 못 받았을 때: 승패와 각자의 최종 카드만 평문으로 보인다
+      var T = window.T, esc = T.esc, W = window.WW, bd = $('.board');
+      var t = (R.winners || []).map(function (x) { return W.TEAM_NAME[x]; }).join(', '), dead = R.players.filter(function (p) { return p.dead; }).map(function (p) { return p.name; }).join(', ');
+      bd.innerHTML = '<p>' + esc(T.body.resFallback) + '</p><p>' + esc(t + ' / ' + dead) + '</p>' +
+        R.players.map(function (p) { return '<p><b class="nm">' + esc(p.name) + '</b> ' + esc(W.ROLES[p.final].name) + '</p>'; }).join('') +
+        '<button class="btn-sub" type="button" data-act="resRetry"><span class="lbl">' + esc(T.body.resRetry) + '</span></button>';
+      bd.hidden = false;
+    },
+    kick: function (pid, nm, open) {
+      var T = window.T, esc = T.esc;
+      open('<p class="modal-title">' + T.fmt(T.body.kickAsk, { n: nm }) + '</p><button class="btn-main hold" type="button" data-act="kick" data-pid="' + esc(pid) +
+        '" data-hold="1200"><span class="hold-fill"></span><span class="lbl">' + esc(T.btn.kick) + '</span></button>', 'kick', T.btn.kick);
+    },
+    copy: function (link, open, toast) {
+      var T = window.T, TB = T.body, esc = T.esc;
+      function fb() {
+        open('<h2 class="modal-title">' + esc(TB.copyTitle) + '</h2><p>' + esc(TB.copyHint) + '</p><input class="in" readonly value="' + esc(link) + '" aria-label="' + esc(TB.copyTitle) + '">', 'copy', TB.copyTitle);
+        var i = $('#modal input'); if (i) i.select();
+      }
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(link).then(function () { toast(TB.copied); }, fb); else fb();
+    },
+    menu: function (c) {   // 메뉴 모달 HTML (app.js 에서 옮겨 옴)
+      var T = window.T, TB = T.body, TBT = T.btn, esc = T.esc, h, seg = window.SND && window.SND.segHTML;
+      function item(act, t) { return '<button class="menu-item" type="button" data-act="' + act + '">' + esc(t) + '</button>'; }
+      function hold(act, t) { return '<button class="menu-item is-danger hold" type="button" data-act="' + act + '" data-hold="1200" style="position:relative;overflow:hidden"><span class="hold-fill"></span><span class="lbl" style="position:relative">' + esc(t) + '</span></button>'; }
+      h = '<div class="menu">' + item('voice', c.v ? TBT.voiceOff : TBT.voiceOn) + item('chatTog', c.c ? TBT.chatOn : TBT.chatOff) + item('bgm', c.b ? TBT.bgmOff : TBT.bgmOn) + (c.b && seg ? seg() : '') + item('law', TBT.law) + item('deck', TBT.deck);
+      if (c.p === 'lobby' && c.h) h += '<div class="seg" role="group" aria-label="' + esc(T.head.dayLen) + '">' + [180, 300, 420].map(function (v) {
+        return '<button type="button" class="seg-btn" data-act="dayLen" data-v="' + v + '" aria-pressed="' + (c.d === v) + '">' + (v / 60) + TB.minutes + '</button>'; }).join('') + '</div>';
+      if (c.p === 'day' && c.h) h += hold('judge', TBT.judgeNow);
+      c.o(h + hold('leave', TBT.leave) + '</div>', 'menu-box', TB.ariaMenu);
+    },
+    probe: function (k) {   // 로비 · 첫 밤 4초 동안 긴 작업과 프레임을 재서 느린 기기는 lite 로 내린다
+      var n = 0, l = 0, mx = 0, po, fr = [], t0 = performance.now(), key = 'p' + k;
+      if (de.dataset[key] || de.dataset.perf === 'lite') return; de.dataset[key] = 1;
+      try { po = new PerformanceObserver(function (o) { o.getEntries().forEach(function (e) { n += e.duration; if (e.duration > mx) mx = e.duration; }); }); po.observe({ type: 'longtask' }); } catch (e) { /* 무시 */ }
+      requestAnimationFrame(function lap(t) {
+        if (d.hidden) l = 0; else { if (l) fr.push(t - l); l = t; }
+        if (t - t0 < 4000) return requestAnimationFrame(lap);
+        fr.sort(function (x, y) { return x - y; }); if (po) po.disconnect();
+        if (n > 180 || mx > 150 || fr[fr.length * 0.9 | 0] > 34) { de.dataset.perf = 'lite'; try { localStorage.setItem('ww_perf', JSON.stringify({ v: 'lite', t: Date.now() })); } catch (e) { /* 무시 */ } }
+      });
+    },
     /* ---------- 눈꺼풀 ---------- */
     lidsClose: function (ms) { return lids(1, ms == null ? 500 : ms); },
     lidsOpen: function (ms) { return lids(0, ms == null ? 500 : ms); },

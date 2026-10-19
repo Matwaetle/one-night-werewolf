@@ -326,7 +326,21 @@ function build(opts = {}) {
   if (!memory) {
     const rel = path.relative(root, outDir);
     if (rel.startsWith('..') || path.isAbsolute(rel) || rel === '') throw new Error('outDir 은 저장소 안의 하위 폴더여야 한다: ' + outDir);
+    // 이전 빌드의 /a/ 파일 중 옛 셸(index.html·sw.js·game.js)이 가리키는 것만 남긴다 — 캐시된 옛 셸이 지연 파일에서 404 나지 않게
+    const carry = [];
+    try {
+      const pa = path.join(outDir, 'a');
+      if (fs.existsSync(pa)) {
+        const re = /[A-Za-z0-9_-]+\.[0-9a-f]{8}\.(?:js|css|webp|woff2)/g, ref = new Set(), onDisk = new Set(fs.readdirSync(pa));
+        const scan = (f) => { try { for (const m of fs.readFileSync(f, 'utf8').matchAll(re)) ref.add(m[0]); } catch { /* 무시 */ } };
+        scan(path.join(outDir, 'index.html')); scan(path.join(outDir, 'sw.js'));
+        for (const n of [...ref]) if (/^game\..*\.js$/.test(n) && onDisk.has(n)) scan(path.join(pa, n));
+        for (const n of ref) if (onDisk.has(n) && !files.has('/a/' + n)) carry.push([n, fs.readFileSync(path.join(pa, n))]);
+      }
+    } catch { /* 이전 빌드 없음 */ }
     rmTree(outDir);
+    for (const [n, b] of carry) { fs.mkdirSync(path.join(outDir, 'a'), { recursive: true }); fs.writeFileSync(path.join(outDir, 'a', n), b); }
+    if (carry.length) fs.writeFileSync(path.join(outDir, 'a-prev.json'), JSON.stringify(carry.map((c) => c[0])));
     for (const [url, f] of files) {
       if (url === '/') continue;
       const p = path.join(outDir, url);
