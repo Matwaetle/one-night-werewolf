@@ -1,0 +1,505 @@
+{
+  "generatedAt": "2026-10-19T11:00:15.939Z",
+  "conditions": {
+    "serverTimeScale": 0.35,
+    "browser": "Chrome/155.0.8059.82"
+  },
+  "network": {
+    "home": {
+      "dataNet": "fast",
+      "effectiveType": "3g",
+      "keyArtRequestedWithin4s": true,
+      "formInteractiveMs": 761,
+      "socketReadyMs": 1100,
+      "firstContentfulPaintMs": 704,
+      "responseStartMs": 6,
+      "beforeFormInteractive": {
+        "requests": 9,
+        "httpBytes": 56548,
+        "wsBytes": 0,
+        "bytes": 56548
+      },
+      "beforeSocketReady": {
+        "requests": 9,
+        "httpBytes": 86821,
+        "wsBytes": 169,
+        "bytes": 86990
+      },
+      "afterSettled4s": {
+        "requests": 9,
+        "httpBytes": 124898,
+        "wsBytes": 169,
+        "bytes": 125067
+      },
+      "heaviestRequests": [
+        {
+          "url": "/a/key-m.e9c2ca42.webp",
+          "bytes": 38077,
+          "type": "Image"
+        },
+        {
+          "url": "/a/game.edd37d67.js",
+          "bytes": 25210,
+          "type": "Script"
+        },
+        {
+          "url": "/a/hanbam-d.898bd085.woff2",
+          "bytes": 20665,
+          "type": "Font"
+        },
+        {
+          "url": "/a/sio.040056a1.js",
+          "bytes": 14617,
+          "type": "Script"
+        },
+        {
+          "url": "/",
+          "bytes": 8985,
+          "type": "Document"
+        },
+        {
+          "url": "/a/hanbam-t.efa0cee4.woff2",
+          "bytes": 7476,
+          "type": "Font"
+        },
+        {
+          "url": "/a/game.01637c8a.css",
+          "bytes": 7098,
+          "type": "Stylesheet"
+        },
+        {
+          "url": "/a/fx.739212dc.js",
+          "bytes": 2510,
+          "type": "Script"
+        }
+      ]
+    },
+    "game": {
+      "note": "홈 로드부터 결말 재현 종료까지 한 판 ",
+      "total": {
+        "requests": 27,
+        "httpBytes": 619444,
+        "wsBytes": 32283,
+        "bytes": 651727
+      },
+      "afterFirstHomeLoad": {
+        "requests": 18,
+        "bytes": 526660
+      },
+      "byResourceType": {
+        "Document": 8985,
+        "Font": 28141,
+        "Script": 42337,
+        "Fetch": 260,
+        "Stylesheet": 7098,
+        "Image": 532623
+      },
+      "wsFrames": 74,
+      "durationSec": 131
+    },
+    "websocketThrottleNote": "Chrome CDP 네트워크 제한은 WebSocket 프레임에 적용되지 않는다. HTTP(문서/에셋/폴링)에만 지연·대역폭이 걸린다."
+  },
+  "cpu": {
+    "cpuThrottle": 6,
+    "nightTransitions": {
+      "seconds": 28.7,
+      "longTasks": 10,
+      "longTaskTotalMs": 1474,
+      "longTaskMaxMs": 482,
+      "longTaskList": [
+        {
+          "atMs": 355,
+          "durMs": 201
+        },
+        {
+          "atMs": 564,
+          "durMs": 50
+        },
+        {
+          "atMs": 1614,
+          "durMs": 482
+        },
+        {
+          "atMs": 2394,
+          "durMs": 104
+        },
+        {
+          "atMs": 4807,
+          "durMs": 142
+        },
+        {
+          "atMs": 13240,
+          "durMs": 102
+        },
+        {
+          "atMs": 13774,
+          "durMs": 112
+        },
+        {
+          "atMs": 14735,
+          "durMs": 107
+        },
+        {
+          "atMs": 16052,
+          "durMs": 100
+        },
+        {
+          "atMs": 28588,
+          "durMs": 74
+        }
+      ],
+      "fpsAvg": 117.2,
+      "frameP95Ms": 14,
+      "framesOver50ms": 14
+    },
+    "replay": {
+      "seconds": 70.6,
+      "longTasks": 53,
+      "longTaskTotalMs": 6411,
+      "longTaskMaxMs": 507,
+      "longTaskList": [
+        {
+          "atMs": 41,
+          "durMs": 181
+        },
+        {
+          "atMs": 1534,
+          "durMs": 203
+        },
+        {
+          "atMs": 1738,
+          "durMs": 170
+        },
+        {
+          "atMs": 4821,
+          "durMs": 153
+        },
+        {
+          "atMs": 4975,
+          "durMs": 117
+        },
+        {
+          "atMs": 5107,
+          "durMs": 62
+        },
+        {
+          "atMs": 7896,
+          "durMs": 210
+        },
+        {
+          "atMs": 8106,
+          "durMs": 131
+        },
+        {
+          "atMs": 8951,
+          "durMs": 69
+        },
+        {
+          "atMs": 12323,
+          "durMs": 155
+        },
+        {
+          "atMs": 12479,
+          "durMs": 142
+        },
+        {
+          "atMs": 12974,
+          "durMs": 143
+        },
+        {
+          "atMs": 13181,
+          "durMs": 61
+        },
+        {
+          "atMs": 16817,
+          "durMs": 134
+        },
+        {
+          "atMs": 16952,
+          "durMs": 82
+        },
+        {
+          "atMs": 20558,
+          "durMs": 142
+        },
+        {
+          "atMs": 20700,
+          "durMs": 102
+        },
+        {
+          "atMs": 20843,
+          "durMs": 58
+        },
+        {
+          "atMs": 23656,
+          "durMs": 156
+        },
+        {
+          "atMs": 23813,
+          "durMs": 84
+        },
+        {
+          "atMs": 24342,
+          "durMs": 71
+        },
+        {
+          "atMs": 24656,
+          "durMs": 72
+        },
+        {
+          "atMs": 28011,
+          "durMs": 68
+        },
+        {
+          "atMs": 28079,
+          "durMs": 76
+        },
+        {
+          "atMs": 30478,
+          "durMs": 157
+        },
+        {
+          "atMs": 31398,
+          "durMs": 58
+        },
+        {
+          "atMs": 36056,
+          "durMs": 92
+        },
+        {
+          "atMs": 36149,
+          "durMs": 77
+        },
+        {
+          "atMs": 38005,
+          "durMs": 118
+        },
+        {
+          "atMs": 41752,
+          "durMs": 130
+        },
+        {
+          "atMs": 41883,
+          "durMs": 113
+        },
+        {
+          "atMs": 45622,
+          "durMs": 186
+        },
+        {
+          "atMs": 45809,
+          "durMs": 121
+        },
+        {
+          "atMs": 48107,
+          "durMs": 81
+        },
+        {
+          "atMs": 48189,
+          "durMs": 91
+        },
+        {
+          "atMs": 50379,
+          "durMs": 131
+        },
+        {
+          "atMs": 50510,
+          "durMs": 87
+        },
+        {
+          "atMs": 52628,
+          "durMs": 126
+        },
+        {
+          "atMs": 52754,
+          "durMs": 106
+        },
+        {
+          "atMs": 54908,
+          "durMs": 165
+        }
+      ],
+      "fpsAvg": 123.7,
+      "frameP95Ms": 7,
+      "framesOver50ms": 34
+    },
+    "wholeGame": {
+      "seconds": 114.6,
+      "longTasks": 69,
+      "longTaskTotalMs": 9192,
+      "longTaskMaxMs": 632,
+      "longTaskList": [
+        {
+          "atMs": 355,
+          "durMs": 201
+        },
+        {
+          "atMs": 564,
+          "durMs": 50
+        },
+        {
+          "atMs": 1614,
+          "durMs": 482
+        },
+        {
+          "atMs": 2394,
+          "durMs": 104
+        },
+        {
+          "atMs": 4807,
+          "durMs": 142
+        },
+        {
+          "atMs": 13240,
+          "durMs": 102
+        },
+        {
+          "atMs": 13774,
+          "durMs": 112
+        },
+        {
+          "atMs": 14735,
+          "durMs": 107
+        },
+        {
+          "atMs": 16052,
+          "durMs": 100
+        },
+        {
+          "atMs": 28588,
+          "durMs": 74
+        },
+        {
+          "atMs": 29340,
+          "durMs": 68
+        },
+        {
+          "atMs": 32980,
+          "durMs": 51
+        },
+        {
+          "atMs": 35679,
+          "durMs": 87
+        },
+        {
+          "atMs": 41215,
+          "durMs": 632
+        },
+        {
+          "atMs": 41850,
+          "durMs": 128
+        },
+        {
+          "atMs": 42046,
+          "durMs": 341
+        },
+        {
+          "atMs": 42459,
+          "durMs": 181
+        },
+        {
+          "atMs": 43952,
+          "durMs": 203
+        },
+        {
+          "atMs": 44156,
+          "durMs": 170
+        },
+        {
+          "atMs": 47239,
+          "durMs": 153
+        },
+        {
+          "atMs": 47393,
+          "durMs": 117
+        },
+        {
+          "atMs": 47526,
+          "durMs": 62
+        },
+        {
+          "atMs": 50314,
+          "durMs": 210
+        },
+        {
+          "atMs": 50524,
+          "durMs": 131
+        },
+        {
+          "atMs": 51369,
+          "durMs": 69
+        },
+        {
+          "atMs": 54742,
+          "durMs": 155
+        },
+        {
+          "atMs": 54897,
+          "durMs": 142
+        },
+        {
+          "atMs": 55392,
+          "durMs": 143
+        },
+        {
+          "atMs": 55599,
+          "durMs": 61
+        },
+        {
+          "atMs": 59235,
+          "durMs": 134
+        },
+        {
+          "atMs": 59370,
+          "durMs": 82
+        },
+        {
+          "atMs": 62976,
+          "durMs": 142
+        },
+        {
+          "atMs": 63118,
+          "durMs": 102
+        },
+        {
+          "atMs": 63261,
+          "durMs": 58
+        },
+        {
+          "atMs": 66074,
+          "durMs": 156
+        },
+        {
+          "atMs": 66231,
+          "durMs": 84
+        },
+        {
+          "atMs": 66760,
+          "durMs": 71
+        },
+        {
+          "atMs": 67074,
+          "durMs": 72
+        },
+        {
+          "atMs": 70429,
+          "durMs": 68
+        },
+        {
+          "atMs": 70497,
+          "durMs": 76
+        }
+      ],
+      "fpsAvg": 121.2,
+      "frameP95Ms": 14,
+      "framesOver50ms": 55
+    }
+  },
+  "consoleErrors": [],
+  "notCaptured": [
+    "metrics-net: chat - Waiting failed: 5000ms exceeded",
+    "metrics-net: vote - Waiting failed: 40000ms exceeded",
+    "metrics-net: result - Waiting failed: 40000ms exceeded"
+  ],
+  "shotCount": 0
+}

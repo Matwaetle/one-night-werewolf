@@ -2,54 +2,54 @@
  "name": "doppel-hunter-chain",
  "n": 4,
  "meSeat": 0,
- "meId": "bot-봇1-0.524456215397648",
+ "meId": "bot-봇1-0.4107493775030694",
  "result": {
-  "gameId": "e911eeed",
+  "gameId": "a4d01258",
   "players": [
    {
-    "id": "bot-봇1-0.524456215397648",
+    "id": "bot-봇1-0.4107493775030694",
     "name": "봇1",
     "original": "doppelganger",
     "final": "doppelganger",
     "effective": "hunter",
     "team": "village",
-    "vote": "bot-봇4-0.47964086584445853",
+    "vote": "bot-봇4-0.5842122541179612",
     "votes": 3,
     "dead": true,
     "win": true
    },
    {
-    "id": "bot-봇2-0.852035849591733",
+    "id": "bot-봇2-0.9083678831177586",
     "name": "봇2",
     "original": "hunter",
     "final": "hunter",
     "effective": "hunter",
     "team": "village",
-    "vote": "bot-봇1-0.524456215397648",
+    "vote": "bot-봇1-0.4107493775030694",
     "votes": 0,
     "dead": false,
     "win": true
    },
    {
-    "id": "bot-봇3-0.5801830034965274",
+    "id": "bot-봇3-0.920560170906406",
     "name": "봇3",
     "original": "villager",
     "final": "villager",
     "effective": "villager",
     "team": "village",
-    "vote": "bot-봇1-0.524456215397648",
+    "vote": "bot-봇1-0.4107493775030694",
     "votes": 0,
     "dead": false,
     "win": true
    },
    {
-    "id": "bot-봇4-0.47964086584445853",
+    "id": "bot-봇4-0.5842122541179612",
     "name": "봇4",
     "original": "werewolf",
     "final": "werewolf",
     "effective": "werewolf",
     "team": "wolf",
-    "vote": "bot-봇1-0.524456215397648",
+    "vote": "bot-봇1-0.4107493775030694",
     "votes": 1,
     "dead": true,
     "win": false
@@ -94,8 +94,8 @@
   ],
   "hunterKills": [
    {
-    "hunter": "bot-봇1-0.524456215397648",
-    "target": "bot-봇4-0.47964086584445853"
+    "hunter": "bot-봇1-0.4107493775030694",
+    "target": "bot-봇4-0.5842122541179612"
    }
   ],
   "timeline": [],

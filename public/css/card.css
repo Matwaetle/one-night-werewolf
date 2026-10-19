@@ -116,7 +116,19 @@
 }
 .card[data-art="0"][data-size="xs"] .card-sg svg,
 .card[data-art="0"][data-size="sm"] .card-sg svg{ width:62%; height:auto; aspect-ratio:1; }
-.card[data-art="0"][data-size="sm"] .card-sg{ height:57%; }
+.card[data-art="0"][data-size="sm"] .card-sg{ height:68%; }
+/* 작은 카드: 아트가 판으로 녹아들고, 역할 문양은 아래 잉크 띠 가운데 */
+.card[data-size="sm"] .card-art::after{
+  content:""; position:absolute; inset:auto 0 0 0; height:30%;
+  background:linear-gradient(transparent,rgba(13,11,9,.9));
+}
+.card[data-art="1"][data-size="sm"] .card-sg{
+  left:50%; right:auto; bottom:2%; transform:translateX(-50%); background:none;
+}
+/* md: 리본을 내리고 아래 띠에 문양 */
+.card[data-size="md"] .card-name{ top:80%; height:11%; }
+.card[data-art="1"][data-size="md"] .card-sg{ display:grid; left:0; right:0; top:91%; bottom:0; height:auto; }
+.card[data-art="1"][data-size="md"] .card-sg svg{ width:auto; height:86%; }
 
 /* 리본(역할명 띠). clip-path는 정적 다각형이라 예산 밖 */
 .card-name{
@@ -140,7 +152,7 @@
 
 /* sm: 이름 body 13px, 리본 아래로 칩 자리 확보 */
 .card[data-size="sm"] .card-name{
-  top:57%; height:18%;
+  top:74%; height:15%;
   font:600 min(13px,calc(var(--cw)*.17))/1 var(--f-body); letter-spacing:0;
 }
 .card[data-size="sm"] .card-tm{ width:11px; height:11px; min-width:0; right:4%; top:3%; padding:0; }
@@ -235,7 +247,8 @@ html[data-img~="back"] .card-back::after{ opacity:1; }
   color:var(--bone-hi); fill:none; stroke:currentColor; stroke-width:1.5; stroke-linejoin:miter;
   background:rgba(13,11,9,.6); padding:1px;
 }
-.card[data-size="sm"].is-swapped .card-sw{ top:calc(57% - 14px); }
+.card[data-size="sm"].is-swapped .card-sw{ top:calc(74% - 14px); }
+.card[data-size="md"].is-swapped .card-sw{ top:calc(80% - var(--cw)*.13); }
 .card[data-size="xs"].is-swapped .card-sw{ display:none; }
 
 /* 결과의 처음 카드: sm의 60%, 최종 카드 왼쪽 위에 겹침(데스크톱 전용 배치; 모바일은 §6.9 목록) */

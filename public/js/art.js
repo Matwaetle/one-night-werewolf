@@ -37,16 +37,18 @@
   function isSlow() { return attr('data-net') === 'slow'; }
 
   // 역할 큰 아트 URL (lite/slow면 360px 판 우선)
-  function roleUrl(id) {
+  // lite=true(선로딩)만 작은 아트를 쓴다. 내 카드·공개 카드는 느린 망에서도 큰 아트(약 28KB)
+  function roleUrl(id, lite) {
     var m = ART.manifest || {};
-    var bg = m.art || m.big, big = bg && bg[id], lite = m.lite && m.lite[id];
-    return url(isSmall() ? (lite || big) : (big || lite));
+    var bg = m.art || m.big, big = bg && bg[id], sm = m.lite && m.lite[id];
+    return url(lite && isSmall() ? (sm || big) : (big || sm));
   }
+  function rurl(id) { return urls['r:' + id] || roleUrl(id); }   // 실제로 받은 주소 우선
   function staticUrl(name) {
     var m = ART.manifest || {};
     var v = m[name];
     if (name === 'home') {                       // home:{d,m} (optimize-images) 또는 home + homeM
-      var h = m.home, mob = root.matchMedia && root.matchMedia('(max-width:700px)').matches;
+      var h = m.home, mob = isSlow() || (root.matchMedia && root.matchMedia('(max-width:700px)').matches);
       v = (h && typeof h === 'object') ? (mob && h.m ? h.m : h.d || h.m) : (mob && m.homeM ? m.homeM : h);
     } else if (name.indexOf('verdict-') === 0) v = m.verdict && m.verdict[name.slice(8)];
     return url(v);
@@ -54,7 +56,9 @@
   function roleIndex(id) { return order().indexOf(id); }
 
   // ---------- 로더 (동시 2, 우선순위 큐, decode) ----------
-  var done = {};        // key -> true(성공) | false(실패)
+  var done = {};        // key -> true(성공). 실패는 저장하지 않고 fails로 센다
+  var fails = {};       // key -> 실패 횟수 (3회면 포기, 온라인 복귀 때 초기화)
+  var urls = {};        // key -> 실제 로드한 주소
   var pending = {};     // key -> Promise
   var keep = {};        // key -> Image (디코드된 비트맵 유지)
   var queue = [];       // {key,url,front,resolve}
@@ -69,10 +73,13 @@
     active++;
     var img = new Image();
     img.decoding = 'async';
+    var fin = false, to = setTimeout(function () { img.onerror = img.onload = null; img.src = ''; finish(false); }, 12000);
     var finish = function (ok) {
+      if (fin) return;
+      fin = true; clearTimeout(to);
       active--;
-      done[job.key] = ok;
-      if (ok) keep[job.key] = img;
+      if (ok) { done[job.key] = true; urls[job.key] = job.url; } else fails[job.key] = (fails[job.key] || 0) + 1;
+      if (ok && job.key.indexOf('s:') === 0) keep[job.key] = img;
       delete pending[job.key];
       job.resolve(ok);
       if (ok) onLoaded(job.key);
@@ -88,7 +95,8 @@
   }
   function load(key, u, front) {
     if (!u || !doc) return Promise.resolve(false);
-    if (key in done) return Promise.resolve(done[key]);
+    if (key in done) return Promise.resolve(true);
+    if ((fails[key] || 0) >= 3) return Promise.resolve(false);
     if (pending[key]) {
       if (front) {   // 이미 대기 중이면 앞으로
         for (var i = 0; i < queue.length; i++) if (queue[i].key === key) { queue.unshift(queue.splice(i, 1)[0]); break; }
@@ -123,7 +131,7 @@
     names = names || ['back', 'atlas', 'horizon', 'grain'];
     var out = [];
     names.forEach(function (n) {
-      if (isSlow() && (n === 'horizon' || n === 'home')) return;
+      if (isSlow() && n === 'horizon') return;
       var u = staticUrl(n);
       if (u) out.push(load('s:' + n, u, false));
     });
@@ -147,7 +155,7 @@
     var ids = Array.isArray(deck) ? deck : Object.keys(deck).filter(function (r) { return deck[r] > 0; });
     var seen = {}, list = ids.filter(function (r) { if (seen[r]) return false; seen[r] = 1; return true; });
     var run = function () {
-      list.forEach(function (id) { var u = roleUrl(id); if (u) load('r:' + id, u, false); });
+      list.forEach(function (id) { var u = roleUrl(id, true); if (u) load('r:' + id, u, false); });
     };
     if (root.requestIdleCallback) root.requestIdleCallback(run, { timeout: 3000 }); else setTimeout(run, 200);
   };
@@ -172,7 +180,7 @@
         if (atlasOk) c.setAttribute('data-art', '1');
       } else if (done['r:' + role] === true) {
         var art = c.querySelector('.card-art');
-        if (art) art.style.setProperty('--art', 'url("' + roleUrl(role) + '")');
+        if (art) art.style.setProperty('--art', 'url("' + rurl(role) + '")');
         c.setAttribute('data-art', '1');
       }
     }
@@ -222,7 +230,7 @@
         if (done['s:atlas'] === true) artOn = 1;
       } else if (done['r:' + roleId] === true) {
         artOn = 1;
-        artStyle = '--art:url("' + roleUrl(roleId) + '")';
+        artStyle = '--art:url("' + rurl(roleId) + '")';
       }
     }
 
@@ -247,6 +255,8 @@
     }
     return h + '</div></div>';
   };
+
+  if (root.addEventListener) root.addEventListener('online', function () { fails = {}; });
 
   // ---------- 시작 ----------
   // CSS 이미지 변수(--img-back --img-atlas --img-grain --img-horizon --img-home)는 이미지가 로드·디코드된 뒤에 설정한다.

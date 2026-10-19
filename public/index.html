@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>한밤의 늑대인간</title>
-<meta name="description" content="하룻밤. 한 번의 심판. 늑대를 찾아 처형하라.">
+<meta name="description" content="3~10명이 함께하는 온라인 한밤의 늑대인간입니다. 단 한 번의 투표로 늑대인간을 찾아내세요.">
 <meta name="theme-color" content="#070606">
 <meta name="color-scheme" content="dark">
 <meta name="app-ver" content="__VER__">
@@ -12,7 +12,7 @@
 <link rel="preconnect" href="__SOCKET_URL__" crossorigin>
 <link rel="preload" as="font" type="font/woff2" crossorigin href="/a/__FONT_T__">
 <script>window.SOCKET_URL='__SOCKET_URL__'</script>
-<script>(function(){var d=document.documentElement,n=navigator,c=n.connection||{},q=c.saveData,r=(performance.getEntriesByType('navigation')[0]||{}).responseStart;d.dataset.perf=n.deviceMemory<=2||n.hardwareConcurrency<=2||q?'lite':'full';d.dataset.net=q||/2g|3g/.test(c.effectiveType)||r>1500?'slow':'fast';try{fetch(SOCKET_URL+'/healthz',{mode:'no-cors',cache:'no-store'})}catch(e){}})()</script>
+<script>(function(){var d=document.documentElement,n=navigator,c=n.connection||{},q=c.saveData,r=(performance.getEntriesByType('navigation')[0]||{}).responseStart;d.dataset.perf=n.deviceMemory<=3||n.hardwareConcurrency<=4||q?'lite':'full';d.dataset.net=q||/2g/.test(c.effectiveType||'')||c.downlink<.4||r>2500?'slow':'fast';try{fetch(SOCKET_URL+'/healthz',{mode:'no-cors',cache:'no-store'})}catch(e){}})()</script>
 <style>
 @font-face{font-family:"Hanbam T";src:url(/a/__FONT_T__) format("woff2");font-display:swap}
 @font-face{font-family:"Hanbam";src:url(/a/__FONT_D__) format("woff2");font-display:swap}
@@ -43,24 +43,24 @@ __BASE_CSS__
         <div class="home-eyes" aria-hidden="true"><i></i><i></i></div>
       </div>
       <form class="home-form" id="homeForm" autocomplete="off" novalidate>
-        <input class="in" id="nameInput" maxlength="12" placeholder="이름" aria-label="이름" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next">
+        <input class="in" id="nameInput" maxlength="12" placeholder="닉네임" aria-label="닉네임" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next">
         <p class="home-boot" id="homeBoot" role="status" hidden></p>
-        <p class="home-boot-sub" id="homeBootSub" hidden>깊이 잠든 마을이다. 1분은 걸린다.</p>
-        <button class="btn-main" id="createBtn" type="button"><span class="lbl">마을을 연다</span></button>
-        <p class="home-or"><span>혹은</span></p>
+        <p class="home-boot-sub" id="homeBootSub" hidden>서버를 준비하고 있습니다. 최대 1분 정도 걸릴 수 있습니다.</p>
+        <button class="btn-main" id="createBtn" type="button"><span class="lbl">방 만들기</span></button>
+        <p class="home-or"><span>또는</span></p>
         <div class="home-join">
-          <input class="in in-code" id="codeInput" maxlength="4" placeholder="표식" aria-label="표식" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="latin" enterkeyhint="go">
-          <button class="btn-sub" id="joinBtn" type="button"><span class="lbl">들어간다</span></button>
+          <input class="in in-code" id="codeInput" maxlength="4" placeholder="방 코드" aria-label="방 코드" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="latin" enterkeyhint="go">
+          <button class="btn-sub" id="joinBtn" type="button"><span class="lbl">참가하기</span></button>
         </div>
-        <a class="home-alt" id="otherLink" href="#" role="button" hidden>다른 마을을 연다</a>
-        <a class="home-law" id="lawLink" href="#" role="button">법도</a>
+        <a class="home-alt" id="otherLink" href="#" role="button" hidden>새 방 만들기</a>
+        <a class="home-law" id="lawLink" href="#" role="button">규칙 보기</a>
       </form>
     </section>
   </main>
   <nav id="dock" data-r="dock" hidden></nav>
 </div>
 <aside id="sheet" data-h="0">
-  <div class="sheet-head"><button class="sheet-tab" aria-selected="true">속삭임</button><button class="sheet-tab" aria-selected="false">기록</button></div>
+  <div class="sheet-head"><button class="sheet-tab" aria-selected="true">채팅</button><button class="sheet-tab" aria-selected="false">기록</button></div>
   <div class="sheet-body"></div>
 </aside>
 <div id="fx" aria-hidden="true">
@@ -72,7 +72,7 @@ __BASE_CSS__
 <div id="conn" role="status" aria-live="polite" hidden></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="sr" class="sr-only" role="status" aria-live="polite"></div>
-<span id="hold-hint" class="sr-only">길게 눌러 확정한다</span>
+<span id="hold-hint" class="sr-only">길게 눌러 확정하세요.</span>
 <svg id="sprite" hidden xmlns="http://www.w3.org/2000/svg">
 <symbol id="sg-doppelganger" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 20V9l4-5h4v4l1 3-2 1v2l-3 2v4zM21 20V9l-4-5h-4v4l-1 3 2 1v2l3 2v4z"/></symbol>
 <symbol id="sg-werewolf" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 4l5 3h8l5-3-2 10-5 6h-4l-5-6zM9 14l1.5 4 1.5-4 1.5 4 1.5-4"/></symbol>
@@ -91,6 +91,7 @@ __BASE_CSS__
 <symbol id="tm-tanner" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2v4M12 6l5 3v6l-5 3-5-3V9zM12 18v4"/></symbol>
 <symbol id="back-mark" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 3l5 4h6l5-4v10l-4 6-4 3-4-3-4-6z"/><path d="M7 11l4 1M17 11l-4 1" style="stroke:var(--blood)"/></symbol>
 <symbol id="ic-menu" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="ic-chat" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter" viewBox="0 0 24 24"><path d="M3 4h18v12h-9l-5 4v-4H3zM7 8h10M7 12h6"/></symbol>
 <symbol id="ic-x" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></symbol>
 <symbol id="ic-send" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 5v8H6M10 9l-4 4 4 4"/></symbol>
 <symbol id="ic-copy" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M8 8h11v11H8zM5 16V5h11"/></symbol>

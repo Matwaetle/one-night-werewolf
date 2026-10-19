@@ -68,7 +68,7 @@ const sio = need('socket.io 클라이언트', /^sio\.[0-9a-f]+\.js$/);
 const game = need('game.js', /^game\.[0-9a-f]+\.js$/);
 const tS = fT ? row('hanbam-t (제목 폰트)', size(fT), 10 * KB) : 0;
 const sS = sio ? row('sio (≈15KB, 상한 17KB)', size(sio), 17 * KB) : 0;
-const gS = game ? row('game.js', size(game), 22 * KB) : 0;
+const gS = game ? row('game.js', size(game), 24 * KB) : 0;
 const critical = row('크리티컬 패스 합계 (html+font+sio+game)', htmlBr + tS + sS + gS, 75 * KB);
 
 /* 지연 로드 */

@@ -59,11 +59,11 @@ function build(R, meId) {
     } else if (k === 'know') {
       key = 'know.' + (st === 'werewolf' ? 'werewolf' : st === 'minion' ? (kn.length ? 'minion' : 'minion0') : by.length > 1 ? 'mason' : 'mason1');
       V.list = acts(st === 'minion' ? kn : by); V.a = acts(by); o.kk = st; o.dark = st === 'werewolf';
-      if (st === 'minion') kn.forEach((y) => tr(o, s, y, { bl: 1 }));
-      else by.forEach((x, j) => by.slice(j + 1).forEach((y) => tr(o, x, y, { bl: o.dark })));
+      if (st === 'minion') kn.forEach((y) => tr(o, s, y, { kn: 1 }));
+      else by.forEach((x, j) => by.slice(j + 1).forEach((y) => tr(o, x, y, { kn: 1 })));
     } else if (k === 'peek') {
       o.focus = see.map((x) => ({ slot: x[1], role: eff(x[0]) }));
-      if (st === 'werewolf') { key = 'peek.werewolf' + (dop ? 'D' : ''); tr(o, s, t0, { bl: 1 }); }
+      if (st === 'werewolf') { key = 'peek.werewolf' + (dop ? 'D' : ''); tr(o, s, t0, { kn: 1 }); }
       else if (r === 'seer') { key = 'peek.seer' + (tg.length > 1 ? 2 : ''); tg.forEach((t) => tr(o, s, t)); }
       else {
         const who = {}, dp = by.filter((z) => P[z].original === 'doppelganger'); let ch = 0;
@@ -74,7 +74,7 @@ function build(R, meId) {
       }
     } else if (k === 'swap') {
       key = 'swap.' + r;
-      if (r === 'robber') { o.focus = [{ slot: s, role: eff(c0) }]; tr(o, s, t0); } else tr(o, r === 'drunk' ? s : t0, r === 'drunk' ? t0 : t1);
+      if (r === 'robber') { o.focus = [{ slot: s, role: eff(c0) }]; tr(o, s, t0, { sw: 1 }); } else tr(o, r === 'drunk' ? s : t0, r === 'drunk' ? t0 : t1, { sw: 1 });
       o.mvs = e.mv.map((m) => ({ c: m[0], from: pre.indexOf(m[0]), to: m[1] }));
     } else {
       o.floor = e.auto ? 900 : 1100;
@@ -142,7 +142,7 @@ function build(R, meId) {
   const cnt = {}, seen = {};
   B.forEach((b) => { b.ga = GA[b.act] || b.act; cnt[b.ga] = (cnt[b.ga] || 0) + 1; });
   let total = 0;
-  B.forEach((b) => { seen[b.ga] = (seen[b.ga] || 0) + 1; b.gi = seen[b.ga]; b.gn = cnt[b.ga]; b.read = Math.max(b.floor, 90 * T.syl(b.l1 + b.l2 + (b.l3 || ''))) + (b.extra || 0); total += b.read + 1500; });
+  B.forEach((b) => { seen[b.ga] = (seen[b.ga] || 0) + 1; b.gi = seen[b.ga]; b.gn = cnt[b.ga]; b.read = Math.max(b.floor, 70 * T.syl(b.l1 + b.l2 + (b.l3 || ''))) + (b.extra || 0); total += b.read + 1500; });
   const jr = D.map((_, i) => [{ c: i }]), lines = [];
   ev.forEach((e) => (e.mv || []).forEach((m) => jr[m[1]].push({ c: m[0], st: e.st, by: e.by[0] })));
   B.forEach((b) => {
@@ -154,7 +154,7 @@ function build(R, meId) {
 
 /* ---------- DOM ---------- */
 let S;
-const SYM = '<symbol id="rp-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"><path d="M1 12Q12 3 23 12Q12 21 1 12Z"/><path d="M6 7.4 4.4 5M12 5.4V2.6M18 7.4 19.6 5"/></g><path d="M12 7.6 13.5 12 12 16.4 10.5 12Z" fill="currentColor"/></symbol><symbol id="rp-step" viewBox="0 0 24 24"><path d="M8 3 17 12 8 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/></symbol>';
+const SYM = '<symbol id="rp-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter"><path d="M1 12Q12 3 23 12Q12 21 1 12Z"/><path d="M6 7.4 4.4 5M12 5.4V2.6M18 7.4 19.6 5"/></g><path d="M12 7.6 13.5 12 12 16.4 10.5 12Z" fill="currentColor"/></symbol><symbol id="rp-swap" viewBox="0 0 24 24"><path d="M3 8H21M16 3l5 5-5 5M21 17H3M8 12l-5 5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/></symbol><symbol id="rp-step" viewBox="0 0 24 24"><path d="M8 3 17 12 8 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/></symbol>';
 const $ = (id) => document.getElementById(id);
 const mk = (t, c, h) => { const e = document.createElement(t); e.className = c; e.innerHTML = h || ''; return e; };
 const ico = (id, c) => '<svg' + (c ? ' class="' + c + '"' : '') + '><use href="#' + id + '"/></svg>';
@@ -162,7 +162,7 @@ const card = (r, o) => root.ART ? root.ART.card(r, o) : '';
 const cls = (e, c, on) => e.classList.toggle(c, !!on);
 const wait = (ms) => new Promise((r) => S.tm.push(setTimeout(r, ms / S.rate)));
 const nt = (f) => { const r = S.rp; r.classList.add('rp-nt'); f(); void r.offsetWidth; r.classList.remove('rp-nt'); };
-const vset = (e, x, y, d) => { e.style.cssText = '--tx:' + x + 'px;--ty:' + y + 'px' + (d ? ';width:' + d + 'px;height:' + d + 'px' : ''); };
+const vset = (e, x, y, d) => { const c = '--tx:' + x + 'px;--ty:' + y + 'px' + (d ? ';width:' + d + 'px;height:' + d + 'px' : ''); if (e._c !== c) { e._c = c; e.style.cssText = c; } };
 
 function layout() {
   const rc = S.rp.getBoundingClientRect(), W = rc.width, n = S.n, nar = innerWidth < 600, cs = nar ? 28 : 40, X = [], Y = [], SC = [], TX = [], TY = [], TG = [];
@@ -174,11 +174,12 @@ function layout() {
   });
   const al = S.main.querySelectorAll('.altar .card');
   for (let i = n; i < n + 3; i++) { const a = al[i - n].getBoundingClientRect(); X[i] = a.left + a.width / 2 - rc.left; Y[i] = a.top + a.height / 2 - rc.top; SC[i] = a.width / S.cw; TG[i] = Y[i] + a.height / 2 + 2; }
-  Object.assign(S, { X, Y, SC, TX, TY, W, H: rc.height - 96 }); S.rp.setAttribute('data-nw', W < 420 ? 1 : 0);
+  Object.assign(S, { X, Y, SC, TX, TY, W, H: rc.height - 110 }); S.rp.setAttribute('data-nw', W < 420 ? 1 : 0);
   for (let i = 0; i < n; i++) { vset(S.rings[i], TX[i], TY[i], S.TD[i] + 4); vset(S.vms[i], TX[i] + S.TD[i] * .45, TY[i] - S.TD[i] * .45); }
   S.tags.forEach((e, i) => vset(e, i < n ? TX[i] : X[i], TG[i]));
   S.ln.forEach((l) => {
     const t = l.t, p = (s) => s < n ? [TX[s], TY[s]] : [X[s], Y[s]], a = p(t.a), c = p(t.c);
+    if (l.m) vset(l.m, (a[0] + c[0]) / 2, (a[1] + c[1]) / 2);
     l.e.style.cssText = '--x:' + (a[0] - W / 2) + 'px;--y:' + (a[1] - rc.height / 2) + 'px;--len:' + Math.hypot(c[0] - a[0], c[1] - a[1]) + 'px;--ang:' + Math.atan2(c[1] - a[1], c[0] - a[0]) + 'rad;--g:' + (t.g || 0);
   });
 }
@@ -199,7 +200,7 @@ function scene(i, k) {
   const cp = S.B.copyAs && (S.cdone < i || S.cdone === i && act);
   S.cards.forEach((el, c) => {
     const q = inv[c], cd = el.querySelector('.rp-front .card'), co = el.querySelector('.rp-co');
-    el.style.cssText = '--tx:' + S.X[q] + 'px;--ty:' + S.Y[q] + 'px;--s:' + S.SC[q] + ';--inv:' + 1 / S.SC[q]; el.setAttribute('data-z', q < n ? 'seat' : 'altar');
+    const css = '--tx:' + S.X[q] + 'px;--ty:' + S.Y[q] + 'px;--s:' + S.SC[q] + ';--inv:' + 1 / S.SC[q]; if (el._c !== css) { el._c = css; el.style.cssText = css; } const z = q < n ? 'seat' : 'altar'; if (el._z !== z) { el._z = z; el.setAttribute('data-z', z); }
     cls(el, 'is-f', a !== 'pro' || k); cls(el, 'rp-mv', 0); cls(el, 'rp-flip', 0); cls(el, 'rp-dim', rel && rel.indexOf(q) < 0); cls(el, 'rp-lit', lit.includes(q)); cls(el, 'rp-hunt', a === 'hunt' && k && c === pos[b.h]);
     cls(cd, 'is-swapped', sws[c]); cls(cd, 'is-dead', dead[q]); if (co) cls(co, 'is-on', cp);
   });
@@ -207,22 +208,25 @@ function scene(i, k) {
   S.tags.forEach((tg, q) => {
     const sh = tagsOn && (!night || rel.includes(q)), nx = q < n ? S.R.players[q].name : AL[q - n];
     cls(tg, 'is-on', sh); cls(tg, 'rp-dim', rel && rel.indexOf(q) < 0); cls(tg, 'is-dead', dead[q]);
-    if (sh) tg.innerHTML = '<i>' + esc(nx.length > 6 ? nx.slice(0, 6) + '…' : nx) + '</i><b>' + esc(rn(eff(pos[q]))) + '</b>';
+    if (sh) { const h = '<i>' + esc(nx.length > 6 ? nx.slice(0, 6) + '…' : nx) + '</i><b>' + esc(rn(eff(pos[q]))) + '</b>'; if (tg._h !== h) { tg._h = h; tg.innerHTML = h; } }
     if (q < n) { const rg = S.rings[q], ir = ring.includes(q); cls(rg, 'is-on', ir); cls(rg, 'is-eye', ir && b.dark); if (S.seats[q]) cls(S.seats[q], 'is-dead', dead[q]); }
   });
   const votes = {};
   S.ln.forEach((l) => {
-    const t = l.t, v = (i > t.b || i === t.b && k >= (t.s || 2)) && !(t.n && JUDGE[a]), now = t.n && i === t.b && act, e = l.e;
+    const t = l.t, v = (i > t.b || i === t.b && k >= (t.s || 2)) && !(t.n && JUDGE[a]) && !(t.v && !DAY[a]), now = t.n && i === t.b && act, e = l.e;
     cls(e, 'is-on', v); cls(e, 'is-now', now); cls(e, 'is-trace', v && t.n && !now); cls(e, 'rp-lo', v && t.n && DAY[a]); cls(e, 'rp-hi', v && a === 'seat' && (t.a === b.s || t.c === b.s));
-    cls(e, 'is-blood', v && (t.bl || t.v && ex[t.t])); cls(e, 'is-thick', v && t.w);
+    cls(e, 'is-blood', v && (t.bl || t.v && ex[t.t])); cls(e, 'is-thick', v && t.w); cls(e, 'is-know', t.kn);
+    if (l.m) { cls(l.m, 'is-on', v && (now || DAY[a])); cls(l.m, 'is-tr', !now); }
     if (t.v && v) votes[t.t] = (votes[t.t] || 0) + 1;
   });
   S.vms.forEach((m, q) => { m.textContent = votes[q] || ''; cls(m, 'is-on', votes[q]); });
+  const fl = b.focus.length || a !== 'verdict' ? b.focus : (B.find((x) => x.ex) || b).focus;
   S.focus.forEach((f, j) => {
-    const fo = act && b.focus[j]; cls(f, 'is-on', fo);
+    const fo = (act || a === 'verdict' && k) && fl[j]; cls(f, 'is-on', fo);
     if (fo) {
-      const cw = innerWidth < 600 ? 128 : 156, key = fo.role + (fo.ch ? 1 : 0), q = fo.slot < n;
-      vset(f, Math.max(16 + cw / 2, Math.min(S.W - 16 - cw / 2, (q ? S.TX : S.X)[fo.slot] + (b.focus.length > 1 ? (j ? 70 : -70) : 0))), Math.max(8 + cw * .7, Math.min(S.H - 8 - cw * .7, q ? S.TY[fo.slot] : S.Y[fo.slot] - 20)));
+      const cw = 128, key = fo.role + (fo.ch ? 1 : 0), q = fo.slot < n, sx = (q ? S.TX : S.X)[fo.slot], sy = (q ? S.TY : S.Y)[fo.slot], hc = S.H / 2, wc = S.W / 2;
+      const x = q ? sx + (wc - sx) * .45 : sx, y = q ? sy + (hc - sy) * .45 : sy - S.SC[fo.slot] * S.cw * .7 - cw * .7 - 12;
+      vset(f, Math.max(16 + cw / 2, Math.min(S.W - 16 - cw / 2, x + (fl.length > 1 ? (j ? 1 : -1) * (cw / 2 + 8) : 0))), Math.max(8 + cw * .7, Math.min(S.H - 8 - cw * .7, y)));
       if (f.getAttribute('data-k') !== key) { f.setAttribute('data-k', key); f.innerHTML = card(fo.role, { size: 'md', face: 1, flat: 1 }) + ico('rp-eye', 'rp-ey2') + (fo.ch ? '<i class="rp-fst">' + T.stamp.changed + '</i>' : ''); }
     }
   });
@@ -233,7 +237,7 @@ function scene(i, k) {
     cls(cap.l1, 'is-h', !k); cls(cap.l2, 'is-h', !k); cap.st.textContent = b.stamp ? T.stamp[b.stamp] : ''; cls(cap.st, 'is-on', k && b.stamp);
   }
   cls(cap.el, 'is-v', a === 'verdict'); cls(ve, 'is-on', a === 'verdict'); cls(ve, 'is-w', a === 'verdict' && act);
-  if (a === 'verdict') { ve.setAttribute('data-team', b.vteam); ve.children[0].firstChild.textContent = b.l1; ve.children[1].innerHTML = b.l2; ve.children[2].innerHTML = b.l3; ve.children[3].textContent = b.win == null ? '' : b.win ? T.stamp.win : T.stamp.lose; ve.style.setProperty('--sd', b.l3 ? 1760 + 90 * T.syl(b.l3) : 960); }
+  if (a === 'verdict') { ve.setAttribute('data-team', b.vteam); ve.children[0].firstChild.textContent = b.l1; ve.children[1].innerHTML = b.l2; ve.children[2].innerHTML = b.l3; ve.children[3].textContent = b.win == null ? '' : b.win ? T.stamp.win : T.stamp.lose; ve.style.setProperty('--sd', b.l3 ? 1760 + 70 * T.syl(b.l3) : 960); }
 }
 function capGo(b) {
   cls(S.cap.l1, 'is-h', 0); cls(S.cap.l2, 'is-h', 0); cls(S.cap.st, 'is-on', b.stamp);
@@ -266,7 +270,7 @@ async function play(i) {
       if (b.dead && F && !S.lite) { if (F.shake) F.shake(6, 4); if (F.flash) F.flash('blood', 120); if (F.buzz) F.buzz(12); }
       scene(i, 2);
       if (b.mvs && !S.lite) b.mvs.forEach((m) => cls(S.cards[m.c], 'rp-mv', 1));
-      await wait(a === 'verdict' ? (b.l3 ? 2060 + 90 * T.syl(b.l3) : 1260) : a === 'vote' ? 300 * b.gs.length + 300 : 900);
+      await wait(a === 'verdict' ? (b.l3 ? 2060 + 70 * T.syl(b.l3) : 1260) : a === 'vote' ? 300 * b.gs.length + 300 : 900);
     }
   }
   if (a !== 'verdict') await wait(b.read);
@@ -322,6 +326,7 @@ function open(R, meId, o) {
   let h = '<i class="rp-ld"></i><i class="rp-lv"></i><i class="rp-glow"></i>';
   rp.setAttribute('aria-hidden', 'true');
   B.tr.forEach(() => { h += '<i class="ln rp-ln"></i>'; });
+  B.tr.forEach((t) => { if (t.sw) h += '<svg class="rp-mk"><use href="#rp-swap"/></svg>'; });
   for (let i = 0; i < n; i++) h += '<i class="rp-ring"><u></u></i><b class="rp-vm"></b>';
   for (let i = 0; i < n + 3; i++) h += '<div class="rp-card"><span class="rp-back">' + card(null, { size: 'sm', flat: 1 }) + '</span><span class="rp-front">' + card(D[i], { size: 'sm', face: 1, flat: 1 }) + '</span>' + (D[i] === 'doppelganger' && B.copyAs ? ico(RL[B.copyAs].sigil, 'rp-co') : '') + '</div>';
   for (let i = 0; i < n + 3; i++) h += '<span class="rp-tag' + (i < n ? '' : ' rp-al') + '"></span>';
@@ -329,9 +334,9 @@ function open(R, meId, o) {
   h += '<div class="rp-cap" role="status"><p class="rp-l1"><i class="rp-rn"></i><span></span><u class="rp-cv"></u></p><p class="rp-l2"><span></span><u class="rp-cv"></u></p><i class="rp-stamp"></i></div><div class="rp-bar" role="slider" tabindex="0">';
   B.beats.forEach((b, k) => { const f = !k || B.beats[k - 1].ga !== b.ga; h += '<i class="rp-tick' + (f ? ' is-first' : '') + (b.mv ? ' is-mv' : '') + (b.act === 'exec' || b.act === 'hunt' ? ' is-bl' : '') + '" style="--p:' + (k + .5) / N + '"' + (b.act === 'night' && b.rn ? ' data-r="' + b.rn.split(' ')[0] + '"' : '') + (f ? ' data-a="' + UI.acts[b.ga] + '"' : '') + '></i>'; });
   rp.innerHTML = h + '<i class="rp-prog"></i><button class="rp-rate"></button></div>'; main.appendChild(rp);
-  const q = (c) => [...rp.querySelectorAll(c)], bar = S.bar = rp.querySelector('.rp-bar'), cp = rp.querySelector('.rp-cap'), ln = q('.rp-ln');
+  const q = (c) => [...rp.querySelectorAll(c)], bar = S.bar = rp.querySelector('.rp-bar'), cp = rp.querySelector('.rp-cap'), ln = q('.rp-ln'), mks = q('.rp-mk');
   Object.assign(S, { glow: rp.querySelector('.rp-glow'), ld: rp.querySelector('.rp-ld'), lv: rp.querySelector('.rp-lv'), rings: q('.rp-ring'), vms: q('.rp-vm'), cards: q('.rp-card'), tags: q('.rp-tag'), focus: q('.rp-focus'), note: rp.querySelector('.rp-note'), vd: rp.querySelector('.rp-vd'),
-    cap: { el: cp, l1: cp.children[0], l2: cp.children[1], st: cp.children[2] }, ticks: q('.rp-tick'), prog: rp.querySelector('.rp-prog'), rateBtn: rp.querySelector('.rp-rate'), ln: B.tr.map((t, k) => ({ t, e: ln[k] })) });
+    cap: { el: cp, l1: cp.children[0], l2: cp.children[1], st: cp.children[2] }, ticks: q('.rp-tick'), prog: rp.querySelector('.rp-prog'), rateBtn: rp.querySelector('.rp-rate'), ln: B.tr.map((t, k) => ({ t, e: ln[k], m: t.sw ? mks.shift() : 0 })) });
   bar.setAttribute('aria-label', UI.ruler); bar.setAttribute('aria-valuemin', 0); bar.setAttribute('aria-valuemax', N - 1);
   const vbt = B.beats.find((b) => b.act === 'vote'); S.vms.forEach((v, s) => v.style.setProperty('--g', Math.max(0, vbt.gs.indexOf(s))));
   const seats = [...main.querySelectorAll('.seat[data-pid]')]; S.seats = R.players.map((p) => seats.find((e) => e.getAttribute('data-pid') === p.id));
@@ -386,12 +391,12 @@ function enhanceBoard(listEl, R, meId, onJump) {
     if (!j || row.querySelector('.rec-path')) return;
     const path = mk('span', 'rec-path', j.length < 2 ? UI.stayed : j.map((x, q) => { const c = B.effRole(x.c); return (q ? '<span class="rp-ar"><i>' + esc(RL[x.st].ord + ' ' + P[x.by].name) + '</i></span>' : '') + '<span class="rp-rc">' + ico(RL[c].sigil) + esc(rn(c)) + '</span>'; }).join(''));
     row.appendChild(path);
-    if (s < n) { const b = B.belief[s], df = b.blind || b.role !== B.effRole(R.night.end[s]), bl = mk('span', 'rec-belief' + (df ? ' is-diff' : ''), UI.journey + ' <i>' + (b.blind ? '모른다' : esc(rn(b.role))) + '</i>'); bl.setAttribute('data-diff', df ? 1 : 0); row.appendChild(bl); }
+    if (s < n) { const b = B.belief[s], df = b.blind || b.role !== B.effRole(R.night.end[s]), bl = mk('span', 'rec-belief' + (df ? ' is-diff' : ''), UI.journey + ' <i>' + (b.blind ? esc(UI.unknown) : esc(rn(b.role))) + '</i>'); bl.setAttribute('data-diff', df ? 1 : 0); row.appendChild(bl); }
     const fb = B.beats.find((x) => x.rel.includes(s));
     if (fb) { row.setAttribute('role', 'button'); row.tabIndex = 0; row.onclick = () => jump(fb.i, s); row.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jump(fb.i, s); } }; }
   });
   if (tl && !tl.children.length) {
-    tl.innerHTML = B.lines.map((l) => '<li class="tl-row" data-beat="' + l.b + '" role="button" tabindex="0">' + (l.role ? card(l.role, { size: 'xs', face: 1 }) : '') + '<span class="tl-t">' + l.h + '</span></li>').join('');
+    tl.innerHTML = B.lines.map((l) => '<li class="tl-row" data-beat="' + l.b + '" role="button" tabindex="0">' + (l.role ? card(l.role, { size: 'xs', face: 1, flat: 1 }) : '') + '<span class="tl-t">' + l.h + '</span></li>').join('');
     tl.onclick = tl.onkeydown = (e) => { const r = e.target.closest('.tl-row'); if (r && (e.type === 'click' || e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); jump(+r.getAttribute('data-beat'), null); } };
     if (root.ART) root.ART.mark(tl);
   }

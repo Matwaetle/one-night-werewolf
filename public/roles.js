@@ -4,63 +4,63 @@
   const ROLES = {
     doppelganger: {
       name: '도플갱어', team: 'village', max: 1, ord: 'I', sigil: 'sg-doppelganger',
-      line: '남의 얼굴로 산다.',
-      desc: '누군가의 패를 보고 그가 된다. 예언자·강도·말썽쟁이·주정뱅이가 되면 그 자리에서 행동하고, 늑대인간·하수인·프리메이슨·불면증환자가 되면 그 차례에 함께 깬다. 그 편에 선다.',
+      line: '다른 사람의 역할을 복사합니다.',
+      desc: '밤에 다른 플레이어의 카드 한 장을 보고 그 역할이 됩니다. 예언자·강도·말썽쟁이·주정뱅이를 복사하면 바로 그 능력을 사용하고, 늑대인간·하수인·프리메이슨·불면증환자를 복사하면 해당 역할의 차례에 함께 눈을 뜹니다. 복사한 역할의 팀이 됩니다.',
     },
     werewolf: {
       name: '늑대인간', team: 'wolf', max: 2, ord: 'II', sigil: 'sg-werewolf',
-      line: '무리를 알아본다.',
-      desc: '다른 늑대를 본다. 혼자라면 제단의 패 하나를 본다. 늑대가 아무도 처형되지 않으면 이긴다.',
+      line: '다른 늑대인간을 확인합니다.',
+      desc: '밤에 다른 늑대인간을 확인합니다. 늑대인간이 혼자라면 가운데 카드 한 장을 볼 수 있습니다. 늑대인간이 한 명도 처형되지 않으면 승리합니다.',
     },
     minion: {
       name: '하수인', team: 'wolf', max: 1, ord: 'III', sigil: 'sg-minion',
-      line: '주인을 섬긴다.',
-      desc: '누가 늑대인지 안다. 늑대는 너를 모른다. 네가 처형되어도 늑대가 살면 이긴다.',
+      line: '늑대인간이 누구인지 압니다.',
+      desc: '밤에 누가 늑대인간인지 확인합니다. 늑대인간은 하수인이 누구인지 모릅니다. 하수인이 처형되더라도 늑대인간이 처형되지 않으면 늑대인간 팀이 승리합니다.',
     },
     mason: {
       name: '프리메이슨', team: 'village', max: 2, ord: 'IV', sigil: 'sg-mason',
-      line: '형제를 안다.',
-      desc: '다른 프리메이슨을 본다.',
+      line: '다른 프리메이슨을 압니다.',
+      desc: '밤에 다른 프리메이슨을 확인합니다.',
     },
     seer: {
       name: '예언자', team: 'village', max: 1, ord: 'V', sigil: 'sg-seer',
-      line: '남의 패를 엿본다.',
-      desc: '한 명의 패, 혹은 제단의 두 장을 본다.',
+      line: '다른 사람의 카드를 확인합니다.',
+      desc: '밤에 다른 플레이어의 카드 한 장 또는 가운데 카드 두 장을 볼 수 있습니다.',
     },
     robber: {
       name: '강도', team: 'village', max: 1, ord: 'VI', sigil: 'sg-robber',
-      line: '빼앗고, 그가 된다.',
-      desc: '누군가와 패를 바꾸고 새 패를 본다. 그 편에 서되, 능력은 쓰지 못한다.',
+      line: '카드를 훔쳐 그 역할이 됩니다.',
+      desc: '밤에 다른 플레이어의 카드를 훔쳐 자신의 카드와 바꾸고 새 카드를 확인할 수 있습니다. 새 역할의 팀이 되지만 그 능력은 사용하지 않습니다.',
     },
     troublemaker: {
       name: '말썽쟁이', team: 'village', max: 1, ord: 'VII', sigil: 'sg-troublemaker',
-      line: '남의 패를 뒤바꾼다.',
-      desc: '다른 둘의 패를 바꾼다. 보지 않는다.',
+      line: '다른 두 사람의 카드를 바꿉니다.',
+      desc: '밤에 다른 플레이어 두 명의 카드를 서로 바꿀 수 있습니다. 바꾼 카드는 확인하지 않습니다.',
     },
     drunk: {
       name: '주정뱅이', team: 'village', max: 1, ord: 'VIII', sigil: 'sg-drunk',
-      line: '제가 누군지 모른다.',
-      desc: '제단의 패 하나와 제 패를 반드시 바꾼다. 새 패는 보지 못한다.',
+      line: '자신이 누구인지 모릅니다.',
+      desc: '밤에 자신의 카드를 가운데 카드 한 장과 반드시 바꿉니다. 새 카드는 확인할 수 없습니다.',
     },
     insomniac: {
       name: '불면증환자', team: 'village', max: 1, ord: 'IX', sigil: 'sg-insomniac',
-      line: '잠들지 못한다.',
-      desc: '밤의 끝에 제 패를 다시 본다.',
+      line: '마지막에 자신의 카드를 확인합니다.',
+      desc: '밤의 마지막에 자신의 카드를 다시 확인합니다.',
     },
     villager: {
       name: '마을주민', team: 'village', max: 3, ord: '—', sigil: 'sg-villager',
-      line: '아무것도 모른다.',
-      desc: '능력이 없다. 말로 살아남아라.',
+      line: '특별한 능력이 없습니다.',
+      desc: '특별한 능력이 없습니다. 대화로 늑대인간을 찾아내세요.',
     },
     hunter: {
       name: '사냥꾼', team: 'village', max: 1, ord: '—', sigil: 'sg-hunter',
-      line: '홀로 죽지 않는다.',
-      desc: '처형되면, 제가 지목한 자도 함께 죽는다.',
+      line: '죽으면 자신이 투표한 사람도 함께 죽습니다.',
+      desc: '사냥꾼이 죽으면 그가 투표한 사람도 함께 죽습니다.',
     },
     tanner: {
       name: '무두장이', team: 'tanner', max: 1, ord: '—', sigil: 'sg-tanner',
-      line: '죽음을 원한다.',
-      desc: '처형되면 홀로 이긴다. 그 경우 늑대는 이길 수 없다.',
+      line: '처형되면 승리합니다.',
+      desc: '무두장이가 처형되면 무두장이 혼자 승리합니다. 이 경우 늑대인간 팀은 승리할 수 없습니다.',
     },
   };
 
@@ -71,21 +71,21 @@
   const NIGHT_ORDER = ['doppelganger', 'werewolf', 'minion', 'mason', 'seer', 'robber',
     'troublemaker', 'drunk', 'insomniac'];
 
-  // TTS 겸용: 쉼표 대신 마침표. 단계 종료 시 '눈을 감아라.'를 붙여 읽는다(T.narr.close).
+  // TTS 겸용: 쉼표 대신 마침표. 단계 종료 시 '눈을 감으세요.'를 붙여 읽습니다(T.narr.close).
   const NIGHT_TEXT = {
-    _check: '각자 패를 봐라. 누구에게도 보이지 마라.',
-    doppelganger: '도플갱어. 눈을 떠라. 누군가의 얼굴을 훔쳐라.',
-    werewolf: '늑대인간. 눈을 떠라. 서로를 알아봐라.',
-    minion: '하수인. 눈을 떠라. 네 주인을 봐라.',
-    mason: '프리메이슨. 눈을 떠라. 형제를 찾아라.',
-    seer: '예언자. 눈을 떠라. 한 명의 패를 봐라. 아니면 제단의 두 장을.',
-    robber: '강도. 눈을 떠라. 누군가의 패를 훔쳐라.',
-    troublemaker: '말썽쟁이. 눈을 떠라. 둘의 패를 뒤바꿔라.',
-    drunk: '주정뱅이. 눈을 떠라. 제단의 패와 네 패를 바꿔라. 보지는 마라.',
-    insomniac: '불면증환자. 눈을 떠라. 네 패를 다시 봐라.',
+    _check: '자신의 카드를 확인하세요. 다른 사람에게 보이지 않게 하세요.',
+    doppelganger: '도플갱어는 눈을 뜨고 다른 사람의 카드를 확인하세요.',
+    werewolf: '늑대인간은 눈을 뜨고 서로를 확인하세요.',
+    minion: '하수인은 눈을 뜨고 늑대인간을 확인하세요.',
+    mason: '프리메이슨은 눈을 뜨고 서로를 확인하세요.',
+    seer: '예언자는 눈을 뜨고 한 사람의 카드나 가운데 카드 두 장을 확인하세요.',
+    robber: '강도는 눈을 뜨세요. 다른 사람과 카드를 바꾸고 새 카드를 확인할 수 있습니다.',
+    troublemaker: '말썽쟁이는 눈을 뜨세요. 다른 두 사람의 카드를 바꿀 수 있습니다.',
+    drunk: '주정뱅이는 눈을 뜨고 가운데 카드 한 장과 자신의 카드를 바꾸세요.',
+    insomniac: '불면증환자는 눈을 뜨고 자신의 카드를 확인하세요.',
   };
 
-  const TEAM_NAME = { village: '마을 편', wolf: '늑대 편', tanner: '홀로' };
+  const TEAM_NAME = { village: '마을 팀', wolf: '늑대인간 팀', tanner: '무두장이 팀' };
 
   // 인원별 추천 구성 (항상 인원 + 3장)
   const PRESETS = {

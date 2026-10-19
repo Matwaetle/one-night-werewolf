@@ -1,11 +1,12 @@
 /* replay.css - Night record (SPEC 13). transform/opacity only; no 3D. Inlined into replay.js by stamp. --u = 1ms (x2: .5ms) */
 body[data-replay="1"]{--band-h:0px}
 body[data-replay="1"] :is(.band){display:none}
-body[data-replay="1"] :is(.seat>.card,.altar .card,.seat-name){opacity:0}
+body[data-replay="1"] :is(.seat>.card,.altar .card,.seat-name,.seat-mark){opacity:0}
+body[data-replay="1"] #stage>.ln{display:none}
 .hud-skip.rp-hid{display:none}
 .rp{--u:1ms;position:absolute;inset:0;z-index:3;contain:layout paint;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rp>*{position:absolute}
-.rp-nt,.rp-nt *{transition:none!important;animation:none!important}
+.rp-nt>*,.rp-nt .rp-card>span,.rp-nt .rp-cap>*,.rp-nt .rp-vd>*,.rp-nt .rp-cv,.rp-nt .rp-bar>*{transition:none!important;animation:none!important}
 .rp-lt *{transition-duration:.16s!important;animation:none!important}
 .rp-ring,.rp-vm,.rp-focus,.rp-glow{left:0;top:0;transform:translate(var(--tx),var(--ty)) translate(-50%,-50%)}
 .rp-ld,.rp-lv{inset:0;opacity:0;pointer-events:none;transition:opacity calc(1100*var(--u))}
@@ -15,7 +16,12 @@ body[data-replay="1"] :is(.seat>.card,.altar .card,.seat-name){opacity:0}
 .rp-glow{width:280px;height:280px;opacity:0;pointer-events:none;background:radial-gradient(circle,var(--light-candle) 0 22%,rgba(214,170,110,.06) 22% 38%,rgba(214,170,110,.03) 38% 52%,transparent 52%);transition:opacity calc(120*var(--u))}
 .rp-glow.is-on{opacity:1;transition-duration:calc(200*var(--u))}
 .rp .ln{transition-duration:calc(280*var(--u));transition-delay:calc(var(--g,0)*300*var(--u))}
-.rp .ln.rp-lo{opacity:.12}
+.rp .ln.is-trace{opacity:0}
+.rp .ln.rp-lo{opacity:.25}
+.rp .ln.is-know{background:repeating-linear-gradient(90deg,currentColor 0 5px,transparent 5px 9px);color:var(--bone-dim)}
+.rp-mk{left:0;top:0;z-index:3;width:18px;height:18px;padding:2px;background:var(--void);color:var(--bone-hi);opacity:0;pointer-events:none;transform:translate(var(--tx),var(--ty)) translate(-50%,-50%);transition:opacity calc(280*var(--u))}
+.rp-mk.is-on{opacity:1}
+.rp-mk.is-on.is-tr{opacity:.35}
 .rp .ln.rp-hi{opacity:.5}
 .rp-ring{opacity:0;pointer-events:none;z-index:3;background:radial-gradient(circle,transparent calc(50% - 2px),var(--bone-hi) calc(50% - 2px) 50%,transparent 50%)}
 .rp-ring.is-on{opacity:1}
@@ -40,8 +46,9 @@ body[data-replay="1"] :is(.seat>.card,.altar .card,.seat-name){opacity:0}
 .rp-flip{animation:rp-flip calc(320*var(--u)) var(--ease-press) calc(var(--k)*120*var(--u)) both}
 .rp-flip .rp-front{animation:rp-fa calc(320*var(--u)) calc(var(--k)*120*var(--u)) both}
 .rp-flip .rp-back{animation:rp-fa calc(320*var(--u)) calc(var(--k)*120*var(--u)) both reverse}
-.rp-tag{display:none;left:0;top:0;flex-direction:column;align-items:center;z-index:3;max-width:90px;font:var(--fs-label)/1.15 var(--f-body);color:var(--bone-dim);text-align:center;pointer-events:none;transform:translate(var(--tx),var(--ty)) translate(-50%,0)}
-.rp-tag.is-on{display:flex}
+.rp-tag{display:flex;visibility:hidden;opacity:0;left:0;top:0;flex-direction:column;align-items:center;z-index:3;max-width:90px;font:var(--fs-label)/1.15 var(--f-body);color:var(--bone-dim);text-align:center;pointer-events:none;transform:translate(var(--tx),var(--ty)) translate(-50%,0)}
+.rp-tag.is-on{visibility:visible;opacity:1}
+.rp-tag.is-on.rp-dim{opacity:.3}
 .rp-tag i{font-style:normal;color:var(--bone-hi)}
 .rp[data-nw="0"] .rp-tag{flex-direction:row;gap:4px;width:max-content;max-width:150px}
 .rp .rp-tag.rp-al{max-width:58px;word-break:keep-all}
@@ -54,10 +61,10 @@ body[data-replay="1"] :is(.seat>.card,.altar .card,.seat-name){opacity:0}
 .rp-fst{position:absolute;left:50%;bottom:14%;margin-left:-3em}
 .rp-note{top:6px;left:16px;right:16px;font:var(--fs-small)/1.4 var(--f-body);color:var(--bone-dim);text-align:center;opacity:0;pointer-events:none;z-index:5}
 .rp-note.is-on{opacity:1}
-.rp-cap{left:0;right:0;bottom:44px;height:52px;z-index:4;padding:6px 16px 0;display:flex;flex-direction:column;justify-content:flex-end;background:var(--void);pointer-events:none}
-.rp-cap::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:36px;background:linear-gradient(transparent,var(--void))}
+.rp-cap{left:0;right:0;bottom:44px;min-height:52px;overflow:visible;z-index:4;padding:6px 16px 0;display:flex;flex-direction:column;justify-content:flex-end;background:var(--void);pointer-events:none}
+.rp-cap::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:16px;background:linear-gradient(transparent,var(--void))}
 .rp-cap.is-v{visibility:hidden}
-.rp-l1,.rp-l2{position:relative;overflow:hidden;flex:none}
+.rp-l1,.rp-l2{position:relative;overflow:hidden;flex:none;max-height:2.7em}
 .rp-l1{font:15px/1.3 var(--f-serif);color:var(--bone-hi)}
 .rp-l2{font:var(--fs-small)/1.35 var(--f-body);color:var(--bone-dim)}
 .rp-rn{display:inline-block;min-width:2.6em;font:400 12px/1 var(--f-title);font-style:normal;color:var(--smoke)}
@@ -67,14 +74,14 @@ body[data-replay="1"] :is(.seat>.card,.altar .card,.seat-name){opacity:0}
 .rp-cv{position:absolute;inset:0;background:var(--void);transform-origin:100% 50%;transform:scaleX(0);transition:transform calc(360*var(--u)) steps(5,end)}
 .rp-l2>.rp-cv{transition-delay:calc(400*var(--u))}
 .is-h>.rp-cv,.rp-vd:not(.is-w) .rp-cv{transform:scaleX(1);transition:none}
-.rp-stamp{right:16px;top:-6px;opacity:0;scale:1.3;transition:opacity calc(120*var(--u)) calc(760*var(--u)),scale calc(120*var(--u)) calc(760*var(--u)) steps(3,end)}
+.rp-stamp{position:absolute;width:max-content;height:auto;pointer-events:none;z-index:1;right:16px;top:-18px;opacity:0;scale:1.3;transition:opacity calc(120*var(--u)) calc(760*var(--u)),scale calc(120*var(--u)) calc(760*var(--u)) steps(3,end)}
 .rp-stamp.is-on{opacity:1;scale:1}
-.rp-vd{display:none;left:0;right:0;top:calc(50% - 48px);z-index:6;padding:20px 16px 16px;text-align:center;background:var(--void);border-top:1px solid var(--blood);border-bottom:1px solid var(--blood)}
+.rp-vd{display:none;left:0;right:0;bottom:44px;z-index:6;padding:28px 16px 14px;text-align:center;background:linear-gradient(transparent,var(--void) 32px);border-bottom:1px solid var(--blood)}
 .rp-vd.is-on{display:block}
 .rp-vl{position:relative;overflow:hidden;font:400 var(--fs-h1)/1.3 var(--f-display);letter-spacing:.06em;color:var(--bone-hi);word-break:keep-all}
 .rp-vd[data-team=wolf] .rp-vl{color:var(--blood-hot)}
-.rp-vw,.rp-vs{margin-top:8px;font:var(--fs-body)/1.55 var(--f-serif);color:var(--bone-dim);opacity:0;transition:opacity calc(200*var(--u)) calc(760*var(--u))}
-.rp-vs{color:var(--bone-hi);transition-delay:calc(1560*var(--u))}
+.rp-vw,.rp-vs{margin-top:8px;font:var(--fs-body)/1.55 var(--f-serif);color:var(--bone-dim);opacity:0;transition:opacity calc(200*var(--u)) calc(360*var(--u))}
+.rp-vs{color:var(--bone-hi);transition-delay:calc(900*var(--u))}
 .rp-vst{display:block;width:max-content;margin:10px auto 0;font-size:20px;opacity:0;scale:1.3;transition:opacity calc(300*var(--u)) calc(var(--sd)*var(--u)),scale calc(300*var(--u)) calc(var(--sd)*var(--u)) steps(3,end)}
 .rp-vst:empty{display:none}
 .is-w :is(.rp-vw,.rp-vs,.rp-vst){opacity:1;scale:1}

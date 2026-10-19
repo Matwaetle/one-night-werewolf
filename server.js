@@ -21,6 +21,7 @@ const TM = {
   IDLE_MAX: 16000,
   VOTE: 60000,
   VOTE_GRACE: 1500,    // 모두 투표한 뒤 결말까지
+  DROP_GRACE: 15000,   // 낮·투표 중 연결이 잠깐 끊긴 사람을 집계에서 빼기 전 기다리는 시간
 };
 for (const k of Object.keys(TM)) TM[k] = Math.max(50, Math.round(TM[k] * SCALE));
 const LOBBY_GRACE = 60000;        // 대기실에서 연결이 끊긴 플레이어를 내보내기까지
@@ -41,8 +42,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
   serveClient: false,
   cors: { origin: [process.env.STATIC_ORIGIN].filter(Boolean) },
-  pingInterval: 20000,
-  pingTimeout: 25000,
+  pingInterval: 10000,   // 끊긴 소켓을 18초 안에 알아챈다 (모바일 셀 전환)
+  pingTimeout: 8000,
   perMessageDeflate: false,
   connectionStateRecovery: { maxDisconnectionDuration: 120000 },
 });
@@ -107,7 +108,6 @@ function loadStamp() {
     console.warn('[static] stamp build failed, serving public/:', e.message);
   }
 }
-loadStamp();
 
 app.get('/healthz', (_req, res) => {
   res.set('Access-Control-Allow-Origin', process.env.STATIC_ORIGIN || '*');
@@ -193,6 +193,14 @@ const pn = (room, id) => room.players.get(id)?.name ?? '?';
 
 function connectedIds(room) {
   return room.order.filter((id) => room.players.get(id)?.connected);
+}
+// 낮·투표의 집계용: 방금 끊긴 사람(DROP_GRACE 안)은 아직 있는 것으로 센다
+function liveIds(room) {
+  const now = Date.now();
+  return room.order.filter((id) => {
+    const p = room.players.get(id);
+    return p && (p.connected || (p.offAt && now - p.offAt < TM.DROP_GRACE));
+  });
 }
 
 function ensureHost(room) {
@@ -698,13 +706,13 @@ function startVote(room) {
 }
 
 function checkAllReady(room) {
-  const ids = connectedIds(room);
+  const ids = liveIds(room);
   if (ids.length && ids.every((id) => room.players.get(id).ready)) startVote(room);
 }
 
 function checkAllVoted(room) {
   const g = room.game;
-  const ids = connectedIds(room);
+  const ids = liveIds(room);
   if (ids.length && ids.every((id) => g.votes[id] !== undefined)) {
     setGameTimer(room, TM.VOTE_GRACE, () => resolve(room));
   }
@@ -858,12 +866,17 @@ io.on('connection', (socket) => {
     if (p.socketId && p.socketId !== socket.id) io.sockets.sockets.get(p.socketId)?.disconnect(true);
     p.socketId = socket.id;
     p.connected = true;
+    p.offAt = 0;
     socket.data.code = room.code;
     socket.data.pid = pid;
     socket.join(room.code);
     clearTimeout(p.leaveTimer);
     clearTimeout(room.cleanupTimer);
     socket.emit('chatHistory', room.chat);
+    const g = room.game;
+    if (room.phase === 'vote' && g && g.votes[pid] === undefined) {   // 투표 전 복귀: 모두 투표했다고 잡힌 결말 예약을 되돌린다
+      setGameTimer(room, Math.max(TM.VOTE_GRACE, g.voteEndsAt - Date.now()), () => resolve(room));
+    }
   }
 
   socket.on('create', ({ name, playerId } = {}, cb) => {
@@ -928,6 +941,7 @@ io.on('connection', (socket) => {
     } else {
       const p = room.players.get(pid);
       p.connected = false;
+      p.offAt = 0;
       p.socketId = null;
       sysChat(room, M('left', { n: p.name }));
       ensureHost(room);
@@ -1054,6 +1068,7 @@ io.on('connection', (socket) => {
     const p = room.players.get(pid);
     if (p.socketId !== socket.id) return; // 이미 다른 탭/기기로 재접속함
     p.connected = false;
+    p.offAt = Date.now();
     p.socketId = null;
     // 새로고침 정도로 방장이 바뀌지 않도록 잠시 기다렸다가 넘김
     if (room.hostId === pid) {
@@ -1072,10 +1087,13 @@ io.on('connection', (socket) => {
           if (rooms.has(room.code)) broadcast(room);
         }
       }, LOBBY_GRACE);
-    } else if (room.phase === 'day') {
-      checkAllReady(room);
-    } else if (room.phase === 'vote') {
-      checkAllVoted(room);
+    } else if (room.phase === 'day' || room.phase === 'vote') {
+      // 유예 안에는 그대로 센다. 유예가 지나도 안 돌아오면 그때 다시 집계한다.
+      const ph = room.phase;
+      setTimeout(() => {
+        if (rooms.get(room.code) !== room || room.phase !== ph) return;
+        if (ph === 'vote') checkAllVoted(room); else checkAllReady(room);
+      }, TM.DROP_GRACE + 50);
     }
     scheduleCleanup(room);
     broadcast(room);
@@ -1085,6 +1103,9 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`한밤의 늑대인간 서버 실행 중: http://localhost:${PORT}`);
+  // 정적 사이트가 따로 있으면(STATIC_ORIGIN) 이 서버는 페이지를 서빙하지 않으므로 빌드를 건너뛴다.
+  // 그 외에는 먼저 listen 한 뒤 빌드한다. 끝나기 전에는 public/ 폴백이 응답한다.
+  if (!process.env.STATIC_ORIGIN) setImmediate(loadStamp);
 });
 
 module.exports = { server, rooms, _test };

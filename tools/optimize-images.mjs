@@ -178,6 +178,10 @@ if (has('card-back.png')) {
   manifest.back = writeImg('back', r.buf);
   report(`card-back (q${r.step.q} b${r.step.blur})`, r.buf, 35 * KB);
   lqip.back = await tiny(im, 20, 28);
+  // xs·sm 뒷면은 216x302 로 충분하다 (전체 크기를 40~88px 카드에 줄여 그리지 않는다)
+  const rs = await ladder(im, steps(216, 302, 60, [180]), 10 * KB);
+  manifest.backS = writeImg('back-s', rs.buf);
+  report('card-back-s', rs.buf, 10 * KB);
 }
 
 /* ---------- 홈 키아트 ---------- */

@@ -28,7 +28,7 @@ services:
   - type: web
     name: one-night-werewolf-static
     runtime: static
-    buildCommand: node tools/stamp.js
+    buildCommand: npm ci --include=dev && node tools/stamp.js
     staticPublishPath: dist
     autoDeploy: true
     envVars:

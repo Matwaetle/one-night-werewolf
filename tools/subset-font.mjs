@@ -8,9 +8,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { need } from './_load.mjs';
+import { charsets } from './_charset.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
@@ -34,34 +34,15 @@ if (!fs.existsSync(FONT)) {
   }
 }
 
-const require = createRequire(import.meta.url);
-const T = require('../public/strings.js');
-const R = require('../public/roles.js');
 const subsetFont = await need('subset-font');
-
-const strip = (s) => String(s).replace(/\$\{[^}]*\}/g, '').replace(/\{[A-Za-z_][\w.]*(?::[^}]*)?\}/g, '').replace(/<[^>]+>/g, '');
-const collect = (v, out) => {
-  if (typeof v === 'string') out.push(strip(v));
-  else if (Array.isArray(v)) v.forEach((x) => collect(x, out));
-  else if (v && typeof v === 'object') Object.values(v).forEach((x) => collect(x, out));
-};
-const gather = (...vals) => { const o = []; vals.forEach((v) => collect(v, o)); return o.join(''); };
-
-const ASCII_T = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'IVX—·.,?()/:×' + ' ';
-// 홈 화면 버튼 라벨(.home-form .lbl 은 --f-title)은 제목 서브셋에 넣어 홈에서 디스플레이 폰트(30KB)를 끌어오지 않게 한다.
-const HOME_BTN = ['open', 'join', 'otherTown', 'law', 'or'];
-const textT = gather(T.title, HOME_BTN.map((k) => T.btn[k])) + ASCII_T;
-const display = gather(T.title, T.btn, T.head, T.phase, T.verdict, T.stamp);
-const roleNames = Object.values(R.ROLES).map((r) => r.name).join('');
-const textD = display + roleNames + gather(R.TEAM_NAME) + ASCII_T;
-const uniq = (s) => [...new Set([...s].filter((c) => c.codePointAt(0) >= 0x20 && !/[\u0000-\u001f]/.test(c)))].sort().join('');
+const CS = charsets();
 
 const ttf = fs.readFileSync(FONT);
 fs.mkdirSync(OUT, { recursive: true });
 for (const f of fs.readdirSync(OUT)) if (/^hanbam-[td]\.[0-9a-f]+\.woff2$/.test(f)) fs.unlinkSync(path.join(OUT, f));
 
 let bad = false;
-for (const [stem, text, limit] of [['hanbam-t', uniq(textT), LIMIT_T], ['hanbam-d', uniq(textD), LIMIT_D]]) {
+for (const [stem, text, limit] of [['hanbam-t', CS.t, LIMIT_T], ['hanbam-d', CS.d, LIMIT_D]]) {
   const buf = Buffer.from(await subsetFont(ttf, text, { targetFormat: 'woff2', noHinting: true, noLayoutClosure: true, keepFeatures: [], dropTables: ['gasp', 'DSIG', 'kern'] }));
   const name = `${stem}.${crypto.createHash('sha1').update(buf).digest('hex').slice(0, 8)}.woff2`;
   fs.writeFileSync(path.join(OUT, name), buf);
@@ -69,4 +50,5 @@ for (const [stem, text, limit] of [['hanbam-t', uniq(textT), LIMIT_T], ['hanbam-
   if (!ok) bad = true;
   console.log(`${name}  ${[...text].length}자  ${buf.length}B (상한 ${limit}B) ${ok ? 'OK' : 'FAIL: 디스플레이 그룹의 문장을 T.body 로 옮겨라 (W2 결정)'}`);
 }
+fs.writeFileSync(path.join(OUT, 'charset.json'), JSON.stringify(CS.hash));
 process.exit(bad ? 1 : 0);

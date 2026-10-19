@@ -114,7 +114,10 @@ function build(opts = {}) {
   const minJs = (code, label) => {
     if (process.env.NO_MINIFY) return code;
     const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, '_min.cjs')], { input: code, encoding: 'utf8', maxBuffer: 64 << 20 });
-    if (r.status !== 0 || !r.stdout) { if (!minWarned) { minWarned = true; warn(`JS 최소화 실패(${label}) — 원본을 쓴다 (npm i 로 terser 설치): ${(r.stderr || '').slice(0, 120)}`); } return code; }
+    if (r.status !== 0 || !r.stdout) {
+      // 배포 빌드(CLI + CI/RENDER)에서는 원본이 조용히 나가지 않게 실패시킨다. 서버가 부팅 중 메모리 빌드할 때는 해당 없음.
+      if (process.env.STAMP_STRICT) throw new Error(`JS 최소화 실패(${label}): terser 가 없다 — npm ci --include=dev`);
+      if (!minWarned) { minWarned = true; warn(`JS 최소화 실패(${label}) — 원본을 쓴다 (npm i 로 terser 설치): ${(r.stderr || '').slice(0, 120)}`); } return code; }
     return r.stdout;
   };
 
@@ -263,7 +266,7 @@ function build(opts = {}) {
   /* 5. sw.js */
   if (swRaw != null) {
     const pre = ['/'];
-    for (const n of [GAME_JS, GAME_CSS, FX_JS, SIO, FONT_T, FONT_D]) if (n) pre.push('/a/' + n);
+    for (const n of [GAME_JS, GAME_CSS, FX_JS, SIO, FONT_T, FONT_D, REPLAY_JS]) if (n) pre.push('/a/' + n);
     if (typeof manifest.back === 'string') pre.push(manifest.back);
     const sw = swRaw.split('__VER__').join(ver).split('__PRECACHE__').join(JSON.stringify(pre));
     put('/sw.js', sw, 'no-cache');
@@ -287,6 +290,7 @@ module.exports = { build, minCss };
 
 if (require.main === module) {
   const a = process.argv.slice(2);
+  if ((process.env.CI || process.env.RENDER) && !process.env.NO_MINIFY) process.env.STAMP_STRICT = '1';
   const arg = (k) => { const i = a.indexOf(k); return i >= 0 ? a[i + 1] : undefined; };
   const r = build({ outDir: arg('--out'), socketUrl: arg('--socket-url') });
   let total = 0;

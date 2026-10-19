@@ -185,8 +185,9 @@
         e = ls[i];
         e.style.willChange = soft ? 'opacity' : 'transform';
         e.style.transition = (soft ? 'opacity ' : 'transform ') + (soft ? 160 : ms) + 'ms ' + (closed ? 'cubic-bezier(.7,0,.3,1)' : 'cubic-bezier(.2,.7,.1,1)');
-        if (soft) { e.style.transform = 'scaleY(1)'; e.style.opacity = closed ? 1 : 0; }
-        else { e.style.opacity = ''; e.style.transform = closed ? 'scaleY(1)' : 'scaleY(0)'; }
+        // 닫힘은 완전한 암전이 아니라 가운데에 틈(20vh)을 남긴다: 차례 안내(.night-msg/.night-nar)가 틈으로 보인다
+        if (soft) { e.style.transform = closed ? 'scaleY(.8)' : 'scaleY(1)'; e.style.opacity = closed ? 1 : 0; }
+        else { e.style.opacity = ''; e.style.transform = closed ? 'scaleY(.8)' : 'scaleY(0)'; }
       }
       later(function () {
         for (i = 0; i < ls.length; i++) { ls[i].style.willChange = ''; ls[i].style.transition = ''; }

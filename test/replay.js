@@ -10,7 +10,7 @@ if (!files.length) { console.error('no test/fixtures/night-*.json (run npm test 
 const strip = (h) => String(h).replace(/<[^>]*>/g, '');
 const EMOJI = /\p{Extended_Pictographic}/u;
 let checked = 0;
-const roman = /(^|[^\w])(I|II|III|IV|V|VI|VII|VIII|IX)\s*(제단)|(제단)\s*(I|II|III|IV|V|VI|VII|VIII|IX)(\s|$)/;
+const roman = /(^|[^\w])(I|II|III|IV|V|VI|VII|VIII|IX)\s*가운데 카드|가운데 카드\s*(I|II|III|IV|V|VI|VII|VIII|IX)(\s|$)/;
 
 function check(name, fx) {
   const R = fx.result, me = fx.meId, N = R.night, n = R.players.length;
@@ -23,6 +23,8 @@ function check(name, fx) {
     assert(strip(b.l1).trim(), name + ': empty upper line @' + b.i + ' ' + b.act);
     assert(!/undefined|\$\{|\{\w+\}|\bnull\b|\[object|NaN|false/.test(all), name + ': bad caption @' + b.i + ': ' + all);
     assert(!roman.test(all), name + ': altar called by roman numeral @' + b.i + ': ' + all);
+    assert(!/ —/.test(all), name + ': dash josa @' + b.i + ': ' + all);
+    assert(name === 'max-bytes' || strip(b.l1).length <= 46, name + ': caption too long @' + b.i + ': ' + strip(b.l1));
     assert(!EMOJI.test(all), name + ': emoji in caption');
     assert(!/!/.test(all), name + ': exclamation in caption');
   }
@@ -63,11 +65,24 @@ function check(name, fx) {
   return B;
 }
 
+// 라틴 이름: 조사는 괄호 병기, 대시 폴백 금지
+function latin(fx) {
+  const L = ['Tom', 'Ann', 'Bob', 'Cy', 'Di', 'Ed', 'Flo', 'Gus', 'Hal', 'Ivy'];
+  const c = JSON.parse(JSON.stringify(fx));
+  c.result.players.forEach((p, i) => { p.name = L[i % L.length]; });
+  return c;
+}
 const all = {};
 for (const f of files) {
   const fx = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   all[fx.name] = fx;
-  try { check(fx.name, fx); checked++; } catch (e) { console.error('FAIL', f, '\n ', e.message); process.exitCode = 1; }
+  try { check(fx.name, fx); check(fx.name + ' [latin]', latin(fx)); checked++; } catch (e) { console.error('FAIL', f, '\n ', e.message); process.exitCode = 1; }
+}
+
+// Latin names: bracket josa, never a dash
+if (files.length) {
+  const fx = JSON.parse(JSON.stringify(all[Object.keys(all)[0]])); fx.result.players.forEach((p, i) => { p.name = 'Tom' + String.fromCharCode(97 + i); });
+  try { check('latin', fx); } catch (e) { console.error('FAIL latin:', e.message); process.exitCode = 1; }
 }
 
 // scenario specific
