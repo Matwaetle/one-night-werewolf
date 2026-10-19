@@ -857,3 +857,36 @@
 | 사냥꾼 line / desc | 처형되면 자신이 투표한 사람도 함께 처형됩니다. / 사냥꾼이 처형되면 사냥꾼이 투표한 사람도 함께 처형됩니다. |
 | 서버 id | players[].id, me, 채팅 id 는 불투명한 공개 sid(playerId 의 sha256 앞 12자). 원본 playerId 는 create/join 페이로드에서만 전송 |
 | 소켓 핸드셰이크 | auth.v 가 배포 ver 와 다르면 서버가 outdated 를 1회 emit (v 없으면 무시) |
+
+## 최종 다듬기 (이 절이 위 표보다 우선)
+시점은 한 가지로 통일합니다. 라벨은 "내", 문장은 주어를 생략합니다. RP.you('당신')는 3인칭 나열에 치환되므로 그대로 둡니다.
+
+| 키 | 문구 | 비고 |
+|---|---|---|
+| T.body.youWin / youLose | 승리했습니다. / 패배했습니다. | 옆에 도장이 붙음 |
+| T.body.teamMoved | ${from} 카드가 밤사이 바뀌어 ${team:으로/로} 넘어갔습니다. | ${team} 은 이미 "팀"으로 끝남 |
+| T.body.heroWolf | 처형되지 않은 늑대인간 · ${n} | 신규 |
+| T.body.heroKey | 승부를 가른 카드 · ${n} | |
+| T.body.heroDeadMe | 나 · 처형 | |
+| T.body.voteTo / noVote / got | ${n}에게 투표 / 투표 안 함 / ${n}표 받음 | 신규 |
+| T.body.dayTalk | 토론 중입니다. 투표할 준비가 되면 버튼을 누르세요. | |
+| T.body.dayReadyWait | 준비를 마쳤습니다. 다른 사람을 기다리고 있습니다. | 신규 |
+| T.body.raised | 준비 ${r}/${n} · 모두 준비하면 바로 투표합니다. | |
+| T.body.deckCount | 카드 ${total}/${need}장 (가운데 3장 포함) | lack, deckLack 삭제 |
+| T.body.yourCardIs | 내 카드는 ${r}입니다. | |
+| T.body.yourCard | 역할이 아직 가려져 있습니다. | |
+| T.body.whoCopy | 이제 이 역할로 행동합니다. | |
+| T.body.awakeTab | ● 내 차례 | |
+| T.body.reload | 새로고침하기 | |
+| T.msg.stole | ${t}의 카드를 훔쳤습니다. 새 카드는 ${r}입니다. | |
+| T.msg.townFull | 방이 가득 찼습니다. (최대 10명) | |
+| T.replay.pro.bot | 내 시작 카드는 ${r}입니다. 가운데 카드: ${list} | |
+| T.replay.cause.rob / drunk | ${t}의 카드를 가져왔습니다. / 내 카드를 ${P:과/와} 바꿨습니다. | |
+| T.replay.dawn.bot | 카드가 바뀐 자리: ${list} | |
+| T.replay.dawn.seat.same | ${a:은/는} 같은 역할의 카드를 받았습니다: ${to}. | 신규. 같은 역할 이름일 때 |
+| T.replay.uiR.mine | 내 행동 | 신규. 리플레이 중 "내 차례" 도장 대체 |
+| T.replay.why.wolf_lived | 늑대인간 ${list:은/는} 끝까지 정체를 숨겼습니다. | |
+| T.replay.why.wolf_lived_you | 늑대인간인 당신은 끝까지 정체를 숨겼습니다. | |
+| T.replay.why.no_death | 처형된 사람이 없고 늑대인간도 없어 마을 팀이 승리했습니다. | |
+| T.replay.uiR.stayed | 바뀌지 않음 | |
+| T.replay.uiR.hop.drunkCenter | 주정뱅이 ${a:이/가} 가져감 | |

@@ -13,6 +13,7 @@
  * 입력(public/ 기준):
  *   strings.js roles.js js/art.js js/app.js  -> a/game.<h>.js
  *   css/card.css css/screens.css             -> a/game.<h>.css
+ *   js/result.js (+ css/result.css 를 __RESULT_CSS__ 에, strings.js 의 @client:result 구간을 T.body 로 앞에 합친다) -> a/result.<h>.js
  *   js/fx.js                                 -> a/fx.<h>.js
  *   js/replay.js (+ css/replay.css 를 __REPLAY_CSS__ 에 JSON 문자열로) -> a/replay.<h>.js
  *   vendor/socket.io.<ver>.min.js            -> a/sio.<h>.js
@@ -113,7 +114,7 @@ function build(opts = {}) {
   let minWarned = false;
   const minJs = (code, label) => {
     if (process.env.NO_MINIFY) return code;
-    const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, '_min.cjs')], { input: code, encoding: 'utf8', maxBuffer: 64 << 20 });
+    const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, '_min.cjs'), label], { input: code, encoding: 'utf8', maxBuffer: 64 << 20 });
     if (r.status !== 0 || !r.stdout) {
       // 배포 빌드(CLI + CI/RENDER)에서는 원본이 조용히 나가지 않게 실패시킨다. 서버가 부팅 중 메모리 빌드할 때는 해당 없음.
       if (process.env.STAMP_STRICT) throw new Error(`JS 최소화 실패(${label}): terser 가 없다 — npm ci --include=dev`);
@@ -125,10 +126,10 @@ function build(opts = {}) {
   const joinJs = (list) => list.filter((s) => s != null).map((s) => s.replace(/\s+$/, '') + '\n').join(';\n');
   // strings.js 표식 처리 (FEATURES_SPEC 0.2). 표식이 없으면 아무것도 하지 않는다.
   const stripClient = (src) => {
-    const keep = [], rp = [], cx = [];
+    const keep = [], rp = [], cx = [], rs = [];
     let mode = '';
     for (const ln of src.split('\n')) {
-      const m = ln.match(/^\s*\/\/ @client:(drop|replay|chatx)-(start|end)\s*$/);
+      const m = ln.match(/^\s*\/\/ @client:(drop|replay|chatx|result)-(start|end)\s*$/);
       if (m) {
         if (m[2] === 'start') { if (mode) throw new Error('strings.js 표식 중첩: ' + ln.trim()); mode = m[1]; }
         else { if (mode !== m[1]) throw new Error('strings.js 표식 짝 불일치: ' + ln.trim()); mode = ''; }
@@ -137,16 +138,24 @@ function build(opts = {}) {
       if (mode === 'drop') continue;
       if (mode === 'replay') { rp.push(ln); continue; }
       if (mode === 'chatx') { cx.push(ln); continue; }
+      if (mode === 'result') { rs.push(ln); continue; }
       keep.push(ln);
     }
     if (mode) throw new Error('strings.js 표식이 닫히지 않았다: ' + mode);
-    return { game: keep.join('\n'), replay: rp.join('\n').trim(), chatx: cx.join('\n').trim() };
+    return { game: keep.join('\n'), replay: rp.join('\n').trim(), result: rs.join(String.fromCharCode(10)).trim(), chatx: cx.join('\n').trim() };
   };
   const strRaw = rd('strings.js', true), sc = stripClient(strRaw);
   // result.js (A1 지연 청크) — game.js 보다 먼저 만들어 URL 을 game.js 안의 __RESULT_JS__ 에 넣는다
   let RESULT_JS = '';
   const resSrc = rd('js/result.js');
-  if (resSrc != null) RESULT_JS = hashed('result', '.js', minJs(resSrc, 'result'));
+  if (resSrc != null) {
+    const rcss = rd('css/result.css');
+    const rlit = rcss != null ? JSON.stringify(minCss(rcss)) : '""';
+    let rjs = resSrc.replace(/(['"`])__RESULT_CSS__\1|__RESULT_CSS__/g, () => rlit);
+    if (sc.result) rjs = 'Object.assign(window.T.body,{' + sc.result + '\n});\n' + rjs;
+    try { new Function(rjs); } catch (e) { throw new Error('result.js 구문 오류: ' + e.message); }
+    RESULT_JS = hashed('result', '.js', minJs(rjs, 'result'));
+  }
   const gameJs0 = joinJs([sc.game, rd('roles.js', true), rd('js/art.js'), rd('js/app.js')]);
   const gameJs = gameJs0.replace(/(["'`])__RESULT_JS__\1|__RESULT_JS__/g, () => JSON.stringify(RESULT_JS ? '/a/' + RESULT_JS : ''));
   if (sc.game !== strRaw) { try { new Function(gameJs); } catch (e) { throw new Error('game.js 구문 오류(strings.js 표식 처리 뒤): ' + e.message); } }

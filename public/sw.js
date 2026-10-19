@@ -65,7 +65,8 @@ self.addEventListener('fetch', (e) => {
     e.respondWith((async () => {
       const hit = await caches.match(r);
       if (hit) return hit;
-      const res = await fetch(r);
+      let res;
+      try { res = await fetch(r); } catch (e) { return new Response('', { status: 504 }); }
       if (res.ok && res.status === 200) {
         const c = await caches.open(RT);
         await c.put(r, res.clone());

@@ -276,7 +276,7 @@ html[data-perf=lite] .card.is-selectable::before{ animation:none; opacity:.6; }
 }
 .card[data-size="sm"].is-swapped .card-sw{ top:calc(69% - 14px); }
 .card[data-size="md"].is-swapped .card-sw{ top:calc(80% - var(--cw)*.13); }
-.card[data-size="xs"].is-swapped .card-sw{ display:none; }
+.card[data-size="xs"].is-swapped .card-sw{ left:2%; top:calc(74% - 6px); min-width:10px; }
 
 /* 결과의 처음 카드: sm의 60%, 최종 카드 왼쪽 위에 겹침(데스크톱 전용 배치; 모바일은 §6.9 목록) */
 .card.is-original{

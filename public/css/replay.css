@@ -1,6 +1,9 @@
 /* replay.css - Night record (SPEC 13). transform/opacity only; no 3D. Inlined into replay.js by stamp. --u = 1ms (x2: .5ms) */
 .rp{--u:1ms;position:absolute;inset:0;z-index:3;contain:layout paint;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rp>*{position:absolute}
+.rp::before{content:"";position:absolute;inset:0;z-index:4;background:rgba(7,6,6,.86);opacity:0;pointer-events:none;transition:opacity calc(240*var(--u))}
+.rp.has-f::before{opacity:1}
+.rp.has-f .rp-al{visibility:hidden}
 .rp i{font-style:normal}
 .rp-lt *{transition-duration:.16s!important;animation:none!important}
 .rp-ring,.rp-vm,.rp-focus,.rp-glow{left:0;top:0;transform:translate(var(--tx),var(--ty)) translate(-50%,-50%)}
@@ -8,7 +11,7 @@
 .rp-ld{background:radial-gradient(ellipse at 50% 35%,var(--light-dawn),transparent 70%)}
 .rp-lv{background:radial-gradient(ellipse at 50% 40%,var(--light-vote),transparent 75%);transition-duration:calc(600*var(--u))}
 .is-on.rp-ld,.is-on.rp-lv{opacity:1}
-.rp-glow{width:280px;height:280px;opacity:0;pointer-events:none;background:radial-gradient(circle,var(--light-candle) 0 22%,rgba(214,170,110,.06) 22% 38%,rgba(214,170,110,.03) 38% 52%,transparent 52%);transition:opacity calc(120*var(--u))}
+.rp-glow{width:280px;height:280px;opacity:0;pointer-events:none;background:radial-gradient(circle,var(--light-candle) 0 22%,rgba(214,170,110,.05) 22% 52%,transparent 52%);transition:opacity calc(120*var(--u))}
 .rp-glow.is-on{opacity:1;transition-duration:calc(200*var(--u))}
 .rp .ln{transition-duration:calc(280*var(--u));transition-delay:calc(var(--g,0)*300*var(--u))}
 .rp .ln:not(.is-on){opacity:0;transition:opacity 120ms}
@@ -33,9 +36,8 @@
 .rp-dim{opacity:.3}
 .rp-lit::before{content:"";position:absolute;inset:0;z-index:3;border:calc(1px*var(--inv,1)) solid var(--bone-hi)}
 .rp-hunt .card-sg{color:var(--blood-hot)}
-.rp-card :is(.card-name,.card-ord,.card-line,.card-sw){display:none}
+.rp-card .card-sw,.rp-card[data-z=seat] :is(.card-name,.card-ord,.card-line){display:none}
 .rp-card[data-z=seat]::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border:calc(1px*var(--inv,1)) solid var(--ink)}
-.rp-lt .rp-focus{will-change:auto}
 .rp:is([data-act=vote],[data-act=exec]) :is(.rp-card[data-z=altar],.rp-al){opacity:.25}
 .rp-card[data-z=seat] .card-sg{transform:scale(var(--inv))}
 .rp-co{position:absolute;right:calc(3px*var(--inv,1));bottom:28%;z-index:3;width:calc(16px*var(--inv,1));height:calc(16px*var(--inv,1));padding:1px;background:var(--ink);color:var(--bone-hi);opacity:0}
@@ -44,11 +46,11 @@
 .rp-flip{animation:rp-flip calc(320*var(--u)) var(--ease-press) calc(var(--k)*120*var(--u)) both}
 .rp-flip .rp-front{animation:rp-fa calc(320*var(--u)) calc(var(--k)*120*var(--u)) both}
 .rp-flip .rp-back{animation:rp-fa calc(320*var(--u)) calc(var(--k)*120*var(--u)) both reverse}
-.rp-tag{display:flex;visibility:hidden;opacity:0;left:0;top:0;flex-direction:column;align-items:center;z-index:5;max-width:90px;font:var(--fs-label)/1.15 var(--f-body);color:var(--bone-dim);text-align:center;pointer-events:none;background:var(--void);padding:1px 4px;word-break:keep-all;transform:translate(var(--tx),var(--ty)) translate(-50%,0)}
+.rp-tag{display:flex;visibility:hidden;opacity:0;left:0;top:0;flex-direction:column;align-items:center;z-index:3;max-width:90px;font:var(--fs-label)/1.15 var(--f-body);color:var(--bone-dim);text-align:center;pointer-events:none;border-top:1px solid var(--blood);text-shadow:0 0 3px #000,0 1px 0 #000,0 0 8px #000;padding:1px 4px 0;word-break:keep-all;transform:translate(var(--tx),var(--ty)) translate(-50%,0)}
 .rp-tag.is-on{visibility:visible;opacity:1}
 .rp-tag.rp-sr{transform:translate(var(--tx),var(--ty)) translate(0,-50%)}
 .rp-tag.rp-sl{transform:translate(var(--tx),var(--ty)) translate(-100%,-50%)}
-.rp-tag.is-on.rp-dim{opacity:.55;background:rgba(21,18,15,.85);margin-top:4px}
+.rp-tag.is-on.rp-dim{opacity:.55;margin-top:4px}
 .rp-tag i{color:var(--bone-hi)}
 .rp-tag u{flex:0 0 100%;text-decoration:none;color:var(--smoke)}
 
@@ -59,24 +61,18 @@
 .rp-tag b{flex:0 0 100%}
 .rp-tag b:empty{display:none}
 body[data-replay] .seat.is-target .seat-token::before{opacity:0}
-.rp-focus{will-change:transform,opacity;z-index:5;opacity:0;translate:0 12px;pointer-events:none;transition:opacity calc(360*var(--u)) calc(280*var(--u)),translate calc(360*var(--u)) calc(280*var(--u)) var(--ease-out)}
-.rp-focus.is-on{opacity:1;translate:0 0}
+.rp-focus{z-index:5;visibility:hidden;translate:0 12px;pointer-events:none;transition:translate calc(360*var(--u)) calc(280*var(--u)) var(--ease-out)}
+.rp-focus.is-on{visibility:visible;translate:0 0}
 .rp-focus:is([data-act=exec],[data-act=hunt]){transition-delay:0s}
 .rp-focus .fx-stamp{top:30%;font-size:calc(var(--cw-md)*.1);padding:.1em .45em;letter-spacing:.1em}
 .rp-focus:has(.fx-stamp) .card.is-dead .card-plate::before{content:none}
 .rp-focus .card{--cw:var(--cw-md)}
 .rp-fl{display:block;margin-top:4px;font:600 var(--fs-small)/1.3 var(--f-body);color:var(--bone-hi);text-align:center}
-.rp[data-act=verdict] :is(.rp-card,.rp-tag,.rp-ring,.rp-vm,.rp-mk,.ln,.rp-glow){opacity:.08}
+.rp[data-act=verdict] :is(.rp-card,.rp-ring,.rp-vm,.rp-mk,.ln,.rp-glow){opacity:.08}
 .rp[data-act=verdict] .rp-card[data-z=altar]{opacity:0}
 #main.rp-v .seat{opacity:.08}
-.rp .rp-vd[data-act=verdict]{top:calc(22% + var(--cw-md)*.7 + 20px);bottom:44px;overflow-y:auto;background:var(--void)}
-.rp .rp-vd.is-on[data-act=verdict]{display:flex;flex-direction:column;justify-content:flex-start;padding-top:12px}
-.rp-rst{margin:14px auto 0;min-height:44px;font:400 16px/1 var(--f-display);letter-spacing:.06em}
 .rp-skip{grid-area:1/1;justify-self:start}
 .rp-main.btn-sub .nm{max-width:100%;font-size:13px;line-height:1.25;color:var(--bone-dim)}
-.rp[data-act=verdict] :is(.rp-tag,.rp-al){opacity:0;visibility:hidden}
-.rp-vd::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--void);opacity:0;transition:opacity calc(200*var(--u))}
-.rp-vd.is-on::before{opacity:1}
 .rp .ln.rp-v::after{content:"";position:absolute;right:-1px;top:-3px;border:3.5px solid transparent;border-left:6px solid currentColor;border-right:0}
 .rp-ey2{position:absolute;right:4px;top:4px;width:22px;height:22px;color:var(--bone-hi)}
 .rp-fst,.rp-stamp,.rp-vst{rotate:-6deg;font:400 16px/1.4 var(--f-display);letter-spacing:.06em;color:var(--bone-hi);border:2px solid var(--bone-hi);padding:0 6px;background:var(--void)}
@@ -91,26 +87,9 @@ body[data-replay] .seat.is-target .seat-token::before{opacity:0}
 .rp-l3{font:var(--fs-label)/1.35 var(--f-body);color:var(--bone-dim)}
 .rp-l3>span:not(:empty){margin-top:2px}
 .rp-cv{position:absolute;inset:0;background:var(--void);transform-origin:100% 50%;transform:scaleX(0);transition:transform calc(120*var(--u)) steps(3,end)}
-.is-h>.rp-cv,.rp-vd:not(.is-w) .rp-cv{transform:scaleX(1);transition:none}
+.is-h>.rp-cv,.rp-vd:not(.is-w) .rp-cv{transform:scaleX(1)}
 .rp-stamp{position:absolute;width:max-content;height:auto;pointer-events:none;left:0;top:0;bottom:auto;z-index:5;opacity:0;scale:1.3;transition:opacity calc(120*var(--u)) calc(760*var(--u)),scale calc(120*var(--u)) calc(760*var(--u)) steps(3,end)}
 .rp-stamp.is-on{opacity:1;scale:1}
 .rp-stamp:not(.is-on){transition:none}
-.rp-vd{display:none;left:0;right:0;bottom:44px;z-index:6;padding:28px 16px 14px;text-align:center;background:linear-gradient(transparent,var(--void) 32px);border-bottom:1px solid var(--blood)}
-.rp-vd.is-on{display:block;animation:rp-vin calc(200*var(--u)) linear both}
-.rp-vd[data-team=wolf] .rp-vl{color:var(--blood-hot)}
-.rp-vst{display:block;width:max-content;margin:10px auto 0;font-size:20px;opacity:0;scale:1.3;transition:opacity calc(300*var(--u)) calc(var(--sd)*var(--u)),scale calc(300*var(--u)) calc(var(--sd)*var(--u)) steps(3,end)}
-.rp-vst:empty{display:none}
-.is-w :is(.rp-vw,.rp-vs,.rp-vst){opacity:1;scale:1}
 
-@media(min-width:1024px){
-  .rp-l1{font-size:19px}
-  .rp-l2{font-size:15px}
-  .rp-cap{padding:22px 24px 16px}
-  .rp-tag{font-size:13px;max-width:130px}
-  .rp[data-nw="0"] .rp-tag{max-width:220px}
-  .rp-fl{font-size:15px}
-  .rp .rp-vd.is-on[data-act=verdict]{left:50%;right:auto;width:min(720px,calc(100% - 48px));bottom:56px;top:auto;height:auto;max-height:calc(62% - 12px);transform:translateX(-50%);padding:20px 28px 16px;background:var(--void);border:1px solid var(--blood)}
-  .rp-vw,.rp-vs{font-size:17px}
-  .rp-vl{font-size:calc(var(--fs-h1)*1.15)}
-}
 @keyframes rp-lift{40%{scale:1.8}}@keyframes rp-flip{50%{scale:0 1}}@keyframes rp-fa{0%,49%{opacity:0}50%,100%{opacity:1}}@keyframes rp-vin{from{opacity:0}to{opacity:1}}

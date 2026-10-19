@@ -153,11 +153,12 @@
       ui.off = 0; clearTimeout(ui.connT); body.removeAttribute('data-conn');
       const c = $('#conn'); c.hidden = true; c.innerHTML = ''; delete c.dataset.state; toast(TB.reconnected);
     };
+    const retry = () => { ui.rjN = (ui.rjN || 0) + 1; sock.disconnect(); setTimeout(() => { if (!ui.replaced) sock.connect(); }, Math.min(30000, 1000 * 2 ** ui.rjN)); };
     if (code) {
       sock.timeout(5000).emit('join', { code, playerId: playerId(), rejoin: true }, (err, r) => {
-        if (err) { ui.rjN = (ui.rjN || 0) + 1; sock.disconnect(); setTimeout(() => { if (!ui.replaced) sock.connect(); }, Math.min(30000, 1000 * 2 ** ui.rjN)); return; }
+        if (err) return retry();
         ui.rjN = 0;
-        if (r && r.ok) { back(); run(); } else { back(); LS.del('ww_room'); toHome(); toast(TB.roomLost, 'danger'); run(); }
+        if (r && r.ok) { back(); run(); } else if (r && (r.code === 'noTown' || r.code === 'cannotReturn')) { back(); LS.del('ww_room'); toHome(); toast(TB.roomLost, 'danger'); run(); } else retry();
       });
     } else { back(); run(); }
   });
@@ -189,16 +190,17 @@
   });
   sock.on('chatHistory', (m, code) => {
     try {
-      const l = $('#chatLog'), same = code && ui.chatCode === code; if (!Array.isArray(m)) return; ui.chatCode = code; ui.chatBuf = m; if (!l) return;
+      const l = $('#chatLog'), same = code && ui.chatCode === code; if (!Array.isArray(m)) return; ui.chatCode = code; { const lm = m.length ? m[m.length - 1].mid : 0; ui.chatBuf = m.concat((ui.chatBuf || []).filter((x) => x.mid > lm && m.indexOf(x) < 0)); } if (!l) return;
       const keep = !same && $('.msg[data-cid]', l);   // 방이 바뀌면 아직 확인 못 받은 내 글은 입력창으로 돌려놓는다 (같은 방이면 줄이 그대로 남는다)
       if (!same) { l.innerHTML = ''; ui.lastMid = 0; ui.stick = 1; } m.forEach((x) => { if (!same || x.mid > ui.lastMid) addChat(x, 1); }); if (keep) { const i = $('#chatInput'); if (i && !i.value) i.value = keep.dataset.t; }
       if (ui.stick) toEnd();
     } catch (e) { console.error(e); }
   });
-  sock.on('chat', (m) => { try { addChat(m); } catch (e) { console.error(e); } });
+  sock.on('chat', (m) => { try { if (!$('#chatLog')) { (ui.chatBuf = ui.chatBuf || []).push(m); return; } addChat(m); } catch (e) { console.error(e); } });
   sock.on('kicked', () => { LS.del('ww_room'); toHome(); toast(TB.kicked, 'danger'); });
 
   const rclose = () => { try { W.REPLAY && REPLAY.close(); } catch (e) { /* 무시 */ } $$('.msg[data-kind=end][hidden]').forEach((e) => { e.hidden = false; }); };
+  W.addEventListener('unhandledrejection', (e) => { console.error(e.reason); if (body.dataset.replay) { rclose(); body.removeAttribute('data-replay'); sched(); } });
   function toHome() {
     S = null; R = null; ui.seatKey = ''; closeModal(); if (ui.shell) closeSheet();
     rclose();
@@ -210,6 +212,7 @@
   }
   function onPhase(from, to, first) {
     clearLater(); coverAll(); ui.hb = -1; ui.intro = 0; ui.wait = 0;
+    if (first && to !== 'lobby') ART.warm();   // 게임 도중 재접속: 대기실 warm을 건너뛰었으므로 여기서 받는다
     if (to !== 'result') { body.removeAttribute('data-replay'); }
     if (to !== 'night') D.title = TB.docTitle;
     if (to === 'lobby') {
@@ -322,7 +325,7 @@
     band.innerHTML = '<p class="band-text"></p><button class="band-q" type="button" data-act="rule" aria-label="' + esc(TB.voteRule) + '" aria-expanded="false" hidden>?</button><p class="band-rule" hidden>' + esc(TB.voteRule) + '</p><div class="band-bar" hidden></div><p class="day-seen" role="button" tabindex="0" data-act="seenLog" hidden></p><a class="dock-alt" href="#" role="button" hidden></a>';
     $('#app').insertBefore(band, $('#dock'));
     buildDock();
-    $('.altar').innerHTML = [0, 1, 2].map((i) => ART.card(null, { size: 'sm', cls: 'altar-card', label: T.altar[i] })).join('');
+    $('.altar').innerHTML = [0, 1, 2].map((i) => ART.card(null, { size: 'sm', cls: 'altar-card', label: T.altar[i], tag: T.replay.ui.altarShort[i] })).join('');
     $$('.altar .card').forEach((c, i) => { c.dataset.i = i; });
     buildSheet();
     const st = $('#stage');
@@ -346,17 +349,16 @@
     if (mode === 'lobby') {
       const n = S.players.length, need = n + 3, total = sum(S.deck);
       V.band = n < 3 ? fmt(TB.waitMore, { need: 3 - n }) : fmt(TB.deckCount, { total, need });
-      V.btn = !isHost() ? { lbl: TB.waitChief, dis: 1 } : n < 3 ? { lbl: fmt(TB.lack, { need: 3 - n }), dis: 1 }
-        : total !== need ? { lbl: fmt(TB.deckLack, { total, need }), dis: 1 } : { lbl: TBT.start, act: 'start' };
+      V.btn = !isHost() ? { lbl: TB.waitChief, dis: 1 } : n < 3 || total !== need ? { lbl: TBT.start, dis: 1 } : { lbl: TBT.start, act: 'start' };
     } else if (mode === 'check') {
-      V.band = TB.checkBand; V.btn = { hide: 1 };
+      V.band = ''; V.btn = { hide: 1 };
     } else if (mode === 'sleep') {
       V.btn = { hide: 1 }; V.card = 0;
     } else if (mode === 'awake') {
       nightView(V);
     } else if (mode === 'day') {
       const conn = S.players.filter((p) => p.connected), mine = S.players.find((p) => p.id === S.me);
-      V.band = (dayEl() < 8000 ? TB.dayAsk : TB.dayTalk) + '\n' + fmt(TB.raised, { r: conn.filter((p) => p.ready).length, n: conn.length }); V.card = 0;
+      V.band = (mine && mine.ready ? TB.dayReadyWait : dayEl() < 8000 ? TB.dayAsk : TB.dayTalk) + '\n' + fmt(TB.raised, { r: conn.filter((p) => p.ready).length, n: conn.length }); V.card = 0;
       V.btn = { lbl: mine && mine.ready ? TBT.unready : TBT.ready, act: 'ready' };
     } else if (mode === 'vote') {
       V.rule = 1; V.card = 0; V.band = TB.pickExec; V.sel = others().map((p) => p.id);
@@ -474,7 +476,7 @@
     geo.q = requestAnimationFrame(() => { geo.q = 0; const o = gk(); measure(); if (o !== gk()) relayout(); });
   }
   function placeSeats() {
-    const st = $('#stage'), N = ui.ids.length, rp = body.dataset.replay ? (desk() ? 72 : 96) : 0;   // 리플레이 자막 띠만큼 탁자를 위로 올린다
+    const st = $('#stage'), N = ui.ids.length, cap = body.dataset.replay ? $('.rp-cap') : null, rp = body.dataset.replay ? (cap && cap.offsetHeight ? cap.offsetHeight + 24 : desk() ? 40 : 96) : 0;   // 리플레이 자막 띠(실측)만큼 탁자를 위로 올린다
     if (!geo.h) measure();
     const ds = $('.day-seen'), bot = ds && !ds.hidden ? ds.offsetHeight + 4 : 0;   // 낮 한 줄이 아래 좌석 이름을 덮지 않게 그만큼 탁자를 올린다
     const H = geo.h - rp - bot, tk = geo.tk, sh = geo.sh, al = $('.altar'), on = !!al && !al.hidden;
@@ -482,6 +484,7 @@
     const ang = (i) => Math.PI / 2 + 2 * Math.PI * ((i - ui.me + N) % N) / N, aw = geo.aw / 2, ah = geo.ah / 2;
     let hit = 0;
     if (on && geo.ah) for (let i = 0; i < N && !hit; i++) { const x = rx * Math.cos(ang(i)), y = ry * Math.sin(ang(i)); hit = x - 42 < aw && x + 42 > -aw && y + sh > -ah && y - tk / 2 < ah; }   // 좌석 칸이 탁자 가운데 카드와 실제로 겹치면 촘촘 모드
+    if (on && geo.ah && !hit) for (let i = 0; i < N && !hit; i++) { const x = rx * Math.cos(ang(i)), y = ry * Math.sin(ang(i)); if (Math.abs(y) - tk / 2 < ah + sh) hit = aw > Math.abs(x) - tk / 2 - 6 - geo.cw - 8 - 12; }   // 실제 좌석 x 로 가운데 카드와 가로로 겹치는지
     const seatIn = rx - tk / 2 - 6 - geo.cw - 8, tight = on && !!geo.ah && (hit || ry < geo.ah / 2 + sh / 2 + 8 || geo.aw / 2 > seatIn);   // 세로 · 가로로 탁자 가운데 카드가 좌석 카드를 덮으면 촘촘 모드
     st.style.setProperty('--cy', (-(rp + bot) / 2) + 'px');
     if (tight !== (st.dataset.tight === '1')) { if (tight) st.dataset.tight = '1'; else delete st.dataset.tight; }
@@ -526,7 +529,8 @@
       const tok = $('.seat-token', el);
       tok.setAttribute('aria-pressed', f['is-target'] ? 'true' : 'false');
       if (isHost() && S.phase === 'lobby' && p.id !== S.me) tok.dataset.lp = '1'; else delete tok.dataset.lp;
-      set($('.seat-name', el), 'textContent', f['is-off'] ? TB.away : short(p.name));
+      { const sn = $('.seat-name', el), nm = f['is-off'] ? TB.away : short(p.name), eff = p.final === 'doppelganger' && R && R.doppelCopy ? R.doppelCopy : p.final;
+        if (body.dataset.phase === 'result' && ROLES[eff]) set(sn, 'innerHTML', esc(nm) + '<i class="seat-role">' + esc(ROLES[eff].name) + '</i>'); else set(sn, 'textContent', nm); }
       const m = $('.seat-mark', el);
       if (mk) { m.dataset.k = mk[0]; set(m, 'textContent', mk[1]); }
       else if (res && p.votes > 0) { m.dataset.k = 'votes'; set(m, 'textContent', TB.cols.votes + ' ' + p.votes); }
@@ -538,7 +542,7 @@
         if (ck === 'b') el.insertAdjacentHTML('beforeend', ART.card(null, { size: 'xs' }));
         else if (ck) {
           const sw = p.final !== p.original;
-          el.insertAdjacentHTML('beforeend', ART.card(p.final, { size: desk() ? 'sm' : 'xs', face: 1, cls: (p.dead ? 'is-dead ' : '') + (sw ? 'is-swapped' : '') }) + (sw ? ART.card(p.original, { size: desk() ? 'sm' : 'xs', face: 1, cls: 'is-original' }) : ''));
+          el.insertAdjacentHTML('beforeend', ART.card(p.final, { size: desk() ? 'sm' : 'xs', face: 1, cls: (p.dead ? 'is-dead ' : '') + (sw ? 'is-swapped' : '') }));
         }
         ART.mark(el);
       }
@@ -553,7 +557,7 @@
       const role = res ? R.center.final[i] : null, sw = res && R.center.original[i] !== R.center.final[i], key = role ? role + (sw ? '*' : '') : '';
       if (c._k !== key) {
         const t = D.createElement('template');
-        t.innerHTML = ART.card(role, { size: 'sm', cls: 'altar-card' + (sw ? ' is-swapped' : ''), label: T.altar[i], face: role ? 1 : 0 });
+        t.innerHTML = ART.card(role, { size: 'sm', cls: 'altar-card' + (sw ? ' is-swapped' : ''), label: T.altar[i], tag: T.replay.ui.altarShort[i], face: role ? 1 : 0 });
         const n = t.content.firstChild; n.dataset.i = i; n._k = key; c.replaceWith(n); c = n; ART.mark(n);
       }
       const can = V.selC && V.mode === 'awake';
@@ -623,7 +627,7 @@
     if (S.phase !== 'night' || m === 'lobby') return '';
     if (m === 'check') {
       return '<div class="check"><div class="check-card" data-peek="check" style="' + NOSEL + '">' + ART.card(S.myCard, { size: 'xl', face: 0 }) + '</div>' +
-        '<p class="check-t1">' + esc(TB.yourCard) + '</p><p class="check-team" hidden></p><p class="check-desc" hidden></p><p class="check-t2">' + esc(TB.holdHint) + '</p><i class="check-bar"></i></div>';
+        '<p class="check-t1">' + esc(TB.yourCard) + '</p><p class="check-team" hidden></p><p class="check-desc" hidden></p><p class="check-t2">' + esc(TB.holdHint) + '</p><p class="check-t2 check-priv">' + esc(TB.checkBand) + '</p><i class="check-bar"></i></div>';
     }
     const n = S.steps.length - 1, rn = ROLES[S.stepRole] ? ROLES[S.stepRole].name : '';
     const dots = '<div class="night-track">' + Array.from({ length: n }, (_, i) => (i + 1 === S.stepIdx ? '<i class="night-dot is-now" role="img" aria-label="' + esc(rn) + '"></i>' : '<i class="night-dot' + (i + 1 < S.stepIdx ? ' is-past' : '') + '"></i>')).join('') + (rn ? '<span class="night-pos">' + S.stepIdx + ' / ' + n + ' · ' + esc(rn) + '</span>' : '') + '</div>';
@@ -636,8 +640,9 @@
       bar.style.setProperty('--ms', left + 'ms'); void bar.offsetWidth; bar.classList.add('is-run');
       ui.pressed = 0;
       later(Math.max(0, 7000 - (13000 - left)), () => { const k = $('.check-t2'); if (k && !ui.pressed) k.classList.add('is-blink'); });
-      later(Math.max(0, left - 1200), () => { if (cc) cc.classList.add('is-sink'); });
-      later(Math.max(0, left - 700), () => fx('lidsClose', 500));
+      const rel = (fn) => { const g = () => { if (press && press.el === cc) later(250, g); else fn(); }; g(); };   // 카드를 잡고 있는 동안은 얼굴과 이름표를 그대로 두고, 놓은 뒤에야 어두워진다
+      later(Math.max(0, left - 1200), () => rel(() => { if (cc) cc.classList.add('is-sink'); }));
+      later(Math.max(0, left - 700), () => rel(() => fx('lidsClose', 500)));
       later(Math.max(0, left) + 300, () => fx('lidsOpen', 900));
     } else if (V.mode === 'sleep') {
       later(150, () => fx('lidsOpen', 400));   // 암전은 탁자를 어둡게 하는 것으로 충분하다. 눈꺼풀을 열어 안내문을 보인다

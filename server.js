@@ -981,8 +981,8 @@ io.on('connection', (socket) => {
     room.players.set(playerId, { id: playerId, name, connected: true, socketId: null, ready: false });
     room.order.push(playerId);
     room.hostId = playerId;
-    attach(room, playerId);
     sysChat(room, M('townOpened', { name }));
+    attach(room, playerId);
     reply(cb, { ok: true, code: room.code });
     sendNow(room);
   });
@@ -990,7 +990,7 @@ io.on('connection', (socket) => {
   on('join', (d, cb) => {
     let { code, name, playerId, rejoin } = obj(d);
     const room = typeof code === 'string' ? rooms.get(code.toUpperCase().trim()) : null;
-    if (!room) return reply(cb, { ok: false, error: M('noTown') });
+    if (!room) return reply(cb, { ok: false, code: 'noTown', error: M('noTown') });
     if (typeof playerId !== 'string' || !playerId || playerId.length > 64) return reply(cb, { ok: false, error: M('badRequest') });
     playerId = sidOf(playerId); // 이후 모든 id 는 공개용 sid (원본 playerId 는 보관·전송하지 않는다)
 
@@ -1002,7 +1002,7 @@ io.on('connection', (socket) => {
       reply(cb, { ok: true, code: room.code });
       return sendNow(room);
     }
-    if (rejoin) return reply(cb, { ok: false, error: M('cannotReturn') });
+    if (rejoin) return reply(cb, { ok: false, code: 'cannotReturn', error: M('cannotReturn') });
     if (typeof name !== 'string') return reply(cb, { ok: false, error: M('badRequest') });
     name = cleanName(name);
     if (!name) return reply(cb, { ok: false, error: M('needName') });
@@ -1016,10 +1016,10 @@ io.on('connection', (socket) => {
     if (socket.data.code && socket.data.code !== room.code) leaveCurrent(socket);
     room.players.set(playerId, { id: playerId, name: final, connected: true, socketId: null, ready: false });
     room.order.push(playerId);
+    sysChat(room, M('sat', { n: final }));
     attach(room, playerId);
     if (!room.players.has(room.hostId)) ensureHost(room);
     autoDeck(room);
-    sysChat(room, M('sat', { n: final }));
     reply(cb, { ok: true, code: room.code });
     sendNow(room);
   });
@@ -1164,7 +1164,8 @@ io.on('connection', (socket) => {
     reply(cb, reDropped ? { ok: true, reDropped: true } : { ok: true });
   });
 
-  on('disconnect', () => {
+  // 속도 제한(on)을 거치면 연타 뒤의 disconnect 가 삼켜져 접속 상태가 남으므로 직접 등록한다.
+  socket.on('disconnect', () => { try {
     const { room, pid } = ctx();
     if (!room) return;
     const p = room.players.get(pid);
@@ -1199,7 +1200,7 @@ io.on('connection', (socket) => {
     }
     scheduleCleanup(room);
     broadcast(room);
-  });
+  } catch (e) { console.error('[sock] disconnect', e); } });
 });
 
 const PORT = process.env.PORT || 3000;

@@ -200,6 +200,7 @@
       var u = roleUrl(id), k = 'r:' + id;
       if (!u) return;
       if (done[k] === true && urls[k] && urls[k] !== u && !asked[u] && !pending['u:' + id] && !isSlow()) {
+        if (!doc.querySelector('.card[data-role="' + id + '"][data-size=md],.card[data-role="' + id + '"][data-size=xl]')) return;
         load('u:' + id, u, front).then(function (ok) {
           if (!ok) return;
           urls[k] = u;
@@ -312,7 +313,7 @@
       if (size !== 'xs' && size !== 'sm') h += '<span class="card-ord">' + esc(r.ord || '') + '</span>';
       if (size !== 'xs') h += '<svg class="card-tm" aria-hidden="true"><use href="#' + (ART.TEAM_SYMBOL[r.team] || 'tm-village') + '"/></svg>';
       h += '<span class="card-sg" aria-hidden="true"><svg><use href="#' + (r.sigil || 'sg-' + roleId) + '"/></svg></span>';
-      if (!small) h += '<svg class="card-sw" aria-hidden="true"><use href="#rp-turn"/></svg>';
+      if (!small || (o.cls && o.cls.indexOf('is-swapped') >= 0)) h += '<svg class="card-sw" aria-hidden="true"><use href="#rp-turn"/></svg>';
       h += '<div class="card-name">' + esc(r.name) + '</div>';
       if (size === 'xl') h += '<div class="card-line">' + esc(r.line || '') + '</div>';
       h += '</div></div>';
@@ -320,7 +321,7 @@
     if (!r || !flat) {
       h += '<div class="card-back"><svg class="card-bm" aria-hidden="true"><use href="#back-mark"/></svg></div>';
     }
-    return h + '</div></div>';
+    return h + '</div>' + (o.tag ? '<i class="card-lbl" aria-hidden="true">' + esc(o.tag) + '</i>' : '') + '</div>';
   };
 
   if (root.addEventListener) root.addEventListener('online', function () { fails = {}; });

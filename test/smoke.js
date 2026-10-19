@@ -7,7 +7,7 @@ const { io } = require('socket.io-client');
 const TS = require(path.join(__dirname, '..', 'public/strings.js'));
 if (TS.fmt('${a:이/가}', { a: { t: '민수', h: '<b>민수</b>' } }) !== '<span class="nw"><b>민수</b>가</span>' || TS.fmt('${a:이/가}', { a: '민수' }) !== '민수가') { console.error('FMT assertion failed'); process.exit(1); }
 
-{ const dc = TS.fmt(TS.body.deckCount, { total: 5, need: 6 }); if (dc !== '카드 5장 / 필요 6장' || /(^|[^0-9])s*장/.test(dc.replace(/d+장/g, ''))) { console.error('deckCount assertion failed: ' + dc); process.exit(1); } }
+{ const dc = TS.fmt(TS.body.deckCount, { total: 5, need: 6 }); if (dc !== '카드 5/6장 (가운데 3장 포함)' || /(^|[^0-9])s*장/.test(dc.replace(/d+장/g, ''))) { console.error('deckCount assertion failed: ' + dc); process.exit(1); } }
 
 // ---- 정적 빌드 검사 (FEATURES_SPEC 10.1 G4): 서버를 띄우기 전에 메모리 빌드로 확인한다 ----
 {

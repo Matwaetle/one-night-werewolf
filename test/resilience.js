@@ -29,6 +29,7 @@ async function waitServer() {
   throw new Error('서버가 뜨지 않음');
 }
 
+const until0 = async (f, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (f()) return true; await sleep(30); } return false; };
 const sleepState = async (s) => { for (let i = 0; i < 20 && !s.last; i++) await sleep(50); return s.last; };
 async function main() {
   const a = await waitServer();
@@ -97,6 +98,19 @@ async function main() {
   for (let i = 0; i < 50; i++) burstS.emit('ready', { ready: i % 2 === 0 });
   await sleep(500);
   ok(burstS.frames - before < 25, '프레임 폭주: ' + (burstS.frames - before));
+
+  // 연타 직후의 disconnect 는 속도 제한에 삼켜지면 안 된다 (접속 상태가 남는 버그)
+  {
+    const x = await conn(); const y = await conn();
+    const xr = await emit(x, 'create', { name: '연타자', playerId: 'px1' });
+    ok(xr.ok, 'burst-dc create');
+    ok((await emit(y, 'join', { code: xr.code, name: '관전', playerId: 'py1' })).ok, 'burst-dc join');
+    await sleep(150);
+    const xid = y.last.players.find((p) => p.name === '연타자').id;
+    for (let i = 0; i < 30; i++) x.emit('ready', { ready: i % 2 === 0 });
+    x.close();
+    ok(await until0(() => { const p = y.last && y.last.players.find((q) => q.id === xid); return !p || p.connected === false; }, 2000), '연타 뒤 disconnect 가 반영되지 않음');
+  }
 
   // 한 판: 낮 ready 연타 + 투표 중 끊김/재접속
   const mk = async () => {

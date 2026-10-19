@@ -28,8 +28,9 @@
       if (el && kf && o && (o.fill === 'forwards' || o.fill === 'both')) { var k = kf[kf.length - 1]; for (var p in k) if (p === 'transform' || p === 'opacity') el.style[p] = k[p]; }
       if (done) later(done, 0); return null;
     }
-    el.style.willChange = 'transform,opacity';
-    var a = track(el.animate(kf, o), function () { el.style.willChange = ''; if (done) done(); });
+    var wc = getComputedStyle(el).willChange !== 'auto';
+    if (!wc) el.style.willChange = 'transform,opacity';
+    var a = track(el.animate(kf, o), function () { if (!wc) el.style.willChange = ''; if (done) done(); });
     return a;
   }
   function wait(ms) { return new Promise(function (r) { later(r, ms); }); }
@@ -78,7 +79,7 @@
         if (d.hidden) l = 0; else { if (l) fr.push(t - l); l = t; }
         if (t - t0 < 4000) return requestAnimationFrame(lap);
         fr.sort(function (x, y) { return x - y; }); if (po) po.disconnect();
-        if (n > 180 || mx > 150 || fr[fr.length * 0.9 | 0] > 34) { de.dataset.perf = 'lite'; if (!de.dataset.pf) { de.dataset.pf = 1; return; } try { localStorage.setItem('ww_perf', JSON.stringify({ v: 'lite', t: Date.now() })); } catch (e) { /* 무시 */ } }
+        if (n > 180 || mx > 150 || fr[fr.length * 0.9 | 0] > 34) { de.dataset.perf = 'lite'; if (!de.dataset.pf && !(mx > 150 || n > 250)) { de.dataset.pf = 1; return; } try { localStorage.setItem('ww_perf', JSON.stringify({ v: 'lite', t: Date.now() })); } catch (e) { /* 무시 */ } }
       });
     },
     /* ---------- 눈꺼풀 ---------- */
@@ -99,8 +100,8 @@
     },
 
     /* ---------- 흔들림: #main 전용. px 진폭, n 횟수(회당 60ms). 낮은 사양·reduced면 없음 ---------- */
-    shake: function (px, n) {
-      var el = $('#main'); px = px == null ? 4 : px; n = n || 3;
+    shake: function (px, n, el) {
+      el = el || $('#main'); px = px == null ? 4 : px; n = n || 3;
       if (!el || lite() || calm() || !canAnim) return Promise.resolve();
       var kf = [{ transform: 'translateX(0)' }], i;
       for (i = 0; i < n; i++) { kf.push({ transform: 'translateX(' + (i % 2 ? -px : px) + 'px)' }); }
@@ -118,7 +119,7 @@
     rustle: function () {
       var v = $('.vignette'), ms = 400 + Math.random() * 2100;
       later(function () {
-        FX.shake(1, 2);
+        FX.shake(1, 2, $('#stage'));
         if (v) { v.classList.add('fx-dark'); later(function () { v.classList.remove('fx-dark'); }, 700); }
       }, ms);
     },

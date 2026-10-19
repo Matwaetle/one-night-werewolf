@@ -34,7 +34,7 @@ function check(name, fx) {
   const allIdle = N.ev.every((e) => e.k === 'idle');
   let runs = 0, prevIdle = false;
   for (const e of N.ev) { if (e.k === 'idle') { if (!prevIdle) runs++; prevIdle = true; } else { runs++; prevIdle = false; } }
-  const swapped = R.players.filter((p, s) => N.end[s] !== s || p.original !== p.effective).length;
+  const swapped = R.players.filter((p, s) => N.end[s] !== s).length;
   const expect = 1 + (allIdle ? 1 : runs) + 1 + swapped + 1 + 1 + R.deaths.filter((d) => d.by !== 'vote').length + 1;
   assert.strictEqual(bs.length, expect, name + ': beat count ' + bs.length + ' != ' + expect);
   // 6: effective roles
