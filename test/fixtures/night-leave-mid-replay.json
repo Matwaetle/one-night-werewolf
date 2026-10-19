@@ -2,63 +2,63 @@
  "name": "leave-mid-replay",
  "n": 4,
  "meSeat": 0,
- "meId": "bot-봇1-0.5553270519466729",
+ "meId": "bot-봇1-0.2628974227597597",
  "leave": {
-  "id": "bot-봇4-0.6180412865443388",
+  "id": "bot-봇4-0.5996336980720437",
   "seat": 3,
   "statePlayers": [
-   "bot-봇1-0.5553270519466729",
-   "bot-봇2-0.9343612567340346",
-   "bot-봇3-0.39699435454345156"
+   "bot-봇1-0.2628974227597597",
+   "bot-봇2-0.2828111324237593",
+   "bot-봇3-0.8457314761666307"
   ]
  },
  "result": {
-  "gameId": "c7ec45c0",
+  "gameId": "b7761c0e",
   "players": [
    {
-    "id": "bot-봇1-0.5553270519466729",
+    "id": "bot-봇1-0.2628974227597597",
     "name": "봇1",
     "original": "villager",
     "final": "villager",
     "effective": "villager",
     "team": "village",
-    "vote": "bot-봇3-0.39699435454345156",
+    "vote": "bot-봇3-0.8457314761666307",
     "votes": 1,
     "dead": false,
     "win": true
    },
    {
-    "id": "bot-봇2-0.9343612567340346",
+    "id": "bot-봇2-0.2828111324237593",
     "name": "봇2",
     "original": "seer",
     "final": "seer",
     "effective": "seer",
     "team": "village",
-    "vote": "bot-봇3-0.39699435454345156",
+    "vote": "bot-봇3-0.8457314761666307",
     "votes": 0,
     "dead": false,
     "win": true
    },
    {
-    "id": "bot-봇3-0.39699435454345156",
+    "id": "bot-봇3-0.8457314761666307",
     "name": "봇3",
     "original": "werewolf",
     "final": "werewolf",
     "effective": "werewolf",
     "team": "wolf",
-    "vote": "bot-봇1-0.5553270519466729",
+    "vote": "bot-봇1-0.2628974227597597",
     "votes": 3,
     "dead": true,
     "win": false
    },
    {
-    "id": "bot-봇4-0.6180412865443388",
+    "id": "bot-봇4-0.5996336980720437",
     "name": "봇4",
     "original": "villager",
     "final": "villager",
     "effective": "villager",
     "team": "village",
-    "vote": "bot-봇3-0.39699435454345156",
+    "vote": "bot-봇3-0.8457314761666307",
     "votes": 0,
     "dead": false,
     "win": true

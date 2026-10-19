@@ -60,6 +60,7 @@ function check(name, fx) {
   assert(B.total > 5000 && B.total < 200000, name + ': total ms ' + B.total);
   // verdict self line
   if (me_ >= 0) assert(strip(last.l3).trim().length > 5, name + ': self line');
+  if (me_ >= 0) assert(strip(last.l3).includes('당신') && !strip(last.l3).includes('소속입니다'), name + ': self line wording: ' + strip(last.l3));
   // slots by result.players only (SPEC 13.11-8)
   assert.deepStrictEqual(REPLAY.slotIds(R), R.players.map((p) => p.id));
   return B;
@@ -95,6 +96,7 @@ must('doppel-robber-steals-wolf', (fx, B, N) => {         // 7: pack comes from 
   assert.notDeepStrictEqual(holders.slice().sort(), e.by.slice().sort(), 'wolf-card holders must differ from event.by in this scenario');
   const txt = strip(b.l2); e.by.forEach((s) => assert(txt.includes(fx.result.players[s].name), 'pack text misses ' + s));
 });
+must('doppel-robber', (fx, B) => { const b = B.beats.find((x) => x.k === 'swap' && x.r === 'robber'); assert(b && strip(b.l2).includes('도플갱어(')); });
 must('doppel-drunk', (fx, B, N) => { const e = N.ev.find((x) => (x.r || x.st) === 'drunk'); assert(e); assert(B.belief[e.by[0]].blind); });
 must('doppel-robber', (fx, B, N) => { const e = N.ev.find((x) => x.r === 'robber'); assert(e && e.st === 'doppelganger'); const b = B.belief[e.by[0]]; assert.strictEqual(b.role, B.effRole(e.see[0][0])); assert(!b.blind); });
 must('doppel-insomniac', (fx, B, N) => { const e = N.ev.find((x) => x.k === 'peek' && x.by.some((s) => fx.result.players[s].original === 'doppelganger')); assert(e); e.by.forEach((s) => { const x = e.see.find((z) => z[1] === s); assert.strictEqual(B.belief[s].role, B.effRole(x[0])); }); });

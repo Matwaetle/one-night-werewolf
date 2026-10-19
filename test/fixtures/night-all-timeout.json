@@ -2,78 +2,78 @@
  "name": "all-timeout",
  "n": 6,
  "meSeat": 0,
- "meId": "bot-봇1-0.04492284114350753",
+ "meId": "bot-봇1-0.2566830950409328",
  "result": {
-  "gameId": "515efd35",
+  "gameId": "e0d5fb62",
   "players": [
    {
-    "id": "bot-봇1-0.04492284114350753",
+    "id": "bot-봇1-0.2566830950409328",
     "name": "봇1",
     "original": "doppelganger",
     "final": "doppelganger",
     "effective": "werewolf",
     "team": "wolf",
-    "vote": "bot-봇2-0.8605856340752337",
+    "vote": "bot-봇2-0.18380312944342192",
     "votes": 1,
     "dead": false,
     "win": true
    },
    {
-    "id": "bot-봇2-0.8605856340752337",
+    "id": "bot-봇2-0.18380312944342192",
     "name": "봇2",
     "original": "werewolf",
     "final": "werewolf",
     "effective": "werewolf",
     "team": "wolf",
-    "vote": "bot-봇3-0.9544429944822688",
+    "vote": "bot-봇3-0.6883256279660345",
     "votes": 1,
     "dead": false,
     "win": true
    },
    {
-    "id": "bot-봇3-0.9544429944822688",
+    "id": "bot-봇3-0.6883256279660345",
     "name": "봇3",
     "original": "seer",
     "final": "seer",
     "effective": "seer",
     "team": "village",
-    "vote": "bot-봇4-0.7920973165305485",
+    "vote": "bot-봇4-0.5810225063579028",
     "votes": 1,
     "dead": false,
     "win": false
    },
    {
-    "id": "bot-봇4-0.7920973165305485",
+    "id": "bot-봇4-0.5810225063579028",
     "name": "봇4",
     "original": "robber",
     "final": "robber",
     "effective": "robber",
     "team": "village",
-    "vote": "bot-봇5-0.46950832318031",
+    "vote": "bot-봇5-0.4858858999376243",
     "votes": 1,
     "dead": false,
     "win": false
    },
    {
-    "id": "bot-봇5-0.46950832318031",
+    "id": "bot-봇5-0.4858858999376243",
     "name": "봇5",
     "original": "troublemaker",
     "final": "troublemaker",
     "effective": "troublemaker",
     "team": "village",
-    "vote": "bot-봇6-0.2883393741932696",
+    "vote": "bot-봇6-0.8124790373844106",
     "votes": 1,
     "dead": false,
     "win": false
    },
    {
-    "id": "bot-봇6-0.2883393741932696",
+    "id": "bot-봇6-0.8124790373844106",
     "name": "봇6",
     "original": "drunk",
-    "final": "insomniac",
-    "effective": "insomniac",
+    "final": "villager",
+    "effective": "villager",
     "team": "village",
-    "vote": "bot-봇1-0.04492284114350753",
+    "vote": "bot-봇1-0.2566830950409328",
     "votes": 1,
     "dead": false,
     "win": false
@@ -92,8 +92,8 @@
    ],
    "final": [
     "werewolf",
-    "drunk",
-    "villager"
+    "insomniac",
+    "drunk"
    ]
   },
   "doppelCopy": "werewolf",
@@ -184,15 +184,15 @@
       5
      ],
      "tg": [
-      7
+      8
      ],
      "mv": [
       [
        5,
-       7
+       8
       ],
       [
-       7,
+       8,
        5
       ]
      ],
@@ -210,10 +210,10 @@
     2,
     3,
     4,
-    7,
+    8,
     6,
-    5,
-    8
+    7,
+    5
    ]
   }
  }

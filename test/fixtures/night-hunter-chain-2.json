@@ -2,66 +2,66 @@
  "name": "hunter-chain-2",
  "n": 5,
  "meSeat": 0,
- "meId": "bot-봇1-0.6866073407085088",
+ "meId": "bot-봇1-0.3573866757208738",
  "result": {
-  "gameId": "9a4de93a",
+  "gameId": "61d80b24",
   "players": [
    {
-    "id": "bot-봇1-0.6866073407085088",
+    "id": "bot-봇1-0.3573866757208738",
     "name": "봇1",
     "original": "doppelganger",
     "final": "doppelganger",
     "effective": "hunter",
     "team": "village",
-    "vote": "bot-봇2-0.9887139468984577",
+    "vote": "bot-봇2-0.773615100225645",
     "votes": 3,
     "dead": true,
     "win": true
    },
    {
-    "id": "bot-봇2-0.9887139468984577",
+    "id": "bot-봇2-0.773615100225645",
     "name": "봇2",
     "original": "hunter",
     "final": "hunter",
     "effective": "hunter",
     "team": "village",
-    "vote": "bot-봇5-0.5082606023545324",
+    "vote": "bot-봇5-0.4457284025533965",
     "votes": 1,
     "dead": true,
     "win": true
    },
    {
-    "id": "bot-봇3-0.235021523642582",
+    "id": "bot-봇3-0.6245689404124473",
     "name": "봇3",
     "original": "villager",
     "final": "villager",
     "effective": "villager",
     "team": "village",
-    "vote": "bot-봇1-0.6866073407085088",
+    "vote": "bot-봇1-0.3573866757208738",
     "votes": 0,
     "dead": false,
     "win": true
    },
    {
-    "id": "bot-봇4-0.2902473860808795",
+    "id": "bot-봇4-0.2269047964330304",
     "name": "봇4",
     "original": "villager",
     "final": "villager",
     "effective": "villager",
     "team": "village",
-    "vote": "bot-봇1-0.6866073407085088",
+    "vote": "bot-봇1-0.3573866757208738",
     "votes": 0,
     "dead": false,
     "win": true
    },
    {
-    "id": "bot-봇5-0.5082606023545324",
+    "id": "bot-봇5-0.4457284025533965",
     "name": "봇5",
     "original": "werewolf",
     "final": "werewolf",
     "effective": "werewolf",
     "team": "wolf",
-    "vote": "bot-봇1-0.6866073407085088",
+    "vote": "bot-봇1-0.3573866757208738",
     "votes": 1,
     "dead": true,
     "win": false
@@ -111,12 +111,12 @@
   ],
   "hunterKills": [
    {
-    "hunter": "bot-봇1-0.6866073407085088",
-    "target": "bot-봇2-0.9887139468984577"
+    "hunter": "bot-봇1-0.3573866757208738",
+    "target": "bot-봇2-0.773615100225645"
    },
    {
-    "hunter": "bot-봇2-0.9887139468984577",
-    "target": "bot-봇5-0.5082606023545324"
+    "hunter": "bot-봇2-0.773615100225645",
+    "target": "bot-봇5-0.4457284025533965"
    }
   ],
   "timeline": [],

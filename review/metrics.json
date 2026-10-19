@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T11:00:15.939Z",
+  "generatedAt": "2026-10-19T11:31:39.257Z",
   "conditions": {
     "serverTimeScale": 0.35,
     "browser": "Chrome/155.0.8059.82"
@@ -9,27 +9,27 @@
       "dataNet": "fast",
       "effectiveType": "3g",
       "keyArtRequestedWithin4s": true,
-      "formInteractiveMs": 761,
-      "socketReadyMs": 1100,
-      "firstContentfulPaintMs": 704,
-      "responseStartMs": 6,
+      "formInteractiveMs": 759,
+      "socketReadyMs": 1109,
+      "firstContentfulPaintMs": 564,
+      "responseStartMs": 4,
       "beforeFormInteractive": {
         "requests": 9,
-        "httpBytes": 56548,
+        "httpBytes": 57130,
         "wsBytes": 0,
-        "bytes": 56548
+        "bytes": 57130
       },
       "beforeSocketReady": {
         "requests": 9,
-        "httpBytes": 86821,
+        "httpBytes": 67153,
         "wsBytes": 169,
-        "bytes": 86990
+        "bytes": 67322
       },
       "afterSettled4s": {
         "requests": 9,
-        "httpBytes": 124898,
+        "httpBytes": 126031,
         "wsBytes": 169,
-        "bytes": 125067
+        "bytes": 126200
       },
       "heaviestRequests": [
         {
@@ -38,13 +38,13 @@
           "type": "Image"
         },
         {
-          "url": "/a/game.edd37d67.js",
-          "bytes": 25210,
+          "url": "/a/game.78872a81.js",
+          "bytes": 25622,
           "type": "Script"
         },
         {
-          "url": "/a/hanbam-d.898bd085.woff2",
-          "bytes": 20665,
+          "url": "/a/hanbam-d.a2829693.woff2",
+          "bytes": 20801,
           "type": "Font"
         },
         {
@@ -54,18 +54,18 @@
         },
         {
           "url": "/",
-          "bytes": 8985,
+          "bytes": 9155,
           "type": "Document"
+        },
+        {
+          "url": "/a/game.38fbce6c.css",
+          "bytes": 7513,
+          "type": "Stylesheet"
         },
         {
           "url": "/a/hanbam-t.efa0cee4.woff2",
           "bytes": 7476,
           "type": "Font"
-        },
-        {
-          "url": "/a/game.01637c8a.css",
-          "bytes": 7098,
-          "type": "Stylesheet"
         },
         {
           "url": "/a/fx.739212dc.js",
@@ -77,429 +77,421 @@
     "game": {
       "note": "홈 로드부터 결말 재현 종료까지 한 판 ",
       "total": {
-        "requests": 27,
-        "httpBytes": 619444,
-        "wsBytes": 32283,
-        "bytes": 651727
+        "requests": 34,
+        "httpBytes": 818226,
+        "wsBytes": 46654,
+        "bytes": 864880
       },
       "afterFirstHomeLoad": {
-        "requests": 18,
-        "bytes": 526660
+        "requests": 25,
+        "bytes": 738680
       },
       "byResourceType": {
-        "Document": 8985,
-        "Font": 28141,
-        "Script": 42337,
+        "Document": 9155,
+        "Script": 55688,
         "Fetch": 260,
-        "Stylesheet": 7098,
-        "Image": 532623
+        "Font": 28277,
+        "Stylesheet": 7513,
+        "Image": 717333
       },
-      "wsFrames": 74,
-      "durationSec": 131
+      "wsFrames": 88,
+      "durationSec": 123
     },
     "websocketThrottleNote": "Chrome CDP 네트워크 제한은 WebSocket 프레임에 적용되지 않는다. HTTP(문서/에셋/폴링)에만 지연·대역폭이 걸린다."
   },
   "cpu": {
     "cpuThrottle": 6,
     "nightTransitions": {
-      "seconds": 28.7,
-      "longTasks": 10,
-      "longTaskTotalMs": 1474,
-      "longTaskMaxMs": 482,
+      "seconds": 29.4,
+      "longTasks": 9,
+      "longTaskTotalMs": 1197,
+      "longTaskMaxMs": 322,
       "longTaskList": [
         {
-          "atMs": 355,
-          "durMs": 201
-        },
-        {
-          "atMs": 564,
-          "durMs": 50
-        },
-        {
-          "atMs": 1614,
-          "durMs": 482
-        },
-        {
-          "atMs": 2394,
-          "durMs": 104
-        },
-        {
-          "atMs": 4807,
-          "durMs": 142
-        },
-        {
-          "atMs": 13240,
-          "durMs": 102
-        },
-        {
-          "atMs": 13774,
-          "durMs": 112
-        },
-        {
-          "atMs": 14735,
-          "durMs": 107
-        },
-        {
-          "atMs": 16052,
-          "durMs": 100
-        },
-        {
-          "atMs": 28588,
-          "durMs": 74
-        }
-      ],
-      "fpsAvg": 117.2,
-      "frameP95Ms": 14,
-      "framesOver50ms": 14
-    },
-    "replay": {
-      "seconds": 70.6,
-      "longTasks": 53,
-      "longTaskTotalMs": 6411,
-      "longTaskMaxMs": 507,
-      "longTaskList": [
-        {
-          "atMs": 41,
-          "durMs": 181
-        },
-        {
-          "atMs": 1534,
-          "durMs": 203
-        },
-        {
-          "atMs": 1738,
-          "durMs": 170
-        },
-        {
-          "atMs": 4821,
-          "durMs": 153
-        },
-        {
-          "atMs": 4975,
+          "atMs": 264,
           "durMs": 117
         },
         {
-          "atMs": 5107,
-          "durMs": 62
+          "atMs": 1537,
+          "durMs": 322
         },
         {
-          "atMs": 7896,
-          "durMs": 210
+          "atMs": 2140,
+          "durMs": 57
         },
         {
-          "atMs": 8106,
-          "durMs": 131
+          "atMs": 4769,
+          "durMs": 176
         },
         {
-          "atMs": 8951,
+          "atMs": 13183,
+          "durMs": 151
+        },
+        {
+          "atMs": 13672,
           "durMs": 69
         },
         {
-          "atMs": 12323,
-          "durMs": 155
+          "atMs": 14561,
+          "durMs": 132
         },
         {
-          "atMs": 12479,
-          "durMs": 142
+          "atMs": 14701,
+          "durMs": 63
         },
         {
-          "atMs": 12974,
-          "durMs": 143
-        },
-        {
-          "atMs": 13181,
-          "durMs": 61
-        },
-        {
-          "atMs": 16817,
-          "durMs": 134
-        },
-        {
-          "atMs": 16952,
-          "durMs": 82
-        },
-        {
-          "atMs": 20558,
-          "durMs": 142
-        },
-        {
-          "atMs": 20700,
-          "durMs": 102
-        },
-        {
-          "atMs": 20843,
-          "durMs": 58
-        },
-        {
-          "atMs": 23656,
-          "durMs": 156
-        },
-        {
-          "atMs": 23813,
-          "durMs": 84
-        },
-        {
-          "atMs": 24342,
-          "durMs": 71
-        },
-        {
-          "atMs": 24656,
-          "durMs": 72
-        },
-        {
-          "atMs": 28011,
-          "durMs": 68
-        },
-        {
-          "atMs": 28079,
-          "durMs": 76
-        },
-        {
-          "atMs": 30478,
-          "durMs": 157
-        },
-        {
-          "atMs": 31398,
-          "durMs": 58
-        },
-        {
-          "atMs": 36056,
-          "durMs": 92
-        },
-        {
-          "atMs": 36149,
-          "durMs": 77
-        },
-        {
-          "atMs": 38005,
-          "durMs": 118
-        },
-        {
-          "atMs": 41752,
-          "durMs": 130
-        },
-        {
-          "atMs": 41883,
-          "durMs": 113
-        },
-        {
-          "atMs": 45622,
-          "durMs": 186
-        },
-        {
-          "atMs": 45809,
-          "durMs": 121
-        },
-        {
-          "atMs": 48107,
-          "durMs": 81
-        },
-        {
-          "atMs": 48189,
-          "durMs": 91
-        },
-        {
-          "atMs": 50379,
-          "durMs": 131
-        },
-        {
-          "atMs": 50510,
-          "durMs": 87
-        },
-        {
-          "atMs": 52628,
-          "durMs": 126
-        },
-        {
-          "atMs": 52754,
-          "durMs": 106
-        },
-        {
-          "atMs": 54908,
-          "durMs": 165
+          "atMs": 29299,
+          "durMs": 110
         }
       ],
-      "fpsAvg": 123.7,
+      "fpsAvg": 129,
       "frameP95Ms": 7,
-      "framesOver50ms": 34
+      "framesOver50ms": 10
     },
-    "wholeGame": {
-      "seconds": 114.6,
-      "longTasks": 69,
-      "longTaskTotalMs": 9192,
-      "longTaskMaxMs": 632,
+    "replay": {
+      "seconds": 73.3,
+      "longTasks": 53,
+      "longTaskTotalMs": 7367,
+      "longTaskMaxMs": 568,
       "longTaskList": [
         {
-          "atMs": 355,
-          "durMs": 201
+          "atMs": 50,
+          "durMs": 320
         },
         {
-          "atMs": 564,
+          "atMs": 371,
           "durMs": 50
         },
         {
-          "atMs": 1614,
-          "durMs": 482
+          "atMs": 1191,
+          "durMs": 97
         },
         {
-          "atMs": 2394,
-          "durMs": 104
+          "atMs": 1288,
+          "durMs": 175
         },
         {
-          "atMs": 4807,
-          "durMs": 142
+          "atMs": 4369,
+          "durMs": 166
         },
         {
-          "atMs": 13240,
-          "durMs": 102
-        },
-        {
-          "atMs": 13774,
-          "durMs": 112
-        },
-        {
-          "atMs": 14735,
-          "durMs": 107
-        },
-        {
-          "atMs": 16052,
-          "durMs": 100
-        },
-        {
-          "atMs": 28588,
-          "durMs": 74
-        },
-        {
-          "atMs": 29340,
-          "durMs": 68
-        },
-        {
-          "atMs": 32980,
-          "durMs": 51
-        },
-        {
-          "atMs": 35679,
-          "durMs": 87
-        },
-        {
-          "atMs": 41215,
-          "durMs": 632
-        },
-        {
-          "atMs": 41850,
+          "atMs": 4536,
           "durMs": 128
         },
         {
-          "atMs": 42046,
-          "durMs": 341
+          "atMs": 4675,
+          "durMs": 52
         },
         {
-          "atMs": 42459,
-          "durMs": 181
+          "atMs": 7683,
+          "durMs": 176
         },
         {
-          "atMs": 43952,
-          "durMs": 203
+          "atMs": 7859,
+          "durMs": 123
         },
         {
-          "atMs": 44156,
-          "durMs": 170
+          "atMs": 8703,
+          "durMs": 59
         },
         {
-          "atMs": 47239,
-          "durMs": 153
+          "atMs": 12343,
+          "durMs": 95
         },
         {
-          "atMs": 47393,
-          "durMs": 117
+          "atMs": 12440,
+          "durMs": 119
         },
         {
-          "atMs": 47526,
-          "durMs": 62
+          "atMs": 12919,
+          "durMs": 204
         },
         {
-          "atMs": 50314,
-          "durMs": 210
+          "atMs": 17301,
+          "durMs": 236
         },
         {
-          "atMs": 50524,
-          "durMs": 131
+          "atMs": 17538,
+          "durMs": 149
         },
         {
-          "atMs": 51369,
-          "durMs": 69
+          "atMs": 21176,
+          "durMs": 114
         },
         {
-          "atMs": 54742,
-          "durMs": 155
+          "atMs": 21290,
+          "durMs": 114
         },
         {
-          "atMs": 54897,
-          "durMs": 142
+          "atMs": 21464,
+          "durMs": 51
         },
         {
-          "atMs": 55392,
-          "durMs": 143
+          "atMs": 24190,
+          "durMs": 167
         },
         {
-          "atMs": 55599,
-          "durMs": 61
+          "atMs": 24358,
+          "durMs": 120
         },
         {
-          "atMs": 59235,
-          "durMs": 134
+          "atMs": 24891,
+          "durMs": 122
         },
         {
-          "atMs": 59370,
-          "durMs": 82
+          "atMs": 25200,
+          "durMs": 67
         },
         {
-          "atMs": 62976,
-          "durMs": 142
+          "atMs": 28837,
+          "durMs": 76
         },
         {
-          "atMs": 63118,
-          "durMs": 102
+          "atMs": 28913,
+          "durMs": 126
         },
         {
-          "atMs": 63261,
-          "durMs": 58
+          "atMs": 30617,
+          "durMs": 247
         },
         {
-          "atMs": 66074,
-          "durMs": 156
-        },
-        {
-          "atMs": 66231,
-          "durMs": 84
-        },
-        {
-          "atMs": 66760,
+          "atMs": 31570,
           "durMs": 71
         },
         {
-          "atMs": 67074,
-          "durMs": 72
+          "atMs": 36231,
+          "durMs": 103
         },
         {
-          "atMs": 70429,
-          "durMs": 68
+          "atMs": 36335,
+          "durMs": 102
         },
         {
-          "atMs": 70497,
-          "durMs": 76
+          "atMs": 38078,
+          "durMs": 182
+        },
+        {
+          "atMs": 41863,
+          "durMs": 178
+        },
+        {
+          "atMs": 42041,
+          "durMs": 120
+        },
+        {
+          "atMs": 45772,
+          "durMs": 167
+        },
+        {
+          "atMs": 45940,
+          "durMs": 109
+        },
+        {
+          "atMs": 48225,
+          "durMs": 173
+        },
+        {
+          "atMs": 48398,
+          "durMs": 118
+        },
+        {
+          "atMs": 50627,
+          "durMs": 164
+        },
+        {
+          "atMs": 50792,
+          "durMs": 109
+        },
+        {
+          "atMs": 52947,
+          "durMs": 170
+        },
+        {
+          "atMs": 53118,
+          "durMs": 103
+        },
+        {
+          "atMs": 55265,
+          "durMs": 170
         }
       ],
-      "fpsAvg": 121.2,
-      "frameP95Ms": 14,
-      "framesOver50ms": 55
+      "fpsAvg": 124.9,
+      "frameP95Ms": 7,
+      "framesOver50ms": 33
+    },
+    "wholeGame": {
+      "seconds": 114.8,
+      "longTasks": 70,
+      "longTaskTotalMs": 10399,
+      "longTaskMaxMs": 711,
+      "longTaskList": [
+        {
+          "atMs": 264,
+          "durMs": 117
+        },
+        {
+          "atMs": 1537,
+          "durMs": 322
+        },
+        {
+          "atMs": 2140,
+          "durMs": 57
+        },
+        {
+          "atMs": 4769,
+          "durMs": 176
+        },
+        {
+          "atMs": 13183,
+          "durMs": 151
+        },
+        {
+          "atMs": 13672,
+          "durMs": 69
+        },
+        {
+          "atMs": 14561,
+          "durMs": 132
+        },
+        {
+          "atMs": 14701,
+          "durMs": 63
+        },
+        {
+          "atMs": 29299,
+          "durMs": 110
+        },
+        {
+          "atMs": 29596,
+          "durMs": 57
+        },
+        {
+          "atMs": 32813,
+          "durMs": 122
+        },
+        {
+          "atMs": 36150,
+          "durMs": 51
+        },
+        {
+          "atMs": 38365,
+          "durMs": 711
+        },
+        {
+          "atMs": 39078,
+          "durMs": 596
+        },
+        {
+          "atMs": 39724,
+          "durMs": 170
+        },
+        {
+          "atMs": 39935,
+          "durMs": 76
+        },
+        {
+          "atMs": 40067,
+          "durMs": 320
+        },
+        {
+          "atMs": 40388,
+          "durMs": 50
+        },
+        {
+          "atMs": 41208,
+          "durMs": 97
+        },
+        {
+          "atMs": 41305,
+          "durMs": 175
+        },
+        {
+          "atMs": 44386,
+          "durMs": 166
+        },
+        {
+          "atMs": 44553,
+          "durMs": 128
+        },
+        {
+          "atMs": 44692,
+          "durMs": 52
+        },
+        {
+          "atMs": 47700,
+          "durMs": 176
+        },
+        {
+          "atMs": 47876,
+          "durMs": 123
+        },
+        {
+          "atMs": 48720,
+          "durMs": 59
+        },
+        {
+          "atMs": 52360,
+          "durMs": 95
+        },
+        {
+          "atMs": 52457,
+          "durMs": 119
+        },
+        {
+          "atMs": 52936,
+          "durMs": 204
+        },
+        {
+          "atMs": 57318,
+          "durMs": 236
+        },
+        {
+          "atMs": 57555,
+          "durMs": 149
+        },
+        {
+          "atMs": 61193,
+          "durMs": 114
+        },
+        {
+          "atMs": 61307,
+          "durMs": 114
+        },
+        {
+          "atMs": 61481,
+          "durMs": 51
+        },
+        {
+          "atMs": 64207,
+          "durMs": 167
+        },
+        {
+          "atMs": 64375,
+          "durMs": 120
+        },
+        {
+          "atMs": 64908,
+          "durMs": 122
+        },
+        {
+          "atMs": 65217,
+          "durMs": 67
+        },
+        {
+          "atMs": 68854,
+          "durMs": 76
+        },
+        {
+          "atMs": 68930,
+          "durMs": 126
+        }
+      ],
+      "fpsAvg": 124.4,
+      "frameP95Ms": 7,
+      "framesOver50ms": 51
     }
   },
   "consoleErrors": [],
-  "notCaptured": [
-    "metrics-net: chat - Waiting failed: 5000ms exceeded",
-    "metrics-net: vote - Waiting failed: 40000ms exceeded",
-    "metrics-net: result - Waiting failed: 40000ms exceeded"
-  ],
-  "shotCount": 0
+  "notCaptured": [],
+  "shotCount": 112
 }

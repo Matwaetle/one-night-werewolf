@@ -237,7 +237,7 @@
     var h = '<div class="card' + (o.cls ? ' ' + esc(o.cls) : '') + '" data-size="' + size + '"';
     if (r) h += ' data-role="' + roleId + '" data-team="' + r.team + '"';
     h += ' data-face="' + face + '" data-art="' + artOn + '"' + (flat ? ' data-flat="1"' : '') +
-      (o.label ? ' data-lbl="1"' : '') + ' role="img" aria-label="' + esc(label) + '"><div class="card-in">';
+      (o.label ? ' data-lbl="1"' : '') + (r && Array.from(r.name || '').length >= 5 ? ' data-long="1"' : '') + ' role="img" aria-label="' + esc(label) + '"><div class="card-in">';
 
     if (r) {
       h += '<div class="card-front"><div class="card-plate">' +

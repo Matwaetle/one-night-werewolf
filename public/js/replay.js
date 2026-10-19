@@ -13,8 +13,10 @@ function build(R, meId) {
   const N = R.night, P = R.players, n = P.length, D = N.deal, E = N.end, ev = N.ev, B = [], TR = [], pos = D.map((_, i) => i);
   const me = P.findIndex((p) => p.id === meId), ce = ev.find((e) => e.k === 'copy'), cA = ce ? D[ce.see[0][0]] : 0;
   const eff = (c) => D[c] === 'doppelganger' && cA ? cA : D[c];
+  const cn = (c) => D[c] === 'doppelganger' && cA ? fm(RP.copyOf, { r: rn(cA) }) : rn(eff(c));
   const nm = (s) => ({ t: P[s].name, h: '<b class="nm">' + esc(P[s].name) + '</b>' });
   const chip = (r) => ({ t: rn(r), h: '<span class="rp-rc"><svg><use href="#' + RL[r].sigil + '"/></svg>' + esc(rn(r)) + '</span>' });
+  const cc = (c) => ({ t: cn(c), h: '<span class="rp-rc"><svg><use href="#' + RL[D[c]].sigil + '"/></svg>' + esc(cn(c)) + '</span>' });
   const join = (a, sep = RP.sep) => ({ t: a.map((x) => x.t).join(sep), h: a.map((x) => x.h).join(sep) });
   const names = (a) => join(a.map(nm));
   const acts = (a) => join(a.map((s) => P[s].original === 'doppelganger' ? { t: fm(RP.doppelOf, { a: P[s].name }), h: fm(RP.doppelOf, { a: nm(s) }) } : nm(s)));
@@ -37,7 +39,7 @@ function build(R, meId) {
     const e = run[0], k = e.k, by = e.by, tg = e.tg || [], see = e.see || [], s = by[0], st = e.st, r = e.r || st, kn = e.know || [], c0 = see[0] ? see[0][0] : 0, [t0, t1] = tg;
     const dop = s != null && P[s].original === 'doppelganger';
     const o = add('night', { k, e, st, r, by, tg, pre, post, rel: by.concat(tg, kn), mv: e.mv, floor: 1400, gl: s, rn: RL[st].ord + (r !== st ? ' → ' + RL[r].ord : '') });
-    let V = { role: s != null && rn(P[s].original), a: s != null && nm(s), t: t0 < n && nm(t0), b: t0 < n && nm(t0), c: t1 < n && nm(t1), P: AL[t0 - n], Q: AL[t1 - n], r: see[0] ? chip(eff(c0)) : t0 != null && chip(eff(pre[t0])), r2: see[1] ? chip(eff(see[1][0])) : s != null && chip(eff(pre[s])), rb: t0 != null && chip(eff(pre[t0])), rc: t1 != null && chip(eff(pre[t1])) };
+    let V = { role: s != null && rn(P[s].original), a: s != null && nm(s), t: t0 < n && nm(t0), b: t0 < n && nm(t0), c: t1 < n && nm(t1), P: AL[t0 - n], Q: AL[t1 - n], r: see[0] ? cc(c0) : t0 != null && cc(pre[t0]), r2: see[1] ? cc(see[1][0]) : s != null && cc(pre[s]), rb: t0 != null && cc(pre[t0]), rc: t1 != null && cc(pre[t1]) };
     let key;
     const other = (seen) => {
       const w = [], l = seen == null ? [] : [seen];
@@ -69,7 +71,7 @@ function build(R, meId) {
         const who = {}, dp = by.filter((z) => P[z].original === 'doppelganger'); let ch = 0;
         see.forEach((x) => { who[x[1]] = x[0]; if (eff(x[0]) !== eff(x[1])) ch = 1; });
         o.focus = see.map((x) => ({ slot: x[1], role: eff(x[0]), ch: eff(x[0]) !== eff(x[1]) })); o.rel = by.slice();
-        if (by.length > 1 && dp.length) { const rl = by.find((z) => dp.indexOf(z) < 0); key = RP.peek.insomniacMany; V = { a: nm(rl), b: nm(dp[0]), r: chip(eff(who[rl])), r2: chip(eff(who[dp[0]])) }; }
+        if (by.length > 1 && dp.length) { const rl = by.find((z) => dp.indexOf(z) < 0); key = RP.peek.insomniacMany; V = { a: nm(rl), b: nm(dp[0]), r: cc(who[rl]), r2: cc(who[dp[0]]) }; }
         else { key = RP.peek.insomniac; o.l1 = fm(key.top, V); o.l2 = fm(ch ? key.changed : key.same, V); key = 0; }
       }
     } else if (k === 'swap') {
@@ -95,7 +97,7 @@ function build(R, meId) {
 
   const sw = []; for (let i = 0; i < n + 3; i++) if (E[i] !== i) sw.push(i);
   add('dawn', { pre: E, sw, l1: RP.dawn.top, l2: sw.length ? fm(RP.dawn.bot, { n: sw.length }) : RP.dawn.botNone, floor: 2000 });
-  P.forEach((p, i) => { if (E[i] !== i || p.original !== p.effective) add('seat', { pre: E, s: i, rel: [i], l1: fm(RP.dawn.seat.top, { a: i === me ? RP.you : nm(i), from: rn(p.original), to: rn(eff(E[i])) }), l2: fm(RP.dawn.seat.bot, { team: TEAM[p.team] }) }); });
+  P.forEach((p, i) => { if (E[i] !== i || p.original !== p.effective) add('seat', { pre: E, s: i, rel: [i], l1: fm(RP.dawn.seat.top, { a: i === me ? RP.you : nm(i), from: rn(p.original), to: cn(E[i]) }), l2: fm(RP.dawn.seat.bot, { team: TEAM[p.team] }) }); });
 
   const vc = {}, ab = [];
   P.forEach((p, s) => { const t = P.findIndex((q) => q.id === p.vote); if (t < 0) ab.push(s); else (vc[t] = vc[t] || []).push(s); });
@@ -106,14 +108,14 @@ function build(R, meId) {
   const dv = R.deaths.filter((d) => d.by === 'vote').map((d) => d.s), ex = gs.filter((t) => dv.indexOf(t) >= 0);
   dv.forEach((t) => { if (ex.indexOf(t) < 0) ex.push(t); });
   if (ex.length) add('exec', { pre: E, dead: ex, ex: 1, focus: ex.map((t) => ({ slot: t, role: eff(E[t]) })), floor: 1500, l1: fm(RP.exec.top, { list: names(ex) }),
-    l2: ex.length === 1 ? fm(RP.exec.bot, { r: chip(eff(E[ex[0]])) }) : fm(RP.exec.botMany, { list: join(ex.map((t) => ({ t: '', h: fm(RP.exec.item, { t: nm(t), r: chip(eff(E[t])) }) })), RP.dot) }) });
+    l2: ex.length === 1 ? fm(RP.exec.bot, { r: cc(E[ex[0]]) }) : fm(RP.exec.botMany, { list: join(ex.map((t) => ({ t: '', h: fm(RP.exec.item, { t: nm(t), r: cc(E[t]) }) })), RP.dot) }) });
   else add('nodeath', { pre: E, l1: RP.nodeath.top, floor: 1200 });
   let ruled = 0;
   R.deaths.forEach((d) => {
     if (d.by === 'vote') return;
     const h = d.h, t = d.s, last = D[E[h]], o = add('hunt', { pre: E, h, floor: d.by === 'miss' ? 1000 : 1800, dead: d.by === 'hunter' ? [t] : 0 });
     const hh = fm(RP.hunt.title[last === 'doppelganger' ? 'copy' : P[h].original === 'hunter' && last === 'hunter' ? 'both' : 'last'], { a: nm(h) });
-    if (d.by === 'hunter') { o.l1 = fm(RP.hunt.top, { h: hh, t: nm(t) }); o.l2 = fm(RP.hunt.bot, { t: nm(t), r: chip(eff(E[t])) }); o.focus = [{ slot: t, role: eff(E[t]) }]; tr(o, h, t, { bl: 1, w: 1, s: 1 }); }
+    if (d.by === 'hunter') { o.l1 = fm(RP.hunt.top, { h: hh, t: nm(t) }); o.l2 = fm(RP.hunt.bot, { t: nm(t), r: cc(E[t]) }); o.focus = [{ slot: t, role: eff(E[t]) }]; tr(o, h, t, { bl: 1, w: 1, s: 1 }); }
     else { o.l1 = t >= 0 ? fm(RP.hunt.top0, { h: hh, t: nm(t) }) : fm(RP.hunt.topNone, { h: hh }); if (t >= 0) tr(o, h, t, { s: 1 }); }
     if (!ruled) { ruled = 1; o.l2 = o.l2 ? o.l2 + RP.hunt_rule_join + RP.hunt.rule : RP.hunt.rule; }
   });
@@ -135,7 +137,7 @@ function build(R, meId) {
   if (me >= 0) {
     const f = eff(E[me]), b = bel[me], sf = RP.self, p = P[me], kre = f === 'minion' ? /^(minion|wolf_)/ : f === 'tanner' ? /^(tanner|no_wolf_)/ : 0, w = kre && (R.why || []).slice().reverse().find((x) => kre.test(x[0]));
     self = [b.blind ? fm(sf.blind, { f: chip(f) }) : b.role === f ? fm(sf.same, { f: chip(f) }) : fm(sf.diff, { b: chip(b.role), f: chip(f) }),
-      D[E[me]] === 'doppelganger' && cA ? fm(sf.doppel, { r: chip(cA) }) : '', w ? wy(w) : fm(sf.team, { team: TEAM[p.team] }), p.win ? sf.win : sf.lose].filter(Boolean).join(' ');
+      D[E[me]] === 'doppelganger' && cA ? fm(sf.doppel, { r: chip(cA) }) : '', w ? wy(w) : '', fm(p.win ? sf.win : sf.lose, { team: TEAM[p.team] })].filter(Boolean).join(' ');
   }
   add('verdict', { pre: E, vteam: vk === 'wolf' || vk === 'minion' ? 'wolf' : vk === 'tanner' ? 'tanner' : 'village', l1: T.verdict[vk], l2: (R.why || []).map(wy).join(' '), l3: self, win: me >= 0 ? !!P[me].win : null, floor: 1500 });
 
@@ -149,7 +151,7 @@ function build(R, meId) {
     lines.push({ b: b.i, role: b.act === 'night' && b.r ? b.r : null, h: b.l1 + (b.l2 ? ' ' + b.l2 : '') + (b.l3 ? ' ' + b.l3 : '') });
     (b.abst || []).forEach((s) => lines.push({ b: b.i, role: null, h: fm(RP.vote.none, { a: nm(s) }) }));
   });
-  return { beats: B, tr: TR, total, journey: jr, belief: bel, lines, effRole: eff, me, n, copyAs: cA };
+  return { beats: B, tr: TR, total, journey: jr, belief: bel, lines, effRole: eff, cardName: cn, me, n, copyAs: cA };
 }
 
 /* ---------- DOM ---------- */
@@ -170,7 +172,7 @@ function layout() {
   S.R.players.forEach((p, i) => {
     const tn = seats.find((e) => e.getAttribute('data-pid') === p.id).querySelector('.seat-token'), r = tn.getBoundingClientRect(), d = r.width, cx = r.left + d / 2 - rc.left, cy = r.top + r.height / 2 - rc.top;
     SC[i] = cs / S.cw; TX[i] = cx; TY[i] = cy; S.TD[i] = d;
-    X[i] = nar ? cx + d * .2 + cs / 2 : cx; Y[i] = nar ? cy : cy + d / 2 + 2 + cs * .7; TG[i] = nar ? cy + d / 2 + 2 : Y[i] + cs * .7 + 2;
+    X[i] = nar ? cx + d * .2 + cs / 2 : cx; Y[i] = nar ? cy : cy + d / 2 + 2 + cs * .7; TG[i] = nar ? cy + d / 2 + 2 : Y[i] + cs * .7 + 2; if (TG[i] + 32 > rc.height - 110) TG[i] = cy - d / 2 - 34;
   });
   const al = S.main.querySelectorAll('.altar .card');
   for (let i = n; i < n + 3; i++) { const a = al[i - n].getBoundingClientRect(); X[i] = a.left + a.width / 2 - rc.left; Y[i] = a.top + a.height / 2 - rc.top; SC[i] = a.width / S.cw; TG[i] = Y[i] + a.height / 2 + 2; }
@@ -206,26 +208,26 @@ function scene(i, k) {
   });
   const tagsOn = night || a === 'pro' || a === 'dawn' ? k : 1;
   S.tags.forEach((tg, q) => {
-    const sh = tagsOn && (!night || rel.includes(q)), nx = q < n ? S.R.players[q].name : AL[q - n];
+    const sh = tagsOn && (!night || rel.includes(q)), nx = q < n && S.R.players[q].name;
     cls(tg, 'is-on', sh); cls(tg, 'rp-dim', rel && rel.indexOf(q) < 0); cls(tg, 'is-dead', dead[q]);
-    if (sh) { const h = '<i>' + esc(nx.length > 6 ? nx.slice(0, 6) + '…' : nx) + '</i><b>' + esc(rn(eff(pos[q]))) + '</b>'; if (tg._h !== h) { tg._h = h; tg.innerHTML = h; } }
+    if (sh) { const h = q < n ? '<i>' + esc(nx) + '</i><b>' + esc(i < S.cdone || i === S.cdone && !act ? rn(S.R.night.deal[pos[q]]) : S.B.cardName(pos[q])) + '</b>' : '<i>' + esc(UI.altarShort[q - n]) + '</i>'; if (tg._h !== h) { tg._h = h; tg.innerHTML = h; } }
     if (q < n) { const rg = S.rings[q], ir = ring.includes(q); cls(rg, 'is-on', ir); cls(rg, 'is-eye', ir && b.dark); if (S.seats[q]) cls(S.seats[q], 'is-dead', dead[q]); }
   });
   const votes = {};
   S.ln.forEach((l) => {
-    const t = l.t, v = (i > t.b || i === t.b && k >= (t.s || 2)) && !(t.n && JUDGE[a]) && !(t.v && !DAY[a]), now = t.n && i === t.b && act, e = l.e;
+    const t = l.t, v = (i > t.b || i === t.b && k >= (t.s || 2)) && !(t.n && JUDGE[a]) && !(t.v && !DAY[a]) && a !== 'verdict', now = t.n && i === t.b && act, e = l.e;
     cls(e, 'is-on', v); cls(e, 'is-now', now); cls(e, 'is-trace', v && t.n && !now); cls(e, 'rp-lo', v && t.n && DAY[a]); cls(e, 'rp-hi', v && a === 'seat' && (t.a === b.s || t.c === b.s));
     cls(e, 'is-blood', v && (t.bl || t.v && ex[t.t])); cls(e, 'is-thick', v && t.w); cls(e, 'is-know', t.kn);
     if (l.m) { cls(l.m, 'is-on', v && (now || DAY[a])); cls(l.m, 'is-tr', !now); }
     if (t.v && v) votes[t.t] = (votes[t.t] || 0) + 1;
   });
   S.vms.forEach((m, q) => { m.textContent = votes[q] || ''; cls(m, 'is-on', votes[q]); });
-  const fl = b.focus.length || a !== 'verdict' ? b.focus : (B.find((x) => x.ex) || b).focus;
+  const fl = b.focus;
   S.focus.forEach((f, j) => {
-    const fo = (act || a === 'verdict' && k) && fl[j]; cls(f, 'is-on', fo);
+    const fo = act && fl[j]; cls(f, 'is-on', fo);
     if (fo) {
       const cw = 128, key = fo.role + (fo.ch ? 1 : 0), q = fo.slot < n, sx = (q ? S.TX : S.X)[fo.slot], sy = (q ? S.TY : S.Y)[fo.slot], hc = S.H / 2, wc = S.W / 2;
-      const x = q ? sx + (wc - sx) * .45 : sx, y = q ? sy + (hc - sy) * .45 : sy - S.SC[fo.slot] * S.cw * .7 - cw * .7 - 12;
+      const x = q ? wc : sx, y = q ? S.Y[n + 1] : sy - S.SC[fo.slot] * S.cw * .7 - cw * .7 - 12;
       vset(f, Math.max(16 + cw / 2, Math.min(S.W - 16 - cw / 2, x + (fl.length > 1 ? (j ? 1 : -1) * (cw / 2 + 8) : 0))), Math.max(8 + cw * .7, Math.min(S.H - 8 - cw * .7, y)));
       if (f.getAttribute('data-k') !== key) { f.setAttribute('data-k', key); f.innerHTML = card(fo.role, { size: 'md', face: 1, flat: 1 }) + ico('rp-eye', 'rp-ey2') + (fo.ch ? '<i class="rp-fst">' + T.stamp.changed + '</i>' : ''); }
     }
@@ -249,7 +251,7 @@ function capGo(b) {
 const stop = () => { S.tm.forEach(clearTimeout); S.tm = []; };
 async function play(i) {
   const my = ++S.tok, B = S.B.beats, b = B[i], a = b.act, F = root.FX;
-  stop(); S.i = i; nt(() => scene(i, 0)); ui();
+  stop(); S.i = i; nt(() => scene(i, 0)); ui(); if (a !== 'pro') capGo(b);
   if (a === 'pro') {
     if (!S.lite) {
       await wait(600);
@@ -260,13 +262,12 @@ async function play(i) {
   } else {
     if (b.mv || b.dark) await wait(400);
     if (S.gOn && b.gl != null) { cls(S.glow, 'is-on', 0); await wait(120); }
-    scene(i, 1); if (a !== 'exec') capGo(b);
+    scene(i, 1);
     if (a === 'dawn') {
       await wait(S.lite ? 160 : 1100);
       for (const s of b.sw) { S.cards[b.pre[s]].querySelector('.rp-front .card').classList.add('is-swapped'); if (!S.lite) await wait(120); }
     } else {
       await wait(a === 'exec' ? 800 : a === 'hunt' ? 480 : b.k === 'swap' ? 300 : 0);
-      if (a === 'exec') capGo(b);
       if (b.dead && F && !S.lite) { if (F.shake) F.shake(6, 4); if (F.flash) F.flash('blood', 120); if (F.buzz) F.buzz(12); }
       scene(i, 2);
       if (b.mvs && !S.lite) b.mvs.forEach((m) => cls(S.cards[m.c], 'rp-mv', 1));
@@ -332,7 +333,7 @@ function open(R, meId, o) {
   for (let i = 0; i < n + 3; i++) h += '<span class="rp-tag' + (i < n ? '' : ' rp-al') + '"></span>';
   h += '<div class="rp-focus"></div><div class="rp-focus"></div><p class="rp-note"></p><div class="rp-vd"><p class="rp-vl"><span></span><u class="rp-cv"></u></p><p class="rp-vw"></p><p class="rp-vs"></p><i class="rp-vst"></i></div>';
   h += '<div class="rp-cap" role="status"><p class="rp-l1"><i class="rp-rn"></i><span></span><u class="rp-cv"></u></p><p class="rp-l2"><span></span><u class="rp-cv"></u></p><i class="rp-stamp"></i></div><div class="rp-bar" role="slider" tabindex="0">';
-  B.beats.forEach((b, k) => { const f = !k || B.beats[k - 1].ga !== b.ga; h += '<i class="rp-tick' + (f ? ' is-first' : '') + (b.mv ? ' is-mv' : '') + (b.act === 'exec' || b.act === 'hunt' ? ' is-bl' : '') + '" style="--p:' + (k + .5) / N + '"' + (b.act === 'night' && b.rn ? ' data-r="' + b.rn.split(' ')[0] + '"' : '') + (f ? ' data-a="' + UI.acts[b.ga] + '"' : '') + '></i>'; });
+  B.beats.forEach((b, k) => { const f = !k || B.beats[k - 1].ga !== b.ga; h += '<i class="rp-tick' + (f ? ' is-first' : '') + (b.mv ? ' is-mv' : '') + (b.act === 'exec' || b.act === 'hunt' ? ' is-bl' : '') + '" style="--p:' + (k + .5) / N + '"' + (b.act === 'night' && b.rn ? ' data-r="' + b.rn.split(' ')[0] + '"' : '') + (f && b.ga !== 'pro' ? ' data-a="' + UI.acts[b.ga] + '"' : '') + '></i>'; });
   rp.innerHTML = h + '<i class="rp-prog"></i><button class="rp-rate"></button></div>'; main.appendChild(rp);
   const q = (c) => [...rp.querySelectorAll(c)], bar = S.bar = rp.querySelector('.rp-bar'), cp = rp.querySelector('.rp-cap'), ln = q('.rp-ln'), mks = q('.rp-mk');
   Object.assign(S, { glow: rp.querySelector('.rp-glow'), ld: rp.querySelector('.rp-ld'), lv: rp.querySelector('.rp-lv'), rings: q('.rp-ring'), vms: q('.rp-vm'), cards: q('.rp-card'), tags: q('.rp-tag'), focus: q('.rp-focus'), note: rp.querySelector('.rp-note'), vd: rp.querySelector('.rp-vd'),
@@ -389,7 +390,7 @@ function enhanceBoard(listEl, R, meId, onJump) {
   listEl.querySelectorAll('.rec-row').forEach((row, k) => {
     const s = +(row.getAttribute('data-slot') || k), j = B.journey[s];
     if (!j || row.querySelector('.rec-path')) return;
-    const path = mk('span', 'rec-path', j.length < 2 ? UI.stayed : j.map((x, q) => { const c = B.effRole(x.c); return (q ? '<span class="rp-ar"><i>' + esc(RL[x.st].ord + ' ' + P[x.by].name) + '</i></span>' : '') + '<span class="rp-rc">' + ico(RL[c].sigil) + esc(rn(c)) + '</span>'; }).join(''));
+    const path = mk('span', 'rec-path', j.length < 2 ? UI.stayed : j.map((x, q) => { const c = B.effRole(x.c), cl = B.cardName(x.c); return (q ? '<span class="rp-ar"><i>' + esc(RL[x.st].ord + ' ' + P[x.by].name) + '</i></span>' : '') + '<span class="rp-rc">' + ico(RL[c].sigil) + esc(cl) + '</span>'; }).join(''));
     row.appendChild(path);
     if (s < n) { const b = B.belief[s], df = b.blind || b.role !== B.effRole(R.night.end[s]), bl = mk('span', 'rec-belief' + (df ? ' is-diff' : ''), UI.journey + ' <i>' + (b.blind ? esc(UI.unknown) : esc(rn(b.role))) + '</i>'); bl.setAttribute('data-diff', df ? 1 : 0); row.appendChild(bl); }
     const fb = B.beats.find((x) => x.rel.includes(s));
@@ -402,6 +403,6 @@ function enhanceBoard(listEl, R, meId, onJump) {
   }
 }
 
-const REPLAY = { build, open, seek, next, prev, toggle, rate, skip, close, enhanceBoard, slotIds: (R) => R.players.map((p) => p.id) };
+const REPLAY = { build, open, seek, next, prev, toggle, rate, skip, close, enhanceBoard, relayout: () => { if (S) { layout(); nt(() => scene(S.i, 3)); } }, slotIds: (R) => R.players.map((p) => p.id) };
 if (typeof module !== 'undefined' && module.exports) module.exports = REPLAY; else root.REPLAY = REPLAY;
 })(typeof window !== 'undefined' ? window : globalThis);

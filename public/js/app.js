@@ -185,7 +185,7 @@
       if (/^(seer|robber|drunk|insomniac|doppelganger)$/.test(S.myCard)) ART.prefetchDeck(S.gameDeck);
       if (first) fx('lidsOpen', 0);
       if (!first && from === 'lobby') {   // 좌석 불빛이 하나씩 꺼지고 0.8초 암전
-        const n = S.players.length; ui.intro = 1; ui.out = 0;
+        const n = S.players.length; ui.intro = 1; ui.out = 0; later(400, () => toast(TB.keepAwake));
         for (let i = 0; i < n; i++) later(80 * i, () => { ui.out = i + 1; sched(); });
         later(80 * n, () => fx('lidsClose', 400));
         later(80 * n + 800, () => { ui.intro = 0; fx('lidsOpen', 500); sched(); });
@@ -193,7 +193,7 @@
       later(first ? 0 : 1200, () => speak(NIGHT_TEXT._check));
     } else if (to === 'day') {
       fx('heartbeat', 0); speak(T.narr.dawn); idle(() => ART.prefetchDeck(S.gameDeck), 4000);
-      if (!first) { fx('lidsClose', 0); later(1500, () => { fx('lidsOpen', 2500); banner('day', T.phase.dayBreaks, '', 5600); }); }
+      if (!first) { fx('lidsClose', 0); later(400, () => { fx('lidsOpen', 700); banner('day', T.phase.dayBreaks, '', 3200); }); }
     } else if (to === 'vote') {
       fx('heartbeat', 0); idle(loadReplay, 2000);
       if (!first) { fx('flash', 'blood', 80); banner('vote', TH.judge, '', 2000); }
@@ -216,7 +216,7 @@
   function ticker(text) {
     $$('#main .ticker').forEach((e) => e.remove());
     const p = D.createElement('p'); p.className = 'ticker'; p.textContent = text;
-    $('#main').appendChild(p); setTimeout(() => p.remove(), 2600);
+    const bd = $('.band'); if (!bd || $('#main .fx-head')) return; bd.appendChild(p); setTimeout(() => p.remove(), 2600);
   }
 
   // ---------- 렌더 배치 ----------
@@ -265,7 +265,7 @@
       '<div class="hud-r"><button class="hud-more" data-act="menu" type="button" aria-label="' + esc(TB.ariaMenu) + '"><svg class="ic" aria-hidden="true"><use href="#ic-menu"/></svg></button></div><i class="hud-bar" hidden></i>';
     $('#main').insertAdjacentHTML('beforeend',
       '<div class="stage" id="stage" data-r="stage" data-mode=""><div class="altar" hidden></div><i class="ln"></i>' +
-      '<div class="lm" style="display:contents"></div><div class="rv" style="display:contents"></div><div class="stage-bar">' + esc(TH.ending) + '</div></div>' +
+      '<div class="lm" style="display:contents"></div><div class="rv" style="display:contents"></div><div class="stage-bar" role="button" tabindex="0">' + esc(TBT.unfold) + '</div></div>' +
       '<div class="nl" data-r="prompt" style="display:contents"></div><section class="board" data-r="log" hidden></section>');
     const band = D.createElement('div');
     band.className = 'band'; band.dataset.r = 'prompt'; band.setAttribute('role', 'status'); band.setAttribute('aria-live', 'polite');
@@ -299,7 +299,7 @@
       V.btn = !isHost() ? { lbl: TB.waitChief, dis: 1 } : n < 3 ? { lbl: fmt(TB.lack, { need: 3 - n }), dis: 1 }
         : total !== need ? { lbl: fmt(TB.deckLack, { total, need }), dis: 1 } : { lbl: TBT.start, act: 'start' };
     } else if (mode === 'check') {
-      V.band = NIGHT_TEXT._check; V.btn = { hide: 1 };
+      V.band = TB.checkBand; V.btn = { hide: 1 };
     } else if (mode === 'sleep') {
       V.btn = { lbl: TBT.asleep, dis: 1 }; V.card = 0; V.badge = T.phase.night;
     } else if (mode === 'awake') {
@@ -312,6 +312,7 @@
       V.rule = 1; V.band = TB.pickExec; V.sel = others().map((p) => p.id);
       const t = ui.vsel || S.myVote; if (t) V.target = [t];
       V.btn = ui.vsel && ui.vsel !== S.myVote ? { lbl: TBT.execute, nm: pname(ui.vsel), hold: 600, act: 'vote' } : { lbl: TBT.execute, nm: S.myVote ? pname(S.myVote) : '', dis: 1 };
+      if (S.myVote && (!ui.vsel || ui.vsel === S.myVote)) { V.band = fmt(TB.votedFor, { n: pname(S.myVote) }); V.btn = { lbl: TB.votedBtn, nm: '', dis: 1 }; }
     } else if (mode === 'result') {
       V.btn = isHost() ? { lbl: TBT.again, act: 'again' } : { lbl: TB.waitChiefNext, dis: 1 };
     }
@@ -364,7 +365,7 @@
   function paintHud(V) {
     const sg = $('.hud-sign');
     if (sg._c !== S.code) { sg._c = S.code; sg.textContent = S.code; sg.setAttribute('aria-label', TH.sign + ' ' + S.code); }
-    set($('.hud-phase'), 'textContent', V.hudPhase);
+    set($('.hud-phase'), 'textContent', body.dataset.replay ? T.replay.ui.hudCenter : V.hudPhase);
   }
   function deadline(mode) {
     return S.phase === 'day' ? S.dayEndsAt : S.phase === 'vote' ? S.voteEndsAt : mode === 'awake' ? S.stepEndsAt : 0;
@@ -397,10 +398,10 @@
   }
 
   // ---------- 좌석 · 탁자 ----------
-  function relayout() { if (S && ui.ids.length) { placeSeats(); lines(); } }
+  function relayout() { if (S && ui.ids.length) { placeSeats(); lines(); if (body.dataset.replay && W.REPLAY && REPLAY.relayout) REPLAY.relayout(); } }
   function placeSeats() {
-    const st = $('#stage'), N = ui.ids.length, rp = body.dataset.replay ? 96 : 0, H = st.clientHeight - rp;   // 리플레이 자막 띠만큼 탁자를 위로 올린다
-    const rx = Math.max(60, st.clientWidth / 2 - 40), ry = Math.max(Math.min(150, H / 2 - 30), H / 2 - 64);
+    const st = $('#stage'), N = ui.ids.length, rp = body.dataset.replay ? 96 : 0, H = st.clientHeight - rp, sh = Math.max(64, ...ui.ids.map((id) => (ui.seats[id] ? ui.seats[id].offsetHeight : 0)));   // 리플레이 자막 띠만큼 탁자를 위로 올린다
+    const rx = Math.max(60, st.clientWidth / 2 - 40), ry = Math.max(60, Math.min(H / 2 - 64, H / 2 - sh / 2 - 6));
     ui.pts = ui.ids.map((id, i) => {
       const th = Math.PI / 2 + 2 * Math.PI * ((i - ui.me + N) % N) / N;
       return { x: Math.round(rx * Math.cos(th)), y: Math.round(ry * Math.sin(th)) - rp / 2 };
@@ -452,7 +453,7 @@
         if (ck === 'b') el.insertAdjacentHTML('beforeend', ART.card(null, { size: 'xs' }));
         else if (ck) {
           const sw = p.final !== p.original;
-          el.insertAdjacentHTML('beforeend', ART.card(p.final, { size: 'xs', face: 1, cls: (p.dead ? 'is-dead ' : '') + (sw ? 'is-swapped' : '') }) + (sw ? ART.card(p.original, { size: 'xs', face: 1, cls: 'is-original' }) : ''));
+          el.insertAdjacentHTML('beforeend', ART.card(p.final, { size: desk() ? 'sm' : 'xs', face: 1, cls: (p.dead ? 'is-dead ' : '') + (sw ? 'is-swapped' : '') }) + (sw ? ART.card(p.original, { size: desk() ? 'sm' : 'xs', face: 1, cls: 'is-original' }) : ''));
         }
         ART.mark(el);
       }
@@ -502,11 +503,12 @@
   function lobbyHTML() {
     const d = S.phase === 'night' ? S.gameDeck : S.deck, cards = [], prev = ui.fan, seen = {};
     ROLE_ORDER.forEach((r) => { for (let i = 0; i < (d[r] || 0); i++) cards.push(r); });
+    const all = cards.length, extra = Math.max(0, all - 7); cards.length = Math.min(all, 7);
     const c = cards.length, dense = S.players.length >= 7, h = cards.map((r, i) => {
       seen[r] = (seen[r] || 0) + 1;
       const o = i - (c - 1) / 2, drop = prev[r] !== undefined && seen[r] > prev[r];
       return ART.card(r, { size: 'sm', face: 1, cls: drop ? 'fx-drop' : '' }).replace('class="card', 'style="--r:' + (o * Math.min(6, 60 / c)).toFixed(1) + 'deg;--ty:' + Math.round(o * o * (dense ? 0.8 : 1.4)) + 'px' + (dense ? ';--cw:38px' : '') + '" class="card');
-    }).join('');
+    }).join('') + (extra ? '<span class="fan-more">+' + extra + '</span>' : '');
     ui.fan = seen;
     return '<div class="lobby-mid"><p class="lobby-sign" aria-label="' + esc(TH.sign + ' ' + S.code) + '">' + esc(S.code) + '</p>' +
       '<button class="lobby-copy" type="button" data-act="copy">' + esc(TBT.copyCode) + '</button><p class="lobby-count">' + esc(fmt(TB.fire, { n: S.players.length })) + '</p>' +
@@ -522,11 +524,11 @@
     if (S.phase !== 'night' || m === 'lobby') return '';
     if (m === 'check') {
       return '<div class="check"><div class="check-card" data-peek="check" style="' + NOSEL + '">' + ART.card(S.myCard, { size: 'xl', face: 0 }) + '</div>' +
-        '<p class="check-t1">' + esc(TB.yourCard) + '</p><p class="check-team" hidden></p><p class="check-desc" hidden></p><p class="check-t2">' + esc(TB.holdHint) + '</p><p class="check-t3">' + esc(TB.keepAwake) + '</p><i class="check-bar"></i></div>';
+        '<p class="check-t1">' + esc(TB.yourCard) + '</p><p class="check-team" hidden></p><p class="check-desc" hidden></p><p class="check-t2">' + esc(TB.holdHint) + '</p><i class="check-bar"></i></div>';
     }
     const n = S.steps.length - 1;
     const dots = '<div class="night-track" aria-hidden="true">' + Array.from({ length: n }, (_, i) => '<i class="night-dot' + (i + 1 < S.stepIdx ? ' is-past' : i + 1 === S.stepIdx ? ' is-now' : '') + '"></i>').join('') + '</div>';
-    return m === 'sleep' ? dots + '<p class="night-nar" data-t="' + esc(NIGHT_TEXT[S.stepRole] || '') + '"></p><p class="night-msg">' + esc(T.phase.closeEyes || TB.closeEyes) + '</p>' : dots;
+    return m === 'sleep' ? dots + '<p class="night-nar" data-t="' + esc(fmt(TB.wake, { role: ROLES[S.stepRole] ? ROLES[S.stepRole].name : '' })) + '"></p><p class="night-msg">' + esc(T.phase.closeEyes || TB.closeEyes) + '</p>' : dots;
   }
   function afterNight(V) {
     const nl = $('.nl');
@@ -539,7 +541,7 @@
       later(Math.max(0, left - 700), () => fx('lidsClose', 500));
       later(Math.max(0, left) + 300, () => fx('lidsOpen', 900));
     } else if (V.mode === 'sleep') {
-      later(250, () => fx('lidsOpen', 900));   // 암전은 탁자를 어둡게 하는 것으로 충분하다. 눈꺼풀을 열어 안내문을 보인다
+      later(150, () => fx('lidsOpen', 400));   // 암전은 탁자를 어둡게 하는 것으로 충분하다. 눈꺼풀을 열어 안내문을 보인다
       const n = $('.night-nar', nl);
       if (n) { if (W.FX && W.FX.typeLine) W.FX.typeLine(n, n.dataset.t); else n.textContent = n.dataset.t; }
     }
@@ -796,8 +798,7 @@
     b = b || p.original;
     const o = [b === 'blind' ? fmt(SF.blind, { f }) : b === p.effective ? fmt(SF.same, { f }) : fmt(SF.diff, { b: ROLES[b].name, f })];
     if (p.final === 'doppelganger' && R.doppelCopy) o.push(fmt(SF.doppel, { r: ROLES[R.doppelCopy].name }));
-    o.push(fmt(SF.team, { team: TEAM_NAME[p.team] }));
-    o.push(p.win ? SF.win : SF.lose);
+    o.push(fmt(p.win ? SF.win : SF.lose, { team: TEAM_NAME[p.team] }));
     return o.join(' ');
   }
   function verdictKey() {
@@ -810,8 +811,15 @@
   function drawBoard() {
     const bd = $('.board'), vk = verdictKey(), RP = T.replay, me = R.players.some((p) => p.id === S.me);
     if (W.ART && ART.warm && vk[1] !== 'none') ART.warm(['verdict-' + vk[1]]);
-    const why = R.why.map((w) => { const v = names((w[1] || []).map((i) => R.players[i].name)); return fmt(RP.why[w[0]] || '', { list: v, t: v, a: v }); }).join(' ');
-    const vote = R.deaths.filter((d) => d.by === 'vote').map((d) => R.players[d.s].name);
+    const vdeaths = R.deaths.filter((d) => d.by === 'vote'), vote = vdeaths.map((d) => R.players[d.s].name);
+    const execSet = {}, execCards = vdeaths.map((d) => { const q = R.players[d.s]; execSet[d.s] = 1; return fmt(TB.execCard, { n: NM(q.name), r: ROLES[q.final === 'doppelganger' && R.doppelCopy ? R.doppelCopy : q.effective].name }); });
+    const used = {}, whyL = [];
+    execCards.forEach((l) => { used[l] = 1; });
+    R.why.forEach((w) => {
+      if (w[0] === 'wolf_died' && (w[1] || []).some((i) => execSet[i])) return;
+      const v = names((w[1] || []).map((i) => R.players[i].name)), l = fmt(RP.why[w[0]] || '', { list: v, t: v, a: v });
+      if (!l || used[l]) return; used[l] = 1; whyL.push(l);
+    });
     const hunts = R.deaths.filter((d) => d.by === 'hunter');
     const chip = (id, cp) => { const r = ROLES[id]; return '<svg aria-hidden="true"><use href="#' + r.sigil + '"/></svg>' + esc(id === 'doppelganger' && cp ? fmt(TB.doppelArrow, { r: ROLES[cp].name }) : r.name); };
     const row = (p, i, alt) => '<li class="rec-row' + (p.id === S.me ? ' is-me' : '') + (p.dead ? ' is-dead' : '') + (p.win ? ' is-win' : '') + (alt ? ' is-altar' : '') + (!alt && !S.players.some((x) => x.id === p.id) ? ' is-gone' : '') + '" data-slot="' + i + '">' +
@@ -821,10 +829,12 @@
     const rank = (p) => (p.id === S.me ? 0 : p.dead ? 1 : 2);
     const rows = R.players.map((p, i) => [p, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]);
     const n = R.players.length, mob = mq('(max-width:599px)');
-    bd.innerHTML = '<div class="verdict" data-team="' + vk[1] + '"><p class="verdict-line">' + esc(T.verdict[vk[0]]) + '</p><p class="verdict-why">' + why + '</p>' +
+    bd.innerHTML = '<div class="verdict" data-team="' + vk[1] + '"><p class="verdict-line">' + esc(T.verdict[vk[0]]) + '</p>' +
       (vote.length || !R.why.some((w) => w[0] === 'no_death') ? '<p class="verdict-why">' + (vote.length ? fmt(TB.execLine, { names: names(vote) }) : TB.noBlood) + '</p>' : '') +
+      execCards.map((l) => '<p class="verdict-why">' + l + '</p>').join('') +
+      whyL.map((l) => '<p class="verdict-why">' + l + '</p>').join('') +
       hunts.map((d) => '<p class="verdict-why">' + fmt(TB.hunterLine, { a: NM(R.players[d.h].name), b: NM(R.players[d.s].name) }) + '</p>').join('') +
-      (me ? '<p class="verdict-self">' + esc(selfLine()) + '</p>' : '') + '</div>' +
+      (me ? '<p class="verdict-self"><b class="verdict-you">나</b> ' + esc(selfLine()) + '</p>' : '') + '</div>' +
       (R.night ? '<button class="btn-sub rp-again" data-act="replay" type="button" hidden>' + esc(TBT.replay) + '</button>' : '') +
       (R.night ? '<details class="tl-sec" open hidden><summary class="tl-head">' + esc(TH.happened) + '</summary><ol class="tl-list"></ol></details>' : '') +
       '<details class="rec-sec" open><summary class="rec-head">' + esc(TH.records) + '</summary><ul class="rec-list">' + rows.map((x) => row(x[0], x[1])).join('') +
@@ -862,7 +872,7 @@
     if (!R || !R.night || !W.REPLAY) return;
     ui.wait = 0; LS.set('result:' + R.gameId, '1');
     $('#stage').classList.remove('is-fold');
-    body.dataset.replay = '1'; $('.board').hidden = true; $('.band').hidden = true;
+    body.dataset.replay = '1'; sched(); $('.board').hidden = true; $('.band').hidden = true;
     $('#stage').style.height = '';
     $$('.seat').forEach((e) => { e.classList.remove('is-dead'); const m = $('.seat-mark', e); if (m.dataset.k === 'votes') { delete m.dataset.k; m.textContent = ''; } });
     $('.ln').classList.remove('is-on');
