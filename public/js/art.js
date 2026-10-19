@@ -83,7 +83,7 @@
       fin = true; clearTimeout(to);
       active--; if (job.x) xtra = 0;
       if (ok) { done[job.key] = true; urls[job.key] = job.url; } else fails[job.key] = (fails[job.key] || 0) + 1;
-      if (ok && job.key.indexOf('s:') === 0) keep[job.key] = img;
+      if (ok) keep[job.key] = img;
       delete pending[job.key];
       job.resolve(ok);
       if (ok) onLoaded(job.key);
@@ -130,19 +130,35 @@
     var t = setTimeout(flush, doc.hidden ? 50 : 120);
     if (!doc.hidden && root.requestAnimationFrame) root.requestAnimationFrame(function () { clearTimeout(t); flush(); });
   }
+  // 정적 이미지 URL은 :root 변수 대신 <style id=art-urls> 에 소비자별 규칙으로 덧붙인다 (루트 변수 변경 = 문서 전체 스타일 무효화).
+  // 규칙 선택자는 base.css/card.css 소비자와 같다: 같은 명시도 + 나중 순서로 이긴다.
+  var RULES = {
+    grain: function (u) { return '.grain{background:url(' + u + ') 0 0/128px 128px repeat}html[data-img~=grain]:not([data-perf=lite]) #modal .modal-box:is(.law,.paper)::after{background:url(' + u + ') 0 0/128px 128px repeat}'; },
+    home: function (u) { return '.bg-art::before{background:url(' + u + ') center top/cover no-repeat}'; },
+    horizon: function (u) { return 'body:not([data-phase=home]) .bg-art::before{background:url(' + u + ') center bottom/cover no-repeat}'; },
+    back: function (u) { return '.card-back::after{background-image:url(' + u + ')}'; },
+    atlas: function (u) { return '.card[data-size=xs] .card-art,.card[data-size=sm] .card-art{background-image:url(' + u + ')}'; }
+  };
+  function sheet() {
+    var el = doc.getElementById('art-urls');
+    if (!el) { el = doc.createElement('style'); el.id = 'art-urls'; doc.head.appendChild(el); }
+    return el;
+  }
   function flush() {
     if (!tick) return;
     tick = 0;
-    var keys = Object.keys(got), have = (attr('data-img') || '').split(' ').filter(Boolean), n = have.length;
+    var keys = Object.keys(got), have = (attr('data-img') || '').split(' ').filter(Boolean), n = have.length, css = '';
     got = {};
     keys.forEach(function (k) {
       var name = k.slice(2);
       if (k.charAt(0) === 's') {
-        docEl.style.setProperty('--img-' + name, 'url("' + staticUrl(name) + '")');
+        var u = staticUrl(name);
+        css += RULES[name] ? RULES[name](JSON.stringify(u)) : name.indexOf('verdict-') === 0 ? '.verdict[data-team=' + name.slice(8) + ']::before{background-image:url(' + JSON.stringify(u) + ')}' : '';
         if (have.indexOf(name) < 0) have.push(name);
         if (name === 'home') docEl.setAttribute('data-home-art', '1');
       }
     });
+    if (css) sheet().appendChild(doc.createTextNode(css));
     if (have.length !== n) docEl.setAttribute('data-img', have.join(' '));
     keys.forEach(function (k) {
       if (k.charAt(0) === 'r') ART.mark(doc, '.card[data-role="' + k.slice(2) + '"][data-art="0"]');
@@ -284,7 +300,7 @@
   if (root.addEventListener) root.addEventListener('online', function () { fails = {}; });
 
   // ---------- 시작 ----------
-  // CSS 이미지 변수(--img-back --img-atlas --img-grain --img-horizon --img-home)는 이미지가 로드·디코드된 뒤에 설정한다.
+  // CSS 이미지 URL(back atlas grain horizon home verdict-*)은 이미지가 로드·디코드된 뒤 <style id=art-urls> 에 덧붙인다.
   // (시작 시 설정하면 CSS가 곧바로 요청해 slow/차단 정책과 우선순위를 무시한다 — 보고서 참조.)
   // 로드된 정적 이미지는 <html data-img="back atlas …">로 표시된다.
 

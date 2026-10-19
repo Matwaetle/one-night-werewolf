@@ -3,7 +3,7 @@
 'use strict';
 let T = root.T, RL = root.ROLES, TEAM = root.WW && root.WW.TEAM_NAME;
 if (typeof window === 'undefined') { T = require('../strings.js'); const r = require('../roles.js'); RL = r.ROLES; TEAM = r.TEAM_NAME; }
-const RP = T.replay, UI = Object.assign({}, RP.ui, RP.uiR), AL = T.altar, CSS = '__REPLAY_CSS__', fm = T.fmt, esc = T.esc;
+const RP = T.replay, UI = Object.assign({ result: '결과 보기' }, RP.ui, RP.uiR), AL = T.altar, CSS = '__REPLAY_CSS__', fm = T.fmt, esc = T.esc;
 const WAKE = { werewolf: 1, minion: 1, mason: 1, insomniac: 1 }, SLEEP = { villager: 1, hunter: 1, tanner: 1 };
 const DAY = { dawn: 1, seat: 1, vote: 1, exec: 1, nodeath: 1, hunt: 1, verdict: 1 }, JUDGE = { vote: 1, exec: 1, nodeath: 1, hunt: 1, verdict: 1 };
 const GA = { seat: 'dawn', exec: 'vote', nodeath: 'vote', hunt: 'vote' }, rn = (r) => RL[r].name;
@@ -94,7 +94,7 @@ function build(R, meId) {
       if (by.indexOf(me) >= 0) o.stamp = 'you';
       else if (tg.indexOf(me) >= 0 || (e.mv || []).some((x) => x[1] === me || pre[me] === x[0])) { o.stamp = 'yours'; if (o.mv) o.extra = 600; }
     }
-    if (!noted && by.some((z) => pre[z] !== z)) { noted = 1; o.l3n = RP.note.wake; }
+    const z = by.find((x) => pre[x] !== x); if (!noted && z != null) { noted = 1; o.l3n = fm(RP.note.wake, { a: nm(z), r: cc(z) }); }
   }
 
   const sw = []; for (let i = 0; i < n + 3; i++) if (E[i] !== i) sw.push(i);
@@ -136,7 +136,7 @@ function build(R, meId) {
     });
   });
   P.forEach((p, i) => { if (eff(E[i]) !== p.effective) throw new Error('replay desync'); });
-  let self = '';
+  let self = '', l3s = '';
   if (me >= 0) {
     const cs = []; let lr;
     ev.forEach((e) => {
@@ -149,14 +149,15 @@ function build(R, meId) {
     });
     const f = eff(E[me]), b = bel[me], sf = RP.self, p = P[me], kre = f === 'minion' ? /^(minion|wolf_)/ : f === 'tanner' ? /^(tanner|no_wolf_)/ : 0, w = kre && (R.why || []).slice().reverse().find((x) => kre.test(x[0]));
     if (cs.length && !b.blind) cs[cs.length - 1] += ' ' + fm(RP.cause.end, { r: cc(E[me]) });
-    self = [...cs, b.blind ? fm(sf.blind, { f: chip(f) }) : cs.length ? lr !== f ? fm(sf.end, { f: chip(f) }) : '' : b.role === f ? fm(sf.same, { f: chip(f) }) : fm(sf.diff, { b: chip(b.role), f: chip(f) }),
-      D[E[me]] === 'doppelganger' && cA ? fm(sf.doppel, { r: chip(cA) }) : '', w ? wy(w) : '', fm(p.win ? sf.win : sf.lose, { team: TEAM[p.team] })].filter(Boolean).join(' ');
+    const sa = [...cs, b.blind ? fm(sf.blind, { f: chip(f) }) : cs.length ? lr !== f ? fm(sf.end, { f: chip(f) }) : '' : b.role === f ? fm(sf.same, { f: chip(f) }) : fm(sf.diff, { b: chip(b.role), f: chip(f) }),
+      D[E[me]] === 'doppelganger' && cA ? fm(sf.doppel, { r: chip(cA) }) : '', w ? wy(w) : ''].filter(Boolean);
+    l3s = sa.join(' '); self = sa.concat(fm(p.win ? sf.win : sf.lose, { team: TEAM[p.team] })).join(' ');   // 판결 장면은 도장이 승패를 말한다: l3 에는 승패 문장을 뺀다
   }
   const why = (R.why || []).filter((w) => !(w[0] === 'wolf_died' && (w[1] || []).length && w[1].every((x) => ex.includes(x))));
   const wf = [].concat(...(R.why || []).map((w) => w[1] || [])).find((x) => !ex.includes(x));
   const vfocus = ex.concat(wf == null ? [] : [wf]).slice(0, 2).map((x) => ({ slot: x, role: eff(E[x]), lbl: x === me ? RP.you : P[x].name, dead: ex.includes(x) }));
   const exl = ex.length ? fm(RP.exec.top, { list: names(ex) }) + ' ' + ex.map((t) => fm(RP.exec.card, { t: nm(t), r: cc(E[t]) })).join(' ') : RP.nodeath.top;
-  add('verdict', { pre: E, vfocus, vteam: vk === 'wolf' || vk === 'minion' ? 'wolf' : vk === 'tanner' ? 'tanner' : 'village', l1: T.verdict[vk], l2: [exl].concat(why.map(wy)).join(' '), l3: self, win: me >= 0 ? !!P[me].win : null, floor: 1500 });
+  add('verdict', { pre: E, vfocus, vteam: vk === 'wolf' || vk === 'minion' ? 'wolf' : vk === 'tanner' ? 'tanner' : 'village', l1: T.verdict[vk], l2: [exl].concat(why.map(wy)).join(' '), l3: l3s, win: me >= 0 ? !!P[me].win : null, floor: 1500 });
 
   const cnt = {}, seen = {};
   B.forEach((b) => { b.ga = GA[b.act] || b.act; cnt[b.ga] = (cnt[b.ga] || 0) + 1; });
@@ -168,7 +169,7 @@ function build(R, meId) {
     lines.push({ b: b.i, role: b.act === 'night' && b.r ? b.r : null, h: b.l1 + (b.l2 ? ' ' + b.l2 : '') + (b.l3 ? ' ' + b.l3 : '') });
     (b.abst || []).forEach((s) => lines.push({ b: b.i, role: null, h: fm(RP.vote.none, { a: nm(s) }) }));
   });
-  return { beats: B, tr: TR, total, journey: jr, belief: bel, lines, self, nm, rcs, effRole: eff, cardName: cn, me, n, copyAs: cA };
+  return { beats: B, tr: TR, total, journey: jr, belief: bel, lines, self, nm, rcs, effRole: eff, cardName: cn, me, n, copyAs: cA, copyT: ce && ce.tg ? ce.tg[0] : -1 };
 }
 
 /* ---------- DOM ---------- */
@@ -179,6 +180,7 @@ const mk = (t, c, h) => { const e = document.createElement(t); e.className = c; 
 const ico = (id, c) => '<svg' + (c ? ' class="' + c + '"' : '') + '><use href="#' + id + '"/></svg>';
 const card = (r, o) => root.ART ? root.ART.card(r, o) : '';
 const fcard = (r) => S.fc[r] || (S.fc[r] = mk('div', '', card(r, { size: 'md', face: 1, flat: 1 })).firstChild);
+const ric = (f) => (root.requestIdleCallback ? root.requestIdleCallback(f, { timeout: 600 }) : setTimeout(f, 60));
 const cls = (e, c, on) => e.classList.toggle(c, !!on);
 const wait = (ms) => new Promise((r) => S.tm.push(setTimeout(r, ms / S.rate)));
 const nt = (f) => new Promise((res) => { const q = S.q = []; f(); S.q = 0; requestAnimationFrame(() => requestAnimationFrame(() => { q.forEach((e) => { e.style.transition = ''; }); res(); })); });
@@ -186,7 +188,13 @@ const vset = (e, x, y, d) => { const c = '--tx:' + x + 'px;--ty:' + y + 'px' + (
 
 function layout() {
   const rc = S.rp.getBoundingClientRect(), W = rc.width, n = S.n, nar = innerWidth < 600, X = [], Y = [], SC = [], TX = [], TY = [], TG = [], SD = [];
-  const seats = [...S.main.querySelectorAll('.seat[data-pid]')];
+  const seats = [...S.main.querySelectorAll('.seat[data-pid]')], stg = S.main.querySelector('.stage'), fresh = [];
+  if (stg) {   // 자막 띠가 아래 좌석을 덮지 않게 탁자를 올리고, 모자라면 위쪽 기준으로 균등 축소한다
+    stg.style.transform = ''; stg.style.transformOrigin = '50% 0'; const s0 = stg.getBoundingClientRect().top - rc.top; let tp = 1e4, bt = 0;
+    seats.forEach((e) => { const r = e.getBoundingClientRect(); tp = Math.min(tp, r.top - rc.top); bt = Math.max(bt, r.bottom - rc.top); });
+    const lim = rc.height - (S.capMax || 0) - 56, T = Math.max(10, Math.min(tp, 28)), k = Math.min(1, (lim - T) / (bt - tp));
+    if (bt > lim || tp < 10) stg.style.transform = 'translateY(' + (T - s0 - (tp - s0) * k) + 'px) scale(' + k + ')';
+  }
   S.fcw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cw-md')) || 128;
   S.R.players.forEach((p, i) => {
     const se = seats.find((e) => e.getAttribute('data-pid') === p.id), r = se.querySelector('.seat-token').getBoundingClientRect(), d = r.width, cx = r.left + d / 2 - rc.left, cy = r.top + r.height / 2 - rc.top;
@@ -198,7 +206,7 @@ function layout() {
   });
   const al = S.main.querySelectorAll('.altar .card');
   for (let i = n; i < n + 3; i++) { const a = al[i - n].getBoundingClientRect(); X[i] = a.left + a.width / 2 - rc.left; Y[i] = a.top + a.height / 2 - rc.top; SC[i] = a.width / S.cw; TG[i] = Y[i] + a.height / 2 + 2; }
-  Object.assign(S, { X, Y, SC, TX, TY, TG, SD, W, RH: rc.height }); S.rp.setAttribute('data-nw', W < 420 ? 1 : 0);
+  Object.assign(S, { X, Y, SC, TX, TY, TG, SD, W, RH: rc.height }); S.rp.setAttribute('data-nw', W < 420 ? 1 : 0); S.rp.style.setProperty('--acw', SC[n] * S.cw + 'px');
   for (let i = 0; i < n; i++) { vset(S.rings[i], TX[i], TY[i], S.TD[i] + 4); vset(S.vms[i], TX[i] + (SD[i] === 'r' ? 1 : -1) * S.TD[i] * .45, TY[i] - S.TD[i] * .45); }
   relabel();
   S.ln.forEach((l) => {
@@ -207,10 +215,12 @@ function layout() {
     if (l.m) {
       let mx = a[0] + ux * (L - o - e) / 2, my = a[1] + uy * (L - o - e) / 2;
       for (let q = 0; q < n + 3; q++) if (Math.abs(mx - (q < n ? TX[q] : X[q])) < 40 && my > TG[q] - 8 && my < TG[q] + 30) { mx -= uy * 14; my += ux * 14; break; }
-      vset(l.m, mx, my);
+      if (Number.isFinite(mx + my)) { vset(l.m, mx, my); fresh.push(l.m); }
     }
-    l.e.style.cssText = '--x:' + (a[0] - W / 2) + 'px;--y:' + (a[1] - rc.height / 2) + 'px;--len:' + Math.max(0, L - o - e) + 'px;--ang:' + Math.atan2(c[1] - a[1], c[0] - a[0]) + 'rad;--g:' + (t.g || 0);
+    if (Number.isFinite(a[0] + a[1] + c[0] + c[1])) { l.e.style.cssText = '--x:' + (a[0] - W / 2) + 'px;--y:' + (a[1] - rc.height / 2) + 'px;--len:' + Math.max(0, L - o - e) + 'px;--ang:' + Math.atan2(c[1] - a[1], c[0] - a[0]) + 'rad;--g:' + (t.g || 0); fresh.push(l.e); }
   });
+  fresh.forEach((e) => { e.style.transition = 'none'; }); void S.rp.offsetWidth;   // 첫 배치·리사이즈 때 선이 옛 좌표에서 날아오지 않게
+  requestAnimationFrame(() => requestAnimationFrame(() => fresh.forEach((e) => { e.style.transition = ''; })));
 }
 
 /* capH-dependent labels only: reads the caption height, never seat/altar rects */
@@ -236,7 +246,7 @@ function scene(i, k) {
   B.forEach((x, j) => { if (x.dead && (j < i || j === i && act)) x.dead.forEach((d) => { dead[d] = 1; if (x.ex) ex[d] = 1; }); });
   if (a === 'dawn' ? k > 2 : i > dI) B[dI].sw.forEach((x) => { sws[pos[x]] = 1; });
   if (night) {
-    const src = k > 0 ? b : pv && pv.act === 'night' && pv.k !== 'quiet' ? pv : 0;
+    const src = k > 0 || b.k === 'idle' ? b : pv && pv.act === 'night' && pv.k !== 'quiet' ? pv : 0;
     if (src) { rel = src.rel.concat(src.lit); g = src.gl; on = src.dark || g == null ? 0 : 1; if (k) { lit = b.lit; ring = b.by.concat(b.kk === 'minion' ? b.e.know || [] : []); } } else g = b.gl;
   } else if (a === 'seat') rel = [b.s];
   [S.rp, ve].concat(S.focus).forEach((e) => { if (e._a !== a) { e._a = a; e.setAttribute('data-act', a); } }); cls(S.main, 'rp-v', a === 'verdict'); S.gOn = on; cls(S.glow, 'is-on', on); if (g != null) vset(S.glow, S.X[g], S.Y[g]);
@@ -256,8 +266,8 @@ function scene(i, k) {
   });
   const votes = {};
   S.ln.forEach((l) => {
-    const t = l.t, v = (i > t.b || i === t.b && k >= (t.s || 2)) && !(t.n && JUDGE[a]) && !(t.v && !DAY[a]) && a !== 'verdict' && !(t.kn && i >= dI), now = t.n && i === t.b && act, e = l.e;
-    cls(e, 'is-on', v); cls(e, 'is-now', now); cls(e, 'is-trace', v && t.n && !now); cls(e, 'rp-lo', v && t.n && DAY[a]); cls(e, 'rp-hi', v && a === 'seat' && (t.a === b.s || t.c === b.s));
+    const t = l.t, v = (i > t.b || i === t.b && k >= (t.s || 2)) && !(t.n && JUDGE[a]) && !(t.v && !DAY[a]) && a !== 'verdict' && a !== 'pro' && Number.isFinite(S.X[t.c]) && !(t.kn && i >= dI), now = t.n && i === t.b && act, e = l.e;
+    cls(e, 'is-on', v); cls(e, 'is-now', now); cls(e, 'is-trace', v && i > t.b); cls(e, 'rp-hi', v && a === 'seat' && (t.a === b.s || t.c === b.s));
     cls(e, 'is-blood', v && (t.bl || t.v && ex[t.t])); cls(e, 'is-thick', v && t.w); cls(e, 'is-know', t.kn);
     if (l.m) { cls(l.m, 'is-on', v && (now || DAY[a])); cls(l.m, 'is-tr', !now); }
     if (t.v && v) votes[t.t] = (votes[t.t] || 0) + 1;
@@ -269,7 +279,7 @@ function scene(i, k) {
     if (fo) {
       const cw = S.fcw || 128, vd = a === 'verdict', key = fo.role + (fo.ch ? 1 : 0) + (fo.dead ? 'd' : '') + (fo.lbl || '') + (b.k || ''), q = fo.slot < n, sx = (q ? S.TX : S.X)[fo.slot], sy = (q ? S.TY : S.Y)[fo.slot], hc = S.H / 2, wc = S.W / 2;
       const x = q ? wc : sx, y = q ? S.Y[n + 1] : sy - S.SC[fo.slot] * S.cw * .7 - cw * .7 - 12;
-      vset(f, Math.max(16 + cw / 2, Math.min(S.W - 16 - cw / 2, (vd ? wc : x) + (fl.length > 1 ? (j ? 1 : -1) * (cw / 2 + 8) : 0))), vd ? Math.max(8 + cw * .7, S.H * .26) : Math.max(8 + cw * .7, Math.min(S.H - 8 - cw * .7, y)));
+      vset(f, Math.max(16 + cw / 2, Math.min(S.W - 16 - cw / 2, (vd ? wc : x) + (fl.length > 1 ? (j ? 1 : -1) * (cw / 2 + 8) : 0))), vd ? Math.max(8 + cw * .7, S.H * .22) : Math.max(8 + cw * .7, Math.min(S.H - 8 - cw * .7, y)));
       if (f.getAttribute('data-k') !== key) {
         f.setAttribute('data-k', key); const t = fcard(fo.role), fc = t && t.cloneNode(true);
         if (fc) { f.replaceChildren(fc); cls(fc, 'is-dead', fo.dead); } else f.textContent = '';
@@ -280,15 +290,15 @@ function scene(i, k) {
   });
   cls(S.ld, 'is-on', DAY[a] && (a !== 'dawn' || k)); cls(S.lv, 'is-on', JUDGE[a] && (a !== 'vote' || k));
   if (!k || k > 2) {
-    cap.l1.firstChild.innerHTML = b.l1; cap.l2.firstChild.innerHTML = b.l2; cap.l3.firstChild.innerHTML = b.l3n || '';
+    capTxt(b);
     cap.st.textContent = b.stamp ? T.stamp[b.stamp] : ''; cls(cap.st, 'is-on', k && b.stamp);
   }
   cls(cap.el, 'is-v', a === 'verdict'); cls(ve, 'is-on', a === 'verdict'); cls(ve, 'is-w', a === 'verdict' && act);
-  if (a === 'verdict') { ve.setAttribute('data-team', b.vteam); ve.children[0].firstChild.textContent = b.l1; ve.children[1].innerHTML = b.l2; ve.children[2].innerHTML = b.l3; ve.children[3].textContent = b.win == null ? '' : b.win ? T.stamp.win : T.stamp.lose; ve.style.setProperty('--sd', b.l3 ? 1760 + 70 * T.syl(b.l3) : 960); }
 }
+const capTxt = (b) => { const c = S.cap; c.l1.firstChild.innerHTML = b.l1; c.l2.firstChild.innerHTML = b.l2; c.l3.firstChild.innerHTML = b.l3n || ''; };
 const hs = (v) => [S.cap.l1, S.cap.l2, S.cap.l3].forEach((e) => cls(e, 'is-h', v));
 function capGo(b) {
-  hs(0); cls(S.cap.st, 'is-on', b.stamp);
+  hs(0); if (!b.stamp) S.cap.st.textContent = ''; cls(S.cap.st, 'is-on', b.stamp);
   const e = $('sr'); if (e) e.textContent = (b.l1 + ' ' + b.l2 + ' ' + (b.l3n || '') + ' ' + (b.l3 || '')).replace(/<[^>]*>/g, '');
   if (S.first) S.tapAt = Date.now() + 1400;
 }
@@ -304,13 +314,14 @@ async function play(i) {
   await p0; if (!S || my !== S.tok) return;
   if (a === 'pro') {
     if (!S.lite) {
-      await wait(600);
+      await wait(600); await S.art; if (my !== S.tok) return;
       S.wave.forEach((sl, j) => { const e = S.cards[sl]; e.style.setProperty('--k', j); e.classList.add('rp-flip'); });
       await wait(120 * S.wave.length + 400);
     }
     await nt(() => scene(i, 1)); if (!S || my !== S.tok) return;
     capGo(b);
   } else {
+    if (a === 'vote' && S.late && root.ART) { root.ART.want(S.late); S.late = 0; }   // 심판 장면의 큰 카드를 투표 장면 동안 미리 받는다
     if (b.mv || b.dark) await wait(400);
     if (S.gOn && b.gl != null) { cls(S.glow, 'is-on', 0); await wait(120); }
     scene(i, 1);
@@ -349,9 +360,10 @@ function done() {
   setTimeout(() => { if (S === s) { close(); if (cb) cb(); } }, 300);
 }
 function ui() {
-  const b = S.B.beats[S.i], st = S.run, p = fm(UI.pos, { act: UI.acts[b.ga], i: b.gi, n: b.gn });
-  S.mainBtn.firstChild.textContent = st === 'play' ? UI.pause : st === 'end' ? UI.restart : UI.resume;
-  S.mainBtn.lastChild.textContent = st === 'wait' ? UI.tapResume : p;
+  const b = S.B.beats[S.i], st = S.run, last = S.i === S.B.beats.length - 1, p = b.gn > 1 ? fm(UI.pos, { act: UI.acts[b.ga], i: b.gi, n: b.gn }) : UI.acts[b.ga];
+  S.mainBtn.firstChild.textContent = last ? UI.result : st === 'play' ? UI.pause : UI.resume;
+  S.mainBtn.lastChild.textContent = st === 'wait' ? UI.tapResume : last ? '' : p;
+  cls(S.mainBtn, 'btn-main', last); cls(S.mainBtn, 'btn-sub', !last);
   S.bar.setAttribute('aria-valuenow', S.i); S.bar.setAttribute('aria-valuetext', p);
   S.ticks.forEach((t, k) => { cls(t, 'is-past', k < S.i); cls(t, 'is-now', k === S.i); });
   S.prog.style.transform = 'scaleX(' + (S.i + 1) / S.ticks.length + ')';
@@ -366,9 +378,11 @@ function next() {
 }
 function toggle() {
   if (!S) return;
+  if (S.i === S.B.beats.length - 1) return done();
   if (S.run === 'play') { S.tok++; stop(); S.run = 'pause'; if (S.rdy) nt(() => scene(S.i, 3)); ui(); }
-  else { if (S.run === 'end') S.i = -1; S.run = 'play'; play(S.i + 1); }
+  else { S.run = 'play'; play(S.i + 1); }
 }
+const again = () => { if (S) { S.run = 'play'; play(0); } };
 function rate(r) {
   if (!S) return; S.rate = r === 2 ? 2 : 1; S.rp.style.setProperty('--u', S.rate === 2 ? '.5ms' : '1ms');
   S.rateBtn.textContent = S.rate === 2 ? UI.x2 : UI.x1; S.rateBtn.setAttribute('aria-label', S.rate === 2 ? UI.normal : UI.fast);
@@ -393,7 +407,7 @@ function open(R, meId, o) {
   const fr = {};
   for (let i = 0; i < n + 3; i++) h += '<div class="rp-card"><span class="rp-back"></span><span class="rp-front">' + (fr[D[i]] = fr[D[i]] || card(D[i], { size: 'sm', face: 1, flat: 1 })) + '</span>' + (D[i] === 'doppelganger' && B.copyAs ? ico(RL[B.copyAs].sigil, 'rp-co') : '') + '</div>';
   for (let i = 0; i < n + 3; i++) h += '<span class="rp-tag' + (i < n ? '' : ' rp-al') + '"></span>';
-  h += '<div class="rp-focus"></div><div class="rp-focus"></div><div class="rp-vd"><p class="rp-vl"><span></span><u class="rp-cv"></u></p><p class="rp-vw"></p><p class="rp-vs"></p><i class="rp-vst"></i></div>';
+  h += '<div class="rp-focus"></div><div class="rp-focus"></div><div class="rp-vd"><p class="rp-vl"><span></span><u class="rp-cv"></u></p><p class="rp-vw"></p><p class="rp-vs"></p><i class="rp-vst"></i><button class="btn-sub rp-rst">' + UI.restart + '</button></div>';
   h += '<div class="rp-cap" role="status"><p class="rp-l1"><span></span><u class="rp-cv"></u></p><p class="rp-l2"><span></span><u class="rp-cv"></u></p><p class="rp-l3"><span></span><u class="rp-cv"></u></p></div><i class="rp-stamp"></i><div class="rp-bar" role="slider" tabindex="0">';
   B.beats.forEach((b, k) => { const f = !k || B.beats[k - 1].ga !== b.ga; h += '<i class="rp-tick' + (f ? ' is-first' : '') + (k === N - 1 ? ' is-end' : '') + (b.mv ? ' is-mv' : '') + (b.act === 'exec' || b.act === 'hunt' ? ' is-bl' : '') + '" style="--p:' + (k + .5) / N + '"' + (b.act === 'night' && b.rn ? ' data-r="' + b.rn.split(' ')[0] + '"' : '') + (f && b.ga !== 'pro' ? ' data-a="' + UI.acts[b.ga] + '"' : '') + '></i>'; });
   rp.innerHTML = h + '<i class="rp-prog"></i><button class="rp-rate"></button></div>'; main.appendChild(rp);
@@ -412,11 +426,12 @@ function open(R, meId, o) {
   S.mainBtn = dk.querySelector('.rp-main'); S.hud = hud;
   if (hud) {
     hud.querySelectorAll('.hud-skip').forEach((e) => e.classList.add('rp-hid'));
-    const sk = S.skipBtn = mk('button', 'hud-skip rp-skip', UI.hudSkip), hr = hud.querySelector('.hud-r') || hud; hr.insertBefore(sk, hr.firstChild);
+    const sk = S.skipBtn = mk('button', 'hud-skip rp-skip', UI.hudSkip); hud.insertBefore(sk, hud.firstChild);
   }
   S.wave = []; for (let i = 0; i < n; i++) S.wave.push((Math.max(S.me, 0) + i) % n); S.wave.push(n, n + 1, n + 2);
   const on = (t, ev, f) => { if (t) { t.addEventListener(ev, f); S.on.push([t, ev, f]); } };
   on(rp, 'click', next); on(dk.querySelector('.rp-prev'), 'click', prev); on(dk.querySelector('.rp-nxt'), 'click', next); on(S.mainBtn, 'click', toggle); on(S.skipBtn, 'click', skip);
+  on(rp.querySelector('.rp-rst'), 'click', (e) => { e.stopPropagation(); again(); });
   on(S.rateBtn, 'click', (e) => { e.stopPropagation(); rate(S.rate === 1 ? 2 : 1); });
   on(bar, 'click', (e) => { e.stopPropagation(); if (e.target !== S.rateBtn) { const rc = bar.getBoundingClientRect(); seek(Math.max(0, Math.min(N - 1, Math.round((e.clientX - rc.left) / (rc.width - 44) * N - .5)))); } });
   on(document, 'keydown', (e) => {
@@ -426,19 +441,26 @@ function open(R, meId, o) {
   });
   on(document, 'visibilitychange', () => { if (document.hidden && S.run === 'play') toggle(); });
   on(window, 'resize', () => { if (!S.rdy) return; if (S.run === 'play') toggle(); layout(); nt(() => scene(S.i, 3)); });
-  rate(1); duck(-9);
+  rate(innerWidth < 600 ? 2 : 1); duck(-9);   // 좁은 화면은 기본 2배속
   const s1 = S, go = () => { if (S !== s1) return; if (o.paused) { S.run = 'pause'; S.i = o.start || 0; nt(() => scene(S.i, 3)); ui(); } else play(o.start || 0); };
   requestAnimationFrame(() => {
     if (S !== s1) return;
+    const lb = B.beats.reduce((x, y) => (y.l1 + y.l2 + (y.l3n || '')).length > (x.l1 + x.l2 + (x.l3n || '')).length ? y : x);   // 가장 긴 자막 높이를 한 번 재서 탁자 위치를 고정한다
+    capTxt(lb); S.capMax = cp.offsetHeight; capTxt({ l1: '', l2: '' });
     S.cw = S.cards[0]._cd.offsetWidth; layout(); S.rdy = 1;
-    if (typeof ResizeObserver !== 'undefined') { let q = 0; S.ro = new ResizeObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; if (S === s1 && s1.cap.el.offsetHeight !== s1.capOH) relabel(); }); }); S.ro.observe(cp); }
-    B.beats.forEach((b) => (b.act === 'verdict' ? b.vfocus : b.focus).forEach((x) => fcard(x.role)));
-    S.i = o.start || 0;
-    if (root.ART && root.ART.want && root.ART.ready) {
-      const rl = [...new Set(D.concat(R.players.map((p) => p.final || p.effective), B.copyAs ? [B.copyAs] : []))].filter(Boolean);
-      ART.want(rl); nt(() => scene(S.i, 0));
-      Promise.all(rl.map((r) => ART.ready(r))).then(go, go);
-    } else go();
+    if (typeof ResizeObserver !== 'undefined') { let q = 0; S.ro = new ResizeObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; const h = s1.cap.el.offsetHeight; if (S === s1 && h !== s1.capOH) { if (h > s1.capMax) { s1.capMax = h; layout(); } else relabel(); } }); }); S.ro.observe(cp); }
+    const vb = B.beats[N - 1], ve = S.vd;   // 판결 DOM 은 한 번만 채우고 장면에선 클래스만 바꾼다
+    ve.setAttribute('data-team', vb.vteam); ve.children[0].firstChild.textContent = vb.l1; ve.children[1].innerHTML = vb.l2; ve.children[2].innerHTML = vb.l3; ve.children[3].textContent = vb.win == null ? '' : vb.win ? T.stamp.win : T.stamp.lose; ve.style.setProperty('--sd', vb.l3 ? 1760 + 70 * T.syl(vb.l3) : 960);
+    vb.vfocus.forEach((x) => fcard(x.role));
+    S.i = o.start || 0; go();
+    const fr = (f) => [...new Set([].concat(...B.beats.filter(f).map((x) => (x.vfocus || x.focus).map((y) => y.role))))];
+    S.late = fr((x) => JUDGE[x.act]);
+    S.art = new Promise((res) => ric(() => {   // 큰 아트·초점 카드는 첫 장면 뒤 한가할 때 받는다
+      if (S !== s1) return res();
+      B.beats.forEach((x) => x.focus.forEach((y) => fcard(y.role)));
+      const ids = fr((x) => !JUDGE[x.act]);
+      if (root.ART && root.ART.want && root.ART.ready) { root.ART.want(ids); Promise.all(ids.map((r) => root.ART.ready(r))).then(res, res); } else res();
+    }));
     main.dispatchEvent(new CustomEvent('rp-ready', { bubbles: true }));
   });
   return true;
@@ -451,6 +473,7 @@ function close() {
   s.dock.innerHTML = s.dockHTML; s.dock.hidden = s.dockHid;
   if (s.hud) s.hud.querySelectorAll('.rp-hid').forEach((e) => e.classList.remove('rp-hid'));
   document.body.removeAttribute('data-replay'); s.main.classList.remove('rp-v');
+  const g = s.main.querySelector('.stage'); if (g) g.style.transform = '';
 }
 
 /* ---------- end board (SPEC 13.8) ---------- */
@@ -460,17 +483,14 @@ function enhanceBoard(listEl, R, meId, onJump) {
   let tl = listEl.querySelector('.tl-list'), up = listEl;
   while (!tl && up.parentElement && up !== document.body) tl = (up = up.parentElement).querySelector('.tl-list');
   const vs = listEl.querySelector('.verdict-self .vs-t') || document.querySelector('.verdict-self .vs-t'); if (vs && B.self) vs.innerHTML = B.self;
-  const jump = (b, s) => {
-    if (onJump) return onJump(b, s);
-    if (S) { S.ticks.forEach((t, k) => cls(t, 'is-rel', s != null && B.beats[k].rel.includes(s))); seek(b); } else listEl.dispatchEvent(new CustomEvent('rp-jump', { bubbles: true, detail: { beat: b, slot: s } }));
-  };
+  const jump = (b, s) => (onJump ? onJump(b, s) : REPLAY.jump(b, s, listEl));
   listEl.querySelectorAll('.rec-row').forEach((row, k) => {
     const s = +(row.getAttribute('data-slot') || k), j = B.journey[s];
     if (!j || row.querySelector('.rec-path')) return;
     const rc = (c, t) => B.rcs(c, t).h, hp = (k, V, c) => '<span class="rec-hop"><i>' + fm(UI.hop[k], V) + '</i> → ' + c + '</span>';
     const cpy = s < n && P[s].original === 'doppelganger' && B.copyAs;
     const path = mk('span', 'rec-path', j.length < 2 && !cpy ? UI.stayed : j.map((x, q) => {
-      if (!q) { const r0 = R.night.deal[s]; return '<span class="rec-hop"><i>' + UI.hop.start + '</i> ' + rc(r0, rn(r0)) + '</span>' + (cpy ? hp('copy', { a: rn('doppelganger') }, rc(B.copyAs, rn(B.copyAs))) : ''); }
+      if (!q) { const r0 = R.night.deal[s]; return '<span class="rec-hop"><i>' + UI.hop.start + '</i> ' + rc(r0, rn(r0)) + '</span>' + (cpy ? hp('copy', { a: rn('doppelganger'), t: B.copyT < n ? B.nm(B.copyT) : AL[B.copyT - n] }, rc(B.copyAs, rn(B.copyAs))) : ''); }
       const dp = P[x.by].original === 'doppelganger', nb = B.nm(x.by), ac = dp ? { t: fm(RP.doppelOf, { a: P[x.by].name }), h: fm(RP.doppelOf, { a: nb }) } : { t: rn(x.st) + ' ' + P[x.by].name, h: esc(rn(x.st)) + ' ' + nb.h };
       return hp(x.st === 'robber' ? (x.self ? 'robSelf' : 'robTarget') : x.st === 'drunk' ? (x.self ? 'drunkSelf' : 'drunkCenter') : 'swap', { a: ac, t: x.t < n ? B.nm(x.t) : '', P: AL[x.t - n] }, rc(B.effRole(x.c), B.cardName(x.c)));
     }).join(''));
@@ -486,6 +506,8 @@ function enhanceBoard(listEl, R, meId, onJump) {
   }
 }
 
-const REPLAY = { build, open, seek, next, prev, toggle, rate, skip, close, enhanceBoard, relayout: () => { if (S && S.rdy) { layout(); nt(() => scene(S.i, 3)); } }, slotIds: (R) => R.players.map((p) => p.id) };
+/* 보드 행 눌림: 재생 중이면 그 장면으로, 아니면 rp-jump 를 올려 보낸다 (결과 보드가 리플레이를 다시 연다) */
+const jump = (b, s, el) => { if (S) { S.ticks.forEach((t, k) => cls(t, 'is-rel', s != null && S.B.beats[k].rel.includes(s))); seek(b); } else if (el) el.dispatchEvent(new CustomEvent('rp-jump', { bubbles: true, detail: { beat: b, slot: s } })); };
+const REPLAY = { build, get: bld, jump, open, seek, next, prev, toggle, rate, skip, close, enhanceBoard, relayout: () => { if (S && S.rdy) { layout(); nt(() => scene(S.i, 3)); } }, slotIds: (R) => R.players.map((p) => p.id) };
 if (typeof module !== 'undefined' && module.exports) module.exports = REPLAY; else root.REPLAY = REPLAY;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -116,8 +116,11 @@
       skip: '건너뛰기',
       pause: '멈추기',
       resume: '계속하기',
+      continueHere: '이 창에서 계속하기',
+      reload: '다시 불러오기',
+      resend: '다시 보내기',
       restart: '처음부터 보기',
-      leave: '나가기',
+      leave: '방 나가기',
       leaveTown: '방 나가기',
       voiceOn: '음성 안내 켜기',
       voiceOff: '음성 안내 끄기',
@@ -149,7 +152,7 @@
       ending: '결과',
       judge: '투표 시간입니다.',
       name: '이름',
-      yourCard: '당신의 카드입니다.',
+      yourCard: '당신의 역할은 아직 가려져 있습니다.',
       deckCount: '선택한 카드 ${total} / ${need}',
     },
 
@@ -216,9 +219,16 @@
       deckLack: '카드 ${total}/${need}',
       waitChief: '방장 대기 중',
       // 카드 확인
-      yourCard: '당신의 카드입니다.',
+      yourCard: '당신의 역할은 아직 가려져 있습니다.',
       yourCardIs: '당신의 카드는 ${r}입니다.',
       holdHint: '카드를 길게 눌러 확인하세요.',
+      cardHint: '카드를 길게 눌러 역할을 확인하세요.',
+      otherTab: '다른 창에서 이 게임에 접속했습니다.',
+      loadFail: '게임을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.',
+      daySwapHint: '밤사이 바뀌었을 수 있습니다.',
+      seenLine: '밤에 본 것: ${t}',
+      deckCenterOk: '가운데 카드 3장 포함',
+      youHappened: '당신에게 일어난 일',
       keepAwake: '화면이 꺼지지 않도록 해 주세요.',
       peekFirst: '처음 받은 카드',
       chatOffToast: '채팅을 껐습니다.',
@@ -271,9 +281,9 @@
       dawn: '아침이 되었습니다.',
       dayAsk: '토론을 시작하세요.',
       deckAll: '카드 구성 (가운데 3장 포함)',
-      raised: '투표 준비 ${r}/${n} · 모두 준비하면 바로 투표합니다',
+      raised: '투표 준비 ${r}/${n} · 모두 준비하면 바로 투표합니다.',
       // 투표
-      pickExec: '처형할 사람을 고른 뒤 버튼을 길게 누르세요.',
+      pickExec: '처형할 사람을 고르고 투표하기를 길게 누르세요.',
       myVote: '내 투표: ${n}',
       voteRuleBtn: '투표 규칙 보기',
       centerMore: '가운데 +${n}',
@@ -282,7 +292,7 @@
       noBlood: '아무도 처형되지 않았습니다.',
       hunterLine: '사냥꾼 ${a}의 능력으로 ${b}도 함께 죽었습니다.',
       doppelArrow: '도플갱어(${r})',
-      votedFor: '${n}에게 투표했습니다. 다시 고르면 바꿀 수 있습니다.',
+      votedFor: '${n}에게 투표했습니다. 다시 고르면 바뀝니다.',
       votedBtn: '투표 완료',
       checkBand: '다른 사람에게 보이지 않게 확인하세요.',
       execCard: '${n:은/는} ${r:이었/였}습니다.',
@@ -379,6 +389,7 @@
       needName: '닉네임을 입력해 주세요.',
       busy: '지금은 방을 만들 수 없습니다. 잠시 후 다시 시도해 주세요.',
       badRequest: '잘못된 요청입니다.',
+      slowDown: '잠시 후 다시 시도해 주세요.',
       chatFast: '메시지를 너무 빨리 보내고 있습니다. 잠시 뒤 다시 보내 주세요.',
       chatNight: '밤에는 채팅할 수 없습니다.',
       townOpened: '${name:이/가} 방을 만들었습니다.',
@@ -453,7 +464,7 @@
         drunk:        { top: '${role} ${a:이/가} 자신의 카드를 ${P:과/와} 바꿨습니다.', bot: '받은 카드는 ${r}입니다. ${a:은/는} 확인하지 못했습니다.' },
       },
       auto: '(시간 초과)',  // 위 줄 끝에 ' ' 로 이어 붙인다
-      note: { wake: '처음 받은 역할로 깨어납니다.' },
+      note: { wake: '${a:은/는} 카드를 빼앗겼지만 처음 받은 역할(${r})로 깨어났습니다.' },
       dawn: {
         top: '아침이 되었습니다. 최종 카드 배치입니다.',
         bot: '카드가 바뀐 사람: ${list}',
@@ -501,8 +512,8 @@
         diff: '${b}인 줄 알았지만 마지막 카드는 ${f:이었/였}습니다.',
         blind: '바뀐 카드는 확인하지 못했습니다. 마지막 카드는 ${f:이었/였}습니다.',
         doppel: '당신의 도플갱어 카드는 ${r:을/를} 복사했습니다.',
-        win: '${team:으로/로} 승리했습니다.',
-        lose: '${team:으로/로} 패배했습니다.',
+        win: '${team} 승리.',
+        lose: '${team} 패배.',
       },
       // @client:replay-start
       cause: {
@@ -510,7 +521,7 @@
         swapped: '${role} ${a:이/가} 당신의 카드를 ${t}의 카드와 바꿨습니다.',
         rob: '당신은 ${t}의 카드를 가져왔습니다.',
         drunk: '당신은 자신의 카드를 ${P:과/와} 바꿨습니다.',
-        end: '그래서 마지막 카드는 ${r}입니다.',
+        end: '결국 마지막 카드는 ${r:이었/였}습니다.',
       },
       // @client:replay-end
       ui: {
@@ -527,7 +538,7 @@
       },
       // @client:replay-start
       uiR: {
-        hop: { start: '처음', robSelf: '${t}에게서 훔쳐 옴', robTarget: '${a:이/가} 훔쳐 감', swap: '${a:이/가} 바꿔 놓음', drunkSelf: '${P:과/와} 바꿈', drunkCenter: '${a:이/가} 자기 카드와 바꿈', copy: '${a:이/가} 복사함' },
+        hop: { start: '처음', robSelf: '${t}에게서 훔쳐 옴', robTarget: '${a:이/가} 훔쳐 감', swap: '${a:이/가} 바꿔 놓음', drunkSelf: '${P:과/와} 바꿈', drunkCenter: '${a:이/가} 자기 카드와 바꿈', copy: '${t}의 카드를 복사함' },
         journeySep: ' · ',
         hudSkip: '건너뛰기',
         pause: '멈추기',

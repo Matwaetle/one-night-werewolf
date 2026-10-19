@@ -299,6 +299,12 @@ function build(opts = {}) {
     warn('tools/font-metrics.json 없음 — size-adjust/ascent/descent-override 를 뺀다');
     html = html.replace(/(size-adjust|ascent-override|descent-override)\s*:\s*__(SA|AO|DO)__%\s*;?/g, '');
   }
+  {
+    const hm = manifest.home || {};
+    const pl = (u, mq) => (typeof u === 'string' ? `<link rel="preload" as="image" fetchpriority="high" href="${u}" media="${mq}">` : '');
+    const m = pl(hm.m, '(max-width:700px)'), d = pl(hm.d, '(min-width:701px)');
+    rawTok('__PRELOAD_KEY_M__', m); rawTok('__PRELOAD_KEY_D__', d); rawTok('__PRELOAD_KEY__', m + d);
+  }
   rawTok('__SOCKET_URL__', socketUrl);
   if (!socketUrl) html = html.replace(/<link\b[^>]*rel=["']?preconnect["']?[^>]*href=["']{2}[^>]*>\s*|<link\b[^>]*href=["']{2}[^>]*rel=["']?preconnect["']?[^>]*>\s*/g, '');
   rawTok('__VER__', ver);
@@ -312,8 +318,7 @@ function build(opts = {}) {
     const pre = ['/'];
     // audio.js 는 precache 하지 않는다 (FEATURES_SPEC 0.3)
     for (const n of [GAME_JS, GAME_CSS, FX_JS, SIO, FONT_T, FONT_D, FONT_S, REPLAY_JS, CHATX_JS, RESULT_JS]) if (n) pre.push('/a/' + n);
-    for (const k of ['back', 'atlas', 'grain']) if (typeof manifest[k] === 'string') pre.push(manifest[k]);
-    if (manifest.home && typeof manifest.home.m === 'string') pre.push(manifest.home.m);
+    for (const k of ['back', 'atlas', 'grain', 'horizon']) if (typeof manifest[k] === 'string') pre.push(manifest[k]);
     const sw = swRaw.split('__VER__').join(ver).split('__PRECACHE__').join(JSON.stringify(pre));
     put('/sw.js', sw, 'no-cache');
   }

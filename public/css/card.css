@@ -69,7 +69,7 @@
 /* xs/sm: 썸네일 아틀라스 (2행 x 6열, ROLE_ORDER 순) */
 .card[data-size="xs"] .card-art,
 .card[data-size="sm"] .card-art{
-  background:var(--img-atlas) calc(var(--col,0)*20%) calc(var(--row,0)*100%)/600% 200% no-repeat;
+  background-position:calc(var(--col,0)*20%) calc(var(--row,0)*100%);background-size:600% 200%;background-repeat:no-repeat;
 }
 /* 역할별 미세 조정은 W8: [data-role=x] .card-art{background-position:50% N%} (md/xl 전용으로 쓸 것) */
 
@@ -186,10 +186,10 @@
   position:absolute; left:20%; top:25%; width:60%; height:50%;
   color:var(--bone-dim); opacity:.55; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linejoin:miter;
 }
-/* 뒷면 판화: html[data-img~=back]일 때만(art.js가 로드·디코드 뒤 --img-back과 함께 설정) */
+/* 뒷면 판화: html[data-img~=back]일 때만(art.js가 로드·디코드 뒤 art-urls 규칙과 함께 설정) */
 .card-back::after{
   content:""; position:absolute; inset:calc(var(--bi) + 1px); opacity:0; transition:opacity 180ms linear;
-  background:var(--img-back) 50% 0/cover no-repeat;
+  background:50% 0/cover no-repeat;
 }
 html[data-img~="back"] .card-back::after{ opacity:1; }
 .card[data-size="md"] .card-back,.card[data-size="xl"] .card-back{

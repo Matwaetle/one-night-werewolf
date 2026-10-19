@@ -13,7 +13,7 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="/a/__FONT_T__">
 <link rel="preload" as="font" type="font/woff2" crossorigin href="/a/__FONT_D__">
 <script>window.SOCKET_URL='__SOCKET_URL__'</script>
-<script>(function(){var d=document.documentElement,n=navigator,c=n.connection||{},q=c.saveData,r=(performance.getEntriesByType('navigation')[0]||{}).responseStart;d.dataset.perf=n.deviceMemory<=3||n.hardwareConcurrency<=4||q?'lite':'full';try{if(localStorage.ww_perf==='lite')d.dataset.perf='lite'}catch(e){}d.dataset.net=q||/2g/.test(c.effectiveType||'')||c.downlink<.4||r>2500?'slow':'fast';try{fetch(SOCKET_URL+'/healthz',{mode:'no-cors',cache:'no-store'})}catch(e){}})()</script>
+<script>(function(){var d=document.documentElement,n=navigator,c=n.connection||{},q=c.saveData,r=(performance.getEntriesByType('navigation')[0]||{}).responseStart;d.dataset.perf=n.deviceMemory<=3||n.hardwareConcurrency<=4||q?'lite':'full';try{var pf=JSON.parse(localStorage.ww_perf);if(pf&&pf.v==='lite'&&Date.now()-pf.t<6048e5)d.dataset.perf='lite'}catch(e){}d.dataset.net=q||/2g/.test(c.effectiveType||'')||c.downlink<.4||r>2500?'slow':'fast';try{fetch(SOCKET_URL+'/healthz',{mode:'no-cors',cache:'no-store'})}catch(e){}})()</script>
 <style>
 @font-face{font-family:"Hanbam T";src:url(/a/__FONT_T__) format("woff2");font-display:swap}
 @font-face{font-family:"Hanbam";src:url(/a/__FONT_D__) format("woff2");font-display:swap}
@@ -95,6 +95,7 @@ __BASE_CSS__
 <symbol id="ic-menu" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4z" fill="currentColor" stroke="none"/></symbol>
 <symbol id="ic-chat" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter" viewBox="0 0 24 24"><path d="M3 4h18v12h-9l-5 4v-4H3zM7 8h10M7 12h6"/></symbol>
 <symbol id="ic-x" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></symbol>
+<symbol id="ic-chev" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
 <symbol id="ic-send" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 5v8H6M10 9l-4 4 4 4"/></symbol>
 <symbol id="ic-copy" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M8 8h11v11H8zM5 16V5h11"/></symbol>
 <symbol id="ic-key" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 8h7v7H3zM10 11h11M17 11v4M21 11v3"/></symbol>

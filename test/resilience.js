@@ -115,6 +115,19 @@ async function main() {
   const rr = await emit(g2b, 'join', { code: gr.code, playerId: 'g2', rejoin: true });
   ok(rr.ok, 'vote rejoin');
   ok(await until(() => g2b.last && ((g2b.last.phase === 'vote' && g2b.last.myVote === 'g3') || g2b.last.phase === 'result'), 3000), '재접속 뒤 투표 유지');
+  // 같은 playerId 로 두 번째 창이 접속하면 첫 소켓이 'replaced' 를 받고 끊긴다
+  const d1 = await conn();
+  const dr = await emit(d1, 'create', { name: '창1', playerId: 'dup1' });
+  ok(dr && dr.ok, 'dup create');
+  let replaced = 0;
+  // connectionStateRecovery 가 마지막 인자로 오프셋 문자열을 붙이므로 페이로드는 검사하지 않는다
+  d1.on('replaced', () => { replaced++; });
+  const d2 = await conn();
+  const dj = await emit(d2, 'join', { code: dr.code, name: '창1', playerId: 'dup1', rejoin: true });
+  ok(dj && dj.ok, 'dup rejoin ' + JSON.stringify(dj));
+  const t0 = Date.now();
+  while (!replaced && Date.now() - t0 < 2000) await sleep(30);
+  ok(replaced === 1, "첫 번째 창이 'replaced' 를 받지 못함");
   console.log('RESILIENCE OK');
 }
 

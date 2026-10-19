@@ -902,7 +902,7 @@ io.on('connection', (socket) => {
     tokAt = t;
     if (tok < 1) {
       const cb = a[a.length - 1];
-      if (typeof cb === 'function') { try { cb({ ok: false, error: M('badRequest') }); } catch (e) { /* ignore */ } }
+      if (typeof cb === 'function') { try { cb({ ok: false, error: M(ev === 'chat' ? 'chatFast' : 'slowDown') }); } catch (e) { /* ignore */ } }
       return;
     }
     tok -= 1;
@@ -934,7 +934,10 @@ io.on('connection', (socket) => {
 
   function attach(room, pid) {
     const p = room.players.get(pid);
-    if (p.socketId && p.socketId !== socket.id) io.sockets.sockets.get(p.socketId)?.disconnect(true);
+    if (p.socketId && p.socketId !== socket.id) {
+      const old = io.sockets.sockets.get(p.socketId);
+      if (old) { try { old.emit('replaced'); } catch (e) { /* ignore */ } old.disconnect(true); }
+    }
     p.socketId = socket.id;
     p.connected = true;
     p.offAt = 0;

@@ -69,7 +69,7 @@
   function loadAssets() {
     if (/\.css$/.test(A.css || '')) { const l = D.createElement('link'); l.rel = 'stylesheet'; l.href = A.css; cssOk = 0; l.onload = l.onerror = () => { cssOk = 1; sched(); }; D.head.appendChild(l); }
     addScript(A.fx, () => {});
-    idle(() => { loadChatx(); if (bgmOn) ldA(); }, 3000);
+    idle(() => { loadChatx(); loadResult(); if (bgmOn) ldA(); }, 3000);
     idle(() => { try { D.fonts.load('400 18px Hanbam', TH.sign); } catch (e) { /* 무시 */ } }, 3000);
   }
   function loadChatx() {   // 채팅 보조 모듈(답글): 채팅을 껐으면 불러오지 않는다
@@ -94,7 +94,7 @@
     resState = 1;
     addScript(A.result, (ok) => {
       resState = ok && W.RESULT ? 2 : 0;
-      const q = ui.rq; ui.rq = 0;
+      const q = ui.rq; ui.rq = 0; if (resState === 2) { W.RESULT.init(X); sched(); }
       if (resState === 2) { if (q) q.forEach((f) => f()); } else if ((ui.rsTry = (ui.rsTry || 0) + 1) < 4) { ui.rq = q; setTimeout(loadResult, ui.rsTry * 3000); }
     });
   }
@@ -102,12 +102,12 @@
   function probe(k) {   // 로비 · 첫 밤 4초 동안 긴 작업과 프레임을 재서 느린 기기는 lite 로 내린다
     if (ui[k] || root.dataset.perf === 'lite') return; ui[k] = 1;
     let n = 0, l = 0; const f = [], t0 = performance.now();
-    try { new PerformanceObserver((o) => { n += o.getEntries().filter((e) => e.duration > 100).length; }).observe({ type: 'longtask' }); } catch (e) { /* 무시 */ }
+    try { new PerformanceObserver((o) => { o.getEntries().forEach((e) => { n += e.duration; }); }).observe({ type: 'longtask' }); } catch (e) { /* 무시 */ }
     requestAnimationFrame(function lap(t) {
       if (D.hidden) l = 0; else { if (l) f.push(t - l); l = t; }
       if (t - t0 < 4000) return requestAnimationFrame(lap);
       f.sort((x, y) => x - y);
-      if (n >= 3 || f[f.length * 0.9 | 0] > 34) { root.dataset.perf = 'lite'; LS.set('ww_perf', 'lite'); }
+      if (n > 300 || f[f.length * 0.9 | 0] > 34) { root.dataset.perf = 'lite'; LS.set('ww_perf', JSON.stringify({ v: 'lite', t: Date.now() })); }   // 7일 뒤(또는 옛 형식)면 다시 잰다
     });
   }
 
@@ -135,6 +135,11 @@
   }
 
   // ---------- 소켓 ----------
+  if (typeof W.io !== 'function') {   // socket.io 묶음을 못 받았다: 안내와 새로고침 버튼만 보인다
+    const b = $('#homeBoot'); $('#home').dataset.boot = '1'; b.hidden = false; b.textContent = TB.loadFail + ' ';
+    const r = D.createElement('button'); r.type = 'button'; r.className = 'btn-sub'; r.innerHTML = '<span class="lbl">' + esc(TBT.reload) + '</span>'; r.onclick = () => location.reload(); b.appendChild(r);
+    return;
+  }
   const sock = W.io(W.SOCKET_URL || '', { transports: ['websocket', 'polling'], tryAllTransports: true });
   const online = () => sock.connected && !ui.off;
   function send(ev, data, cb) {
@@ -167,9 +172,13 @@
       });
     } else run();
   });
-  sock.on('disconnect', () => {
-    if (S) { ui.off = Date.now(); body.dataset.conn = 'off'; const c = $('#conn'); delete c.dataset.state; c.hidden = false; connTick(); } else setBoot(true);
+  sock.on('disconnect', (reason) => {
+    if (S) { ui.off = Date.now(); body.dataset.conn = 'off'; if (reason !== 'io server disconnect') { const c = $('#conn'); delete c.dataset.state; c.hidden = false; connTick(); } } else setBoot(true);
     sched();
+  });
+  sock.on('replaced', () => {   // 같은 자리에 다른 창이 접속했다: 자동 재접속을 멈추고 이 창에서 계속할지 묻는다
+    ui.replaced = 1; const c = $('#conn'); delete c.dataset.state;
+    c.innerHTML = esc(TB.otherTab) + ' <button class="btn-sub" type="button" data-act="here"><span class="lbl">' + esc(TBT.continueHere) + '</span></button>'; c.hidden = false;
   });
   function connTick() {
     clearTimeout(ui.connT);
@@ -178,21 +187,34 @@
     ui.connT = setTimeout(connTick, 1000);
   }
   sock.on('state', (s) => {
-    const p = S; S = s; skew = s.now - Date.now();
-    LS.set('ww_room', s.code);
-    if (s.result) R = s.result;
-    ensureShell();
-    if (!p || p.gameId !== s.gameId) newGame();
-    if (!p || p.phase !== s.phase) onPhase(p && p.phase, s.phase, !p);
-    else if (s.phase === 'night' && p.stepIdx !== s.stepIdx) onStep();
-    resend();
-    if (s.prompt && (!p || !p.prompt || p.prompt.key !== s.prompt.key)) { ui.sel = []; ui.selC = []; ui.busy = 0; }
-    const pr = s.prompt;   // 불면증환자: 지금 카드를 큰 카드로 한 번만 보여 준다
-    if (pr && pr.type === 'info' && pr.reveal && !pr.done && !ui.dn['rv' + pr.key]) { ui.dn['rv' + pr.key] = 1; pr.reveal.forEach((r) => ui.reveals.push({ k: 'p', id: r.id, self: 'now', role: r.role })); ART.want(pr.reveal.map((r) => r.role)); }
-    sched();
+    if (!s || typeof s !== 'object' || !s.phase) return;
+    try {
+      const p = S; S = s; if (typeof s.now === 'number') skew = s.now - Date.now();
+      LS.set('ww_room', s.code);
+      if (s.result) {
+        if (ui.vw !== s.result.gameId) {   // 결말 카드 뒷배경을 미리 받는다 (result.js 는 같은 요청을 한 번 더 한다)
+          const w = s.result.winners || [], t = w.indexOf('village') >= 0 ? 'village' : w.indexOf('wolf') >= 0 ? 'wolf' : w.indexOf('tanner') >= 0 ? 'tanner' : '';
+          ui.vw = s.result.gameId; if (t && ART.warm) ART.warm(['verdict-' + t]);
+        }
+        R = s.result;
+      }
+      ensureShell();
+      if (!p || p.gameId !== s.gameId) newGame();
+      if (!p || p.phase !== s.phase) onPhase(p && p.phase, s.phase, !p);
+      else if (s.phase === 'night' && p.stepIdx !== s.stepIdx) onStep();
+      resend();
+      if (s.prompt && (!p || !p.prompt || p.prompt.key !== s.prompt.key)) { ui.sel = []; ui.selC = []; ui.busy = 0; }
+      const pr = s.prompt;   // 불면증환자: 지금 카드를 큰 카드로 한 번만 보여 준다
+      if (pr && pr.type === 'info' && pr.reveal && !pr.done && !ui.dn['rv' + pr.key]) { ui.dn['rv' + pr.key] = 1; pr.reveal.forEach((r) => ui.reveals.push({ k: 'p', id: r.id, self: 'now', role: r.role })); ART.want(pr.reveal.map((r) => r.role)); }
+    } catch (e) { console.error(e); } finally { sched(); }
   });
-  sock.on('chatHistory', (m, code) => { const l = $('#chatLog'), same = code && ui.chatCode === code; ui.chatCode = code; ui.chatBuf = m; if (!l) return; if (!same) { l.innerHTML = ''; ui.lastMid = 0; ui.stick = 1; } m.forEach((x) => { if (!same || x.mid > ui.lastMid) addChat(x, 1); }); if (ui.stick) toEnd(); });
-  sock.on('chat', (m) => addChat(m));
+  sock.on('chatHistory', (m, code) => {
+    try {
+      const l = $('#chatLog'), same = code && ui.chatCode === code; if (!Array.isArray(m)) return; ui.chatCode = code; ui.chatBuf = m; if (!l) return;
+      if (!same) { l.innerHTML = ''; ui.lastMid = 0; ui.stick = 1; } m.forEach((x) => { if (!same || x.mid > ui.lastMid) addChat(x, 1); }); if (ui.stick) toEnd();
+    } catch (e) { console.error(e); }
+  });
+  sock.on('chat', (m) => { try { addChat(m); } catch (e) { console.error(e); } });
   sock.on('kicked', () => { LS.del('ww_room'); toHome(); toast(TB.kicked, 'danger'); });
 
   const rclose = () => { try { W.REPLAY && REPLAY.close(); } catch (e) { /* 무시 */ } };
@@ -228,6 +250,7 @@
       }
       later(first ? 0 : 1200 + dl, () => speak(NIGHT_TEXT._check));
     } else if (to === 'day') {
+      ui.swapHint = LS.get('hb.swap') !== '1'; LS.set('hb.swap', '1');
       fx('heartbeat', 0); speak(T.narr.dawn); idle(() => ART.prefetchDeck(S.gameDeck), 4000);
       if (desk()) { ui.tab = 'chat'; ui.stick = 1; }
       if (TB.dockCoach && !isPeeked() && !ui.dn['coach' + S.gameId]) { ui.dn['coach' + S.gameId] = 1; later(first ? 600 : 3400, () => toast(TB.dockCoach)); }
@@ -249,7 +272,9 @@
   function banner(k, a, b, ms) {
     const h = D.createElement('div'); h.className = 'fx-head'; h.dataset.k = k;
     h.innerHTML = '<p class="fx-head-1">' + esc(a) + '</p>' + (b ? '<p class="fx-head-2">' + esc(b) + '</p>' : '');
-    $('#main').appendChild(h); setTimeout(() => h.remove(), ms);
+    $('#main').appendChild(h);
+    h.addEventListener('animationend', (e) => { if (e.target === h.lastElementChild) h.remove(); });   // 머리글 연출이 끝나면 바로 치워 탁자 카드를 다시 보인다
+    setTimeout(() => h.remove(), ms);
   }
   function ticker(text) {
     $$('#main .ticker').forEach((e) => e.remove());
@@ -306,11 +331,11 @@
       '<div class="hud-r"><button class="hud-more" data-act="menu" type="button" aria-label="' + esc(TB.ariaMenu) + '"><svg class="ic" aria-hidden="true"><use href="#ic-menu"/></svg></button></div><i class="hud-bar" hidden></i>';
     $('#main').insertAdjacentHTML('beforeend',
       '<div class="stage" id="stage" data-r="stage" data-mode=""><div class="altar" hidden></div><i class="ln"></i>' +
-      '<div class="lm" style="display:contents"></div><div class="rv" style="display:contents"></div><div class="stage-bar" role="button" tabindex="0">' + esc(TBT.unfold) + '</div></div>' +
+      '<div class="lm" style="display:contents"></div><div class="rv" style="display:contents"></div><button class="stage-bar btn-sub" type="button" data-act="unfold"><span class="lbl">' + esc(TBT.unfold) + '</span><svg class="ic" aria-hidden="true"><use href="#ic-chev"/></svg></button></div>' +
       '<div class="nl" data-r="prompt" style="display:contents"></div><section class="board" data-r="log" hidden></section>');
     const band = D.createElement('div');
     band.className = 'band'; band.dataset.r = 'prompt'; band.setAttribute('role', 'status'); band.setAttribute('aria-live', 'polite');
-    band.innerHTML = '<p class="band-text"></p><button class="band-q" type="button" data-act="rule" aria-label="' + esc(TB.voteRule) + '" aria-expanded="false" hidden>?</button><p class="band-rule" hidden>' + esc(TB.voteRule) + '</p><div class="band-bar" hidden></div><a class="dock-alt" href="#" role="button" hidden></a>';
+    band.innerHTML = '<p class="band-text"></p><button class="band-q" type="button" data-act="rule" aria-label="' + esc(TB.voteRule) + '" aria-expanded="false" hidden>?</button><p class="band-rule" hidden>' + esc(TB.voteRule) + '</p><div class="band-bar" hidden></div><p class="day-seen" hidden></p><a class="dock-alt" href="#" role="button" hidden></a>';
     $('#app').insertBefore(band, $('#dock'));
     buildDock();
     $('.altar').innerHTML = [0, 1, 2].map((i) => ART.card(null, { size: 'sm', cls: 'altar-card', label: T.altar[i] })).join('');
@@ -318,8 +343,8 @@
     buildSheet();
     const st = $('#stage');
     st.addEventListener('click', (e) => { if (st.classList.contains('is-fold') && !e.target.closest('[data-act]')) { st.classList.remove('is-fold'); sched(); } });
-    if (W.ResizeObserver) new ResizeObserver(relayout).observe(st);
-    W.addEventListener('resize', relayout);
+    if (W.ResizeObserver) { const ro = new ResizeObserver(() => { const m = geo.mh; measure(); relayout(); if (m !== geo.mh && S && S.phase === 'result') sched(); }); ro.observe(st); ro.observe($('#main')); }
+    W.addEventListener('resize', () => { measure(); relayout(); });
     if (W.visualViewport) { visualViewport.addEventListener('resize', kb); visualViewport.addEventListener('scroll', kb); }
   }
   function buildDock() {
@@ -444,13 +469,31 @@
 
   // ---------- 좌석 · 탁자 ----------
   function relayout() { if (S && ui.ids.length) { placeSeats(); lines(); if (body.dataset.replay && W.REPLAY && REPLAY.relayout) REPLAY.relayout(); } }
+  // 기하(크기)는 measure() 에서만 읽는다: ResizeObserver · 창 크기 · 좌석/탁자 카드가 바뀐 다음 프레임. placeSeats 는 캐시만 읽고 쓰기만 한다 (강제 레이아웃 없음)
+  const geo = { w: 0, h: 0, mh: 0, tk: 48, sh: 64, cw: 40, ah: 0, aw: 0, q: 0 }, gk = () => [geo.w, geo.h, geo.tk, geo.sh, geo.cw, geo.ah, geo.aw].join();
+  function measure() {
+    const st = $('#stage'); if (!st) return;
+    const loose = st.dataset.tight !== '1' || !geo.ah, al = $('.altar', st), c = $('.seat>.card:not(.is-original)', st), tkn = $('.seat-token', st);   // 탁자 크기는 촘촘 모드가 아닐 때 잰 값을 쓴다 (모드가 서로 되먹임하지 않게)
+    geo.w = st.clientWidth; geo.h = st.clientHeight; geo.mh = $('#main').clientHeight;
+    geo.tk = parseFloat(getComputedStyle(st).getPropertyValue('--tk')) || (tkn && tkn.offsetWidth) || 48;
+    if (loose) {
+      geo.sh = Math.max(64, ...ui.ids.map((id) => (ui.seats[id] ? ui.seats[id].offsetHeight : 0)));
+      if (c && c.offsetWidth) geo.cw = c.offsetWidth;
+      if (al && al.offsetHeight) { geo.ah = al.offsetHeight; geo.aw = al.offsetWidth; }
+    }
+  }
+  function remeasure() {
+    if (geo.q) return;
+    geo.q = requestAnimationFrame(() => { geo.q = 0; const o = gk(); measure(); if (o !== gk()) relayout(); });
+  }
   function placeSeats() {
-    const st = $('#stage'), N = ui.ids.length, rp = body.dataset.replay ? 96 : 0, H = st.clientHeight - rp, sh = Math.max(64, ...ui.ids.map((id) => (ui.seats[id] ? ui.seats[id].offsetHeight : 0)));   // 리플레이 자막 띠만큼 탁자를 위로 올린다
+    const st = $('#stage'), N = ui.ids.length, rp = body.dataset.replay ? 96 : 0;   // 리플레이 자막 띠만큼 탁자를 위로 올린다
+    if (!geo.h) measure();
+    const H = geo.h - rp, tk = geo.tk, sh = geo.sh, al = $('.altar'), on = !!al && !al.hidden;
+    const rx = Math.max(60, geo.w / 2 - 40), ry = Math.max(60, Math.min(H / 2 - 64, H / 2 - (sh - tk / 2) - 12, H / 2 - tk / 2 - 28));   // 토큰 중심이 기준점. 위 28px 는 .night-track 자리
+    const seatIn = rx - tk / 2 - 6 - geo.cw - 8, tight = on && !!geo.ah && (ry < geo.ah / 2 + sh / 2 + 8 || geo.aw / 2 > seatIn);   // 세로 · 가로로 탁자 가운데 카드가 좌석 카드를 덮으면 촘촘 모드
     st.style.setProperty('--cy', (-rp / 2) + 'px');
-    const tk = parseFloat(getComputedStyle(st).getPropertyValue('--tk')) || 48;
-    const rx = Math.max(60, st.clientWidth / 2 - 40), ry = Math.max(60, Math.min(H / 2 - 64, H / 2 - (sh - tk / 2) - 12, H / 2 - tk / 2 - 28));   // 토큰 중심이 기준점. 위 28px 는 .night-track 자리
-    const al = $('.altar'), ah = al && !al.hidden ? al.offsetHeight : 0, tight = !!(ah && ry < ah / 2 + sh / 2 + 8);
-    if (tight !== (st.dataset.tight === '1')) { if (tight) st.dataset.tight = '1'; else delete st.dataset.tight; if (!placeSeats.re) { placeSeats.re = 1; try { return placeSeats(); } finally { placeSeats.re = 0; } } }
+    if (tight !== (st.dataset.tight === '1')) { if (tight) st.dataset.tight = '1'; else delete st.dataset.tight; }
     ui.pts = ui.ids.map((id, i) => {
       const th = Math.PI / 2 + 2 * Math.PI * ((i - ui.me + N) % N) / N;
       return { x: Math.round(rx * Math.cos(th)), y: Math.round(ry * Math.sin(th)) - rp / 2 };
@@ -469,7 +512,7 @@
       st.appendChild(el); ui.seats[p.id] = el;
     });
     ui.seatKey = ui.ids.join(','); st.dataset.n = list.length;
-    placeSeats();
+    placeSeats(); remeasure();
   }
   function seatCard(p, mode) {   // 좌석 위 카드 키
     if (mode === 'lobby' || (p.id === S.me && mode !== 'result')) return '';
@@ -496,6 +539,7 @@
       const m = $('.seat-mark', el);
       if (mk) { m.dataset.k = mk[0]; set(m, 'textContent', mk[1]); }
       else if (res && p.votes > 0) { m.dataset.k = 'votes'; set(m, 'textContent', TB.cols.votes + ' ' + p.votes); }
+      else if (f['is-ready']) { m.dataset.k = 'ready'; set(m, 'textContent', TB.readyMark || '준비 완료'); }
       else { delete m.dataset.k; set(m, 'textContent', ''); }
       const ck = seatCard(p, mode);
       if (el._ck !== ck) {
@@ -508,11 +552,12 @@
         ART.mark(el);
       }
     });
-    if (changed) { placeSeats(); lines(); if (body.dataset.replay && W.REPLAY && REPLAY.relayout) REPLAY.relayout(); }
+    if (changed) { relayout(); remeasure(); }
   }
   function paintAltar(V) {
     const al = $('.altar'), res = V.mode === 'result' && R, ctx = !!V.sel || V.selC;
-    al.hidden = V.mode === 'lobby' || V.mode === 'check';
+    const hid = V.mode === 'lobby' || V.mode === 'check';
+    if (al.hidden !== hid) { al.hidden = hid; remeasure(); }
     $$('.card', al).forEach((c, i) => {
       const role = res ? R.center.final[i] : null, sw = res && R.center.original[i] !== R.center.final[i], key = role ? role + (sw ? '*' : '') : '';
       if (c._k !== key) {
@@ -553,9 +598,9 @@
     if (patch($('.nl'), nightHTML(V))) afterNight(V);
     const bd = $('.board');
     if (mode !== 'result') bd.hidden = true; else if (bd.hidden && !body.dataset.replay && !ui.wait) bd.hidden = false;
-    const mh = $('#main').clientHeight;
-    const hh = mode === 'result' && !st.classList.contains('is-fold') && !desk() ? Math.round(Math.min(mh * 0.55, 380)) + 'px' : '';
-    if (st.style.height !== hh) { st.style.height = hh; if (ui.ids.length) placeSeats(); }
+    if (!geo.mh) measure();
+    const hh = mode === 'result' && !st.classList.contains('is-fold') && !desk() ? Math.round(Math.min(geo.mh * 0.55, 380)) + 'px' : '';
+    if (st.style.height !== hh) { st.style.height = hh; geo.h = hh ? parseInt(hh, 10) : 0; if (ui.ids.length) placeSeats(); }   // 높이를 우리가 정했으니 읽지 않고 안다. 풀었으면 placeSeats 가 한 번 잰다
   }
   function lobbyHTML() {
     const d = S.phase === 'night' ? S.gameDeck : S.deck, cards = [], prev = ui.fan, seen = {};
@@ -586,7 +631,7 @@
     const m = V.mode;
     if (S.phase !== 'night' || m === 'lobby') return '';
     if (m === 'check') {
-      return '<div class="check"><div class="check-card" data-peek="check" style="' + NOSEL + '">' + ART.card(S.myCard, { size: 'xl', face: 0 }) + '</div>' +
+      return '<div class="check"><div class="check-card" data-peek="check" style="' + NOSEL + '">' + ART.card(S.myCard, { size: 'xl', face: 0 }) + '<span class="check-cap">' + esc(TB.cardHint) + '</span></div>' +
         '<p class="check-t1">' + esc(TB.yourCard) + '</p><p class="check-team" hidden></p><p class="check-desc" hidden></p><p class="check-t2">' + esc(TB.holdHint) + '</p><i class="check-bar"></i></div>';
     }
     const n = S.steps.length - 1, rn = ROLES[S.stepRole] ? ROLES[S.stepRole].name : '';
@@ -617,6 +662,8 @@
     set($('.band-text', b), 'textContent', V.band);
     q.hidden = !V.rule; q.setAttribute('aria-expanded', ui.rule ? 'true' : 'false'); r.hidden = !(V.rule && ui.rule);
     b.hidden = V.mode === 'result';
+    const l = V.mode === 'day' && !unknown() ? lastSeen() : null, sn = $('.day-seen', b), tx = [l && fmt(TB.seenLine, { t: ROLES[l.role].name }), V.mode === 'day' && ui.swapHint && TB.daySwapHint].filter(Boolean).join(' · ');   // 낮: 밤에 본 것 한 줄 (첫 판에는 바뀌었을 수 있다는 안내를 덧붙인다)
+    set(sn, 'textContent', tx); sn.hidden = !tx;
   }
   const unknown = () => !!(ui.unk || (S.myCard === 'drunk' && (S.myLog || []).length));
   const isPeeked = () => LS.get('hb.peeked') === '1';
@@ -677,9 +724,9 @@
     f.addEventListener('submit', (e) => {
       e.preventDefault();
       const i = $('#chatInput'), t = i.value.trim(); if (!t || i.disabled) return;
-      const re = +f.dataset.re || 0, cid = (f.dataset.ct === t && f.dataset.cid) || Math.random().toString(36).slice(2);
+      const re = +f.dataset.re || 0, cid = Math.random().toString(36).slice(2);
       i.value = ''; delete f.dataset.re; ui.stick = 1;
-      send('chat', re ? { text: t, re, cid } : { text: t, cid }, (r) => { if (!r || r.ok === false) { if (!i.value) { i.value = t; f.dataset.cid = cid; f.dataset.ct = t; if (re) f.dataset.re = re; } } else { delete f.dataset.cid; delete f.dataset.ct; if (r.reDropped) toast(T.chat.reGone); } });
+      chatSend(t, re, cid);
     });
     const head = $('.sheet-head', sh); let y0 = null;
     head.addEventListener('click', (e) => {
@@ -723,13 +770,28 @@
     const sb = $('.sheet-body'), go = () => { if (sb && chatShown() && ui.stick) sb.scrollTop = sb.scrollHeight; };
     go(); requestAnimationFrame(go); clearTimeout(toEnd.t); toEnd.t = setTimeout(go, 380);
   }
+  function chatSend(t, re, cid) {   // 보낸 즉시 흐린 줄로 보이고, 서버가 되돌려 준 같은 글이 오면 바뀐다. 실패하면 다시 보내기 버튼 (입력창은 건드리지 않는다)
+    const log = $('#chatLog'); if (!log || !S) return;
+    let p = $('.msg[data-cid="' + cid + '"]', log);
+    if (!p) {
+      p = D.createElement('p'); Object.assign(p.dataset, { cid, t, sys: '0' }); if (re) p.dataset.re = re;
+      p.innerHTML = '<b class="msg-n nm">' + esc(pname(S.me)) + '</b><span class="msg-t">' + esc(t) + '</span>'; log.appendChild(p); ui.stick = 1; toEnd();
+    }
+    p.className = 'msg is-pending'; $$('.msg-rs', p).forEach((b) => b.remove());
+    send('chat', re ? { text: t, re, cid } : { text: t, cid }, (r) => {
+      if (!p.isConnected) return;
+      if (r && r.ok !== false) { p.className = 'msg'; if (r.reDropped) toast(T.chat.reGone); return; }
+      p.className = 'msg is-failed'; p.insertAdjacentHTML('beforeend', '<button class="msg-rs" type="button" data-act="resend">' + esc(TBT.resend) + '</button>');
+    });
+  }
   function addChat(m, quiet) {
-    const log = $('#chatLog'); if (!log) return;
+    const log = $('#chatLog'); if (!log || !m || typeof m.text !== 'string') return;
     if (m.mid) { if (m.mid <= (ui.lastMid || 0)) return; ui.lastMid = m.mid; }
     const p = D.createElement('p'); p.className = 'msg'; p.dataset.sys = m.system ? '1' : '0'; if (m.mid) p.dataset.mid = m.mid;
     const q = m.re ? '<span class="msg-q" data-re="' + (+m.re.mid || 0) + '" role="button" tabindex="0" aria-label="' + esc(fmt(T.chat.jump, { n: m.re.name })) + '"><b class="nm">' + esc(m.re.name) + '</b> ' + esc(m.re.t) + '</span>' : '';
     p.innerHTML = m.system ? '<span class="msg-t">' + esc(m.text) + '</span>' : '<b class="msg-n nm">' + esc(m.name) + '</b>' + q + '<span class="msg-t">' + esc(m.text) + '</span>';
     const mine = S && m.id === S.me;
+    if (mine && !m.system) { const q = $$('.msg[data-cid]', log).find((x) => x.dataset.t === m.text); if (q) q.remove(); }   // 내가 보낸 글이 돌아왔다: 임시 줄을 걷는다
     if (!chatShown() || mine) ui.stick = 1;   // 닫혀 있는 동안 온 메시지 · 내가 쓴 메시지는 항상 맨 아래로
     log.appendChild(p);
     while (log.children.length > 150) log.firstChild.remove();
@@ -760,7 +822,7 @@
     if (ck !== ui.ck) { ui.ck = ck; if (ck) { if (ui.stick) toEnd(); else $('.sheet-body').scrollTop = ui.chatTop; } }
     if (night && ui.h && !desk()) setSheet(0);
     sh.setAttribute('aria-hidden', ui.h || desk() ? 'false' : 'true');
-    if (ui.h || desk()) { if (ui.tab === 'log') paintLog(); else if (ui.tab === 'deck') paintDeck(); }
+    if (ui.h || desk()) { if (ui.tab === 'log') paintLog(); else if (ui.tab === 'deck') { if (resState === 2) W.RESULT.deck(); else loadResult(); } }
   }
   function paintLog() {
     const p = $('.pane[data-p=log]'), items = S.myLog || [];
@@ -768,33 +830,10 @@
       (it.reveal || []).map((r) => '<span class="log-c">' + ART.card(r.role, { size: 'xs', face: 1 }) + '</span>').join('') + '<span class="log-t">' + esc(it.text) + '</span></div><span class="secret-lbl">' + esc(TB.blurHint) + '</span></div></li>').join('') + '</ul>'
       : '<p class="log-none">' + esc(TB.seenNothing) + '</p>');
   }
-  function paintDeck() {
-    const p = $('.pane[data-p=deck]'), lobby = S.phase === 'lobby', edit = lobby && isHost();
-    const d = lobby ? S.deck : (S.gameDeck || S.deck), n = S.players.length, need = n + 3, total = sum(d);
-    const warns = lobby ? [d.mason === 1 && TB.masonWarn, !d.werewolf && TB.noWolfWarn].filter(Boolean) : [];
-    let h = '<div class="deck-bar">';
-    if (lobby) {
-      h += '<output class="deck-count' + (total === need ? ' is-ok' : '') + '">' + esc(fmt(TB.deckCount, { total, need })) + '</output>';
-      if (warns.length) h += '<button class="deck-warn" type="button" data-act="warn" aria-expanded="' + !!ui.warn + '">!</button>';
-      if (edit) h += '<button class="deck-arrange" type="button" data-act="preset">' + esc(TH.arrange) + '</button>';
-    } else h += '<p class="deck-note">' + esc(TB.deckAll) + '</p>';
-    h += '</div>';
-    if (lobby) h += (ui.warn && warns.length ? '<p class="deck-warn-t">' + esc(warns.join(' ')) + '</p>' : '') + '<p class="deck-note">' + esc(!S.deckCustom ? TB.arrangeNote : TB.deckNote) + '</p>';
-    h += '<p class="deck-desc" aria-live="polite">' + (ui.descRole ? esc(ROLES[ui.descRole].desc) : '') + '</p><div class="deck-grid">';
-    ROLE_ORDER.forEach((r) => {
-      const c = d[r] || 0, nme = ROLES[r].name; if (!lobby && !c) return;
-      h += '<div class="deck-cell' + (c ? '' : ' is-zero') + '" data-role="' + r + '"><span data-act="role" data-role="' + r + '" role="button" tabindex="0">' + ART.card(r, { size: 'sm', face: 1, cls: c ? '' : 'is-zero' }) + '</span><div class="deck-ctl">' +
-        (edit ? '<button class="deck-dec" type="button" data-act="deckEdit" data-role="' + r + '" data-d="-1" aria-label="' + esc(nme + ' ' + TB.dec) + '"' + (c <= 0 ? ' aria-disabled="true"' : '') + '>−</button>' : '') + '<output>' + c + '</output>' +
-        (edit ? '<button class="deck-inc" type="button" data-act="deckEdit" data-role="' + r + '" data-d="1" aria-label="' + esc(nme + ' ' + TB.inc) + '"' + (c >= ROLES[r].max ? ' aria-disabled="true"' : '') + '>+</button>' : '') + '</div></div>';
-    });
-    patch(p, h + '</div>');
-    if (ui.deckTop) { ui.deckTop = 0; const sb = $('.sheet-body'); if (sb) sb.scrollTop = 0; }
-  }
-
   // ---------- 모달 · 메뉴 · 법도 ----------
   function openModal(inner, cls, label) {
     const m = $('#modal'); if (m.hidden) ui.mopen = D.activeElement;
-    m.innerHTML = '<div class="modal-box ' + (cls || '') + '" role="dialog" aria-modal="true" aria-label="' + esc(label || '') + '"><button class="modal-x" type="button" data-act="closeModal" aria-label="' + esc(TB.ariaClose) + '"><svg class="ic" aria-hidden="true"><use href="#ic-x"/></svg></button>' + inner + '</div>';
+    m.innerHTML = '<div class="modal-box ' + (cls || '') + '" role="dialog" aria-modal="true" aria-label="' + esc(label || '') + '"><button class="modal-x" type="button" data-act="closeModal" aria-label="' + esc(TB.ariaClose) + '"><svg class="ic" aria-hidden="true"><use href="#ic-x"/></svg></button>' + (/\b(law|paper)\b/.test(cls || '') ? '<div class="modal-in">' + inner + '</div>' : inner) + '</div>';
     if (!hs && !desk()) hs = push(2);
     m.hidden = false; ART.mark(m);
     const f = $('input,button:not(.modal-x),[role=button]', m) || $('.modal-x', m); if (f) f.focus();
@@ -804,13 +843,6 @@
     m.hidden = true; m.innerHTML = '';
     if (hs === 2) { hs = 0; back(); }
     if (ui.mopen) { try { ui.mopen.focus(); } catch (e) { /* 무시 */ } ui.mopen = null; }
-  }
-  function openLaw() {
-    const end = '<ul>' + TB.lawEnd.map((x) => '<li><b>' + esc(x.h) + '</b> ' + esc(x.t) + '</li>').join('') + '</ul>';
-    openModal('<h2 class="modal-title">' + esc(TH.law) + '</h2><div class="law-grid"><ol class="law-list">' +
-      TB.law.map((x, i) => '<li class="law-row"><b>' + esc(x.h) + '</b>' + esc(x.t) + (i === TB.law.length - 1 ? end : '') + '</li>').join('') +
-      '</ol><div><h3 class="law-sub">' + esc(TH.lawOrder) + '</h3><div class="law-roles">' +
-      ROLE_ORDER.map((r) => '<div class="law-role">' + ART.card(r, { size: 'sm', face: 1 }) + '<div><b>' + esc(ROLES[r].name) + '</b><span>' + esc(ROLES[r].desc) + '</span></div></div>').join('') + '</div></div></div>', 'law', TH.law);
   }
   function openMenu() {
     const item = (act, t) => '<button class="menu-item" type="button" data-act="' + act + '">' + esc(t) + '</button>';
@@ -883,57 +915,11 @@
   }
 
   // ---------- 결말 ----------
-  function drawBoard() { if (R && W.RESULT) W.RESULT.draw({ S, R, T, TB, TH, TBT, fmt, esc, names, NM, nmh, pname, mq, ART, $, body, enhance: enhanceBoard }); }   // 결말 보드는 지연 모듈(result.js)이 그린다
-  function ensureBoard() { withRes(() => { if (S && S.phase === 'result' && R && !$('.board')._d) { drawBoard(); sched(); } }); }
-  function enhanceBoard() {
-    if (replayState !== 2 || !R || !R.night || !$('.board')._d) return;
-    try { $('.rp-again').hidden = false; REPLAY.enhanceBoard($('.board'), R, S.me); $('.tl-sec').hidden = false; } catch (e) { console.error(e); }
-  }
-  function startResult(first) {
-    ART.want(R.players.filter((p) => p.dead).map((p) => p.final));
-    const st = $('#stage'); st.classList.remove('is-fold');
-    const seen = LS.get('result:' + R.gameId), auto = R.night && !seen && !first, me = R.players.find((p) => p.id === S.me);
-    scNow = 'result'; scO = { win: me ? !!me.win : null, dead: R.players.filter((p) => p.dead).length, replay: !!auto }; snd('scene', 'result', scO);
-    $('.board')._d = 0;
-    if (!auto) { withRes(() => { if (!S || S.phase !== 'result' || !R) return; drawBoard(); $('.board').hidden = false; if (R.night) LS.set('result:' + R.gameId, '1'); if (ui.ids.length) placeSeats(); }); return; }
-    ui.rpr = 1;   // 자동 재생: 첫 장면이 그려진 뒤(rp-ready)에 보드를 따로 그린다 (같은 작업에서 만들지 않는다)
-    if (replayState === 2) return playReplay(true);
-    ui.wait = 1; $('.board').hidden = true; fx('lidsClose', 200); loadReplay();   // 늦으면 암전으로 최대 2초
-    later(2000, timeUp);
-  }
-  function timeUp() {
-    if (!ui.wait) return;
-    ui.wait = 0; if (R) LS.set('result:' + R.gameId, '1');
-    ensureBoard(); $('.board').hidden = false; fx('lidsOpen', 400); sched();
-  }
-  function onReplay() {
-    sched();
-    if (!S || S.phase !== 'result' || !R) return;
-    if (ui.wait) { ui.wait = 0; playReplay(true); } else enhanceBoard();
-  }
-  function playReplay(auto, start) {
-    if (!R || !R.night || !W.REPLAY) return;
-    ui.wait = 0; LS.set('result:' + R.gameId, '1');
-    $('#stage').classList.remove('is-fold');
-    body.dataset.replay = '1'; sched(); $('.board').hidden = true; $('.band').hidden = true;
-    $('#stage').style.height = '';
-    $$('.seat').forEach((e) => { e.classList.remove('is-dead'); const m = $('.seat-mark', e); if (m.dataset.k === 'votes') { delete m.dataset.k; m.textContent = ''; } });
-    $('.ln').classList.remove('is-on');
-    if (ui.ids.length) placeSeats();   // 자막 띠를 비운 채 좌석을 다시 놓은 뒤 리플레이가 토큰 위치를 읽는다
-    try {
-      REPLAY.open(R, S.me, { autoplay: auto, start: start || 0, mount: { main: $('#main'), dock: $('#dock'), hud: $('#hud') }, onDone: endReplay });
-      fx('lidsOpen', 400);
-    } catch (e) { console.error(e); endReplay(); }
-  }
-  function endReplay() {
-    rclose();
-    body.removeAttribute('data-replay');
-    relayout();
-    if (S && S.phase === 'result') { ensureBoard(); $('.board').hidden = false; if (mq('(max-width:599px)')) $('#stage').classList.add('is-fold'); enhanceBoard(); if (ui.ids.length) placeSeats(); }
-    fx('lidsOpen', 200); sched();
-  }
-  D.addEventListener('rp-jump', (e) => playReplay(false, e.detail && e.detail.beat));
-  D.addEventListener('rp-ready', () => { if (ui.rpr) { ui.rpr = 0; idle(() => { if (S && S.phase === 'result') ensureBoard(); }, 1500); } }, true);
+  // 결말 · 규칙 모달 · 리플레이 진입/종료는 지연 모듈(result.js)에 있다. 여기에는 입구만 둔다.
+  const X = { ui, geo, fx, snd, later, idle, sched, placeSeats, relayout, rclose, LS, loadReplay, openModal, patch, sum, isHost,
+    get S() { return S; }, get R() { return R; }, get rs() { return replayState; }, scO: () => scO, scene(a, b) { scNow = a; scO = b; } };
+  const rr = (n, ...a) => withRes(() => W.RESULT[n](...a));
+  const startResult = (first) => rr('start', first), timeUp = () => rr('timeUp'), onReplay = () => rr('rep');
 
   // ---------- 누르기: 길게 누르기 · 엿보기 ----------
   function pressEnd() {
@@ -1006,9 +992,9 @@
   }
   D.addEventListener('visibilitychange', () => {
     body.classList.toggle('paused', D.hidden);
-    if (D.hidden) pressEnd(); else { if (!sock.connected) sock.connect(); else stale(); if (wlWant) wake(true); vp(); if (chatShown() && ui.stick) toEnd(); sched(); }
+    if (D.hidden) pressEnd(); else { if (!sock.connected) { if (!ui.replaced) sock.connect(); } else stale(); if (wlWant) wake(true); vp(); if (chatShown() && ui.stick) toEnd(); sched(); }
   });
-  W.addEventListener('online', () => { if (!sock.connected) sock.connect(); else stale(); });
+  W.addEventListener('online', () => { if (!sock.connected) { if (!ui.replaced) sock.connect(); } else stale(); });
 
   // ---------- 행동 ----------
   const runAct = (el) => { const f = ACT[el.dataset.act]; if (f) f(el.dataset, el); };
@@ -1023,7 +1009,7 @@
     },
     join() { joinWith($('#codeInput').value); },
     other() { inviteOn = false; cleanUrl(); sched(); },
-    law() { closeModal(); openLaw(); },
+    law() { closeModal(); rr('law'); },
     copy: copyLink,
     menu: openMenu,
     closeModal,
@@ -1062,13 +1048,16 @@
       ui.tab = ui.logNew && !ui.unread && S.phase !== 'lobby' ? 'log' : 'chat'; setSheet(1);
     },
     rule() { ui.rule = ui.rule ? 0 : 1; sched(); },
+    unfold() { $('#stage').classList.remove('is-fold'); sched(); },
+    here() { ui.replaced = 0; const c = $('#conn'); c.hidden = true; c.textContent = ''; sock.connect(); },
+    resend(d, el) { const p = el.closest('.msg'); if (p) chatSend(p.dataset.t, +p.dataset.re || 0, p.dataset.cid); },
     ready() {
       if (!guard()) return;
       const me = S.players.find((p) => p.id === S.me);
       if (me) { me.ready = !me.ready; sched(); sock.emit('ready', { ready: !!me.ready }); }
     },
     again() { if (guard()) sock.emit('playAgain'); },
-    replay() { playReplay(false); },
+    replay() { rr('play', false); },
     cover() { coverAll(); },
     seat(d) {
       if (ui.lpDone) { ui.lpDone = 0; return; }

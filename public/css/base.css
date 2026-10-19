@@ -181,6 +181,13 @@ body[data-phase=home] #sheet{display:none}
 .sheet-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:8px 16px}
 .msg{margin:0;padding:3px 0;font-size:var(--fs-body);line-height:1.5;color:var(--bone-hi);overflow-wrap:anywhere}
 .msg-n{margin-right:8px;font-size:var(--fs-small);color:var(--bone-dim)}
+.msg{word-break:normal}
+.msg[data-sys="0"]{display:grid;grid-template-columns:4.5em 1fr;column-gap:8px}
+.msg[data-sys="0"]>:not(.msg-n){grid-column:2}
+.msg[data-sys="0"] .msg-n{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-t{text-wrap:wrap}
+.msg.is-pending{opacity:.55}
+.msg.is-failed .msg-t{color:var(--blood-hot)}
 .msg[data-sys="1"]{padding-left:10px;border-left:1px solid var(--ash);color:var(--smoke)}
 .chat-form{display:flex;flex:none;gap:8px;padding:8px max(16px,var(--sar)) calc(8px + var(--sab)) max(16px,var(--sal));border-top:var(--hair);background:var(--char)}
 .chat-send{flex:none;width:48px;height:48px;display:grid;place-items:center}
@@ -224,7 +231,7 @@ body[data-sheet="1"] #sheet-bd{opacity:1;pointer-events:auto}
 .menu-item.is-danger{border-left:3px solid var(--blood)}
 
 /* 법도 모달 종이: 안쪽 테두리(잉크 6px + 뼈색 실선) 바깥은 고정, 글은 .modal-in 안에서만 스크롤한다 */
-#modal .modal-box:is(.law,.paper){display:flex;padding:0;overflow:hidden;outline:0;border:0;box-shadow:inset 0 0 0 6px var(--ink),inset 0 0 0 7px var(--bone-dim),4px 4px 0 #000}
+#modal .modal-box:is(.law,.paper){display:flex;flex-direction:column;padding:0;overflow:hidden;outline:0;border:0;box-shadow:inset 0 0 0 6px var(--ink),inset 0 0 0 7px var(--bone-dim),4px 4px 0 #000}
 #modal .modal-box:is(.law,.paper) .modal-x{top:10px;right:10px;z-index:1}
 .modal-in{flex:1;min-width:0;min-height:0;margin:10px;padding:18px 16px calc(14px + var(--sab));overflow-y:auto;overscroll-behavior:contain}
 .modal-in .modal-title{padding-right:40px}
@@ -234,6 +241,7 @@ html[data-img~=grain]:not([data-perf=lite]) #modal .modal-box:is(.law,.paper)::a
 #toast{position:fixed;z-index:60;top:calc(var(--hud-h) + 8px);left:0;right:0;width:fit-content;max-width:92vw;margin:0 auto;padding:10px 16px;background:var(--char);border-left:3px solid var(--ash);color:var(--bone-hi);font-size:14px;line-height:1.4;box-shadow:var(--shadow-hard);pointer-events:none}
 #toast[data-kind=danger]{border-left-color:var(--blood)}
 #toast:not([hidden]){animation:toast 180ms steps(4) both}
+body[data-sheet="1"] #toast{z-index:18}
 #conn{position:fixed;z-index:50;top:0;left:0;right:0;padding:calc(6px + var(--sat)) 16px 6px;text-align:center;background:var(--char);border-bottom:3px solid var(--blood);color:var(--bone-hi);font-size:var(--fs-small);font-weight:600}
 #conn[data-state=back]{border-bottom-color:var(--ash)}
 #fx{position:fixed;inset:0;z-index:30;pointer-events:none}
@@ -260,3 +268,10 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
   .hud-timer.tick,#toast:not([hidden]),html[data-home-art="1"] .bg-art::before{animation:none}
   #sheet,#sheet-bd,.btn-main,.btn-sub{transition-duration:.01ms}
 }
+@media(min-width:1024px){:root{--hud-h:56px;--dock-h:calc(88px + var(--sab))}.hud-sign,.hud-mid{font-size:20px}.btn-main .lbl{font-size:20px}.home-form{max-width:400px}.home-form .in{font-size:18px}}
+.msg-rs{margin-left:8px;min-height:32px;padding:0 10px;font-size:var(--fs-small);font-weight:600;color:var(--bone-hi);border:var(--hair);background:var(--char)}
+#conn .btn-sub{display:inline-flex;min-height:32px;margin-left:8px;padding:0 12px;vertical-align:middle}
+#conn .btn-sub .lbl{font-size:var(--fs-small)}
+.day-seen{position:absolute;left:0;right:0;bottom:100%;margin:0;padding:3px 16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:var(--fs-small);font-weight:400;line-height:1.3;color:var(--bone-dim);pointer-events:none}
+.check-cap{position:absolute;left:0;right:0;bottom:0;z-index:6;padding:28px 10px 12px;text-align:center;font-size:var(--fs-small);line-height:1.35;color:var(--bone-hi);background:linear-gradient(transparent,rgba(5,4,3,.82));pointer-events:none}
+.check-card.is-hold .check-cap{display:none}

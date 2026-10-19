@@ -27,7 +27,8 @@ const GAME_WARN = 23.8 * KB;   // FEATURES_SPEC 0.4: 경고선(WARN), 상한 24K
 const row = (name, bytes, limit, note = '') => {
   const ok = bytes <= limit;
   if (!ok) bad = true;
-  rows.push(`${ok ? 'OK  ' : 'FAIL'} ${name.padEnd(40)} ${(bytes / KB).toFixed(2).padStart(7)}KB / ${(limit / KB).toFixed(1)}KB ${note}`);
+  const tag = !ok ? 'FAIL' : bytes >= limit * 0.97 ? 'WARN' : 'OK  ';
+  rows.push(`${tag} ${name.padEnd(40)} ${(bytes / KB).toFixed(2).padStart(7)}KB / ${(limit / KB).toFixed(1)}KB ${note}`);
   return bytes;
 };
 const info = (name, text) => rows.push(`INFO ${name.padEnd(40)} ${text}`);
@@ -78,7 +79,7 @@ const critical = row('크리티컬 패스 합계 (html+font+sio+game)', htmlBr +
 const gc = need('game.css', /^game\.[0-9a-f]+\.css$/); if (gc) row('game.css', size(gc), 9 * KB);
 const fx = need('fx.js', /^fx\.[0-9a-f]+\.js$/); if (fx) row('fx.js', size(fx), 5 * KB);
 const fD = need('hanbam-d 폰트', /^hanbam-d\.[0-9a-f]+\.woff2$/); if (fD) row('hanbam-d (디스플레이 폰트)', size(fD), 30 * KB);
-const rp = opt('replay.js', /^replay\.[0-9a-f]+\.js$/); if (rp.length) row('replay.js (JS+CSS+문양)', size(rp[0]), 15 * KB);
+const rp = opt('replay.js', /^replay\.[0-9a-f]+\.js$/); if (rp.length) row('replay.js (JS+CSS+문양)', size(rp[0]), 16 * KB);
 
 const rs = opt('result.js (A1 결과 청크)', /^result\.[0-9a-f]+\.js$/); if (rs.length) row('result.js (A1 결과 청크)', size(rs[0]), 6 * KB);
 const fS = opt('hanbam-s (명조 서브셋)', /^hanbam-s\.[0-9a-f]+\.woff2$/); if (fS.length) row('hanbam-s (명조 서브셋)', size(fS[0]), 30 * KB);

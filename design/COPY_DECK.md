@@ -88,7 +88,7 @@
 | T.btn.pause | 멈춘다 | 멈추기 | |
 | T.btn.resume | 잇는다 | 계속하기 | |
 | T.btn.restart | 처음부터 | 처음부터 보기 | |
-| T.btn.leave | 떠난다 | 나가기 | |
+| T.btn.leave | 떠난다 | 방 나가기 | 게임 메뉴에서 씁니다. leaveTown과 같은 문구 |
 | T.btn.leaveTown | 마을을 떠난다 | 방 나가기 | |
 | T.btn.voiceOn | 목소리를 켠다 | 음성 켜기 | |
 | T.btn.voiceOff | 목소리를 끈다 | 음성 끄기 | |
@@ -205,7 +205,7 @@
 
 | 위치 | 현재 | 새 문구 | 메모 |
 |---|---|---|---|
-| T.body.yourCard | 네 패다. | 당신의 카드입니다. | check-t1, dock aria. 역할 이름은 누르고 있을 때만 보이므로 문장에 넣지 않습니다. 오너 예시 문장은 4절 선택 키로 처리합니다 |
+| T.body.yourCard | 네 패다. | 당신의 역할은 아직 가려져 있습니다. | check-t1, dock aria. 역할 이름은 누르고 있을 때만 보이므로 문장에 넣지 않습니다. 오너 예시 문장은 4절 선택 키로 처리합니다 |
 | T.body.holdHint | 누르고 있어라. | 카드를 길게 눌러 확인하세요. | 오너 예시 그대로입니다 |
 | T.body.keepAwake | 화면을 끄지 마라. | 화면이 꺼지지 않도록 해 주세요. | |
 | T.body.peekFirst | 처음 받은 패 | 처음 받은 카드 | |
@@ -380,6 +380,7 @@
 | T.msg.endLine | 결말: ${verdict} | 결과: ${verdict} | |
 | T.msg.needName | 이름을 대라. | 닉네임을 입력해 주세요. | |
 | T.msg.badRequest | 지금은 아니다. | 잘못된 요청입니다. | |
+| T.msg.slowDown | | 잠시 후 다시 시도해 주세요. | 채팅 외 이벤트가 요청 한도를 넘었을 때 |
 | T.msg.chatFast | | 메시지를 너무 빨리 보내고 있습니다. 잠시 뒤 다시 보내 주세요. | 채팅 전송 응답 |
 | T.msg.chatNight | | 밤에는 채팅할 수 없습니다. | 채팅 전송 응답 |
 | T.msg.townOpened | ${name:이/가} 마을을 열었다. | ${name:이/가} 방을 만들었습니다. | |
@@ -464,7 +465,7 @@
 | T.replay.swap.drunk.top | ${role} ${a}, ${P}의 패와 제 패를 맞바꿨다. | ${role} ${a:이/가} 자신의 카드를 ${P:과/와} 바꿨습니다. | |
 | T.replay.swap.drunk.bot | 받은 패: ${r}. 그는 끝내 몰랐다. | 받은 카드는 ${r}입니다. ${a:은/는} 확인하지 못했습니다. | |
 | T.replay.auto | 밤이 대신 골랐다. | (시간 초과로 자동 선택) | 윗줄 끝에 붙습니다 |
-| T.replay.note.wake | 패가 바뀌었어도, 처음 받은 패대로 깨어난다. | 카드가 바뀌어도 밤에는 처음 받은 카드의 역할로 깨어납니다. | |
+| T.replay.note.wake | 패가 바뀌었어도, 처음 받은 패대로 깨어난다. | ${a:은/는} 카드를 빼앗겼지만 처음 받은 역할(${r})로 깨어났습니다. | 변수 a: 이름, r: 역할 칩 |
 | T.replay.dawn.top | 날이 밝았다. 패는 이렇게 남았다. | 아침이 되었습니다. 최종 카드 배치입니다. | |
 | T.replay.dawn.bot | 바뀐 패 ${n}장. | 바뀐 카드: ${n}장 | |
 | T.replay.dawn.botNone | 바뀐 패는 없다. | 바뀐 카드가 없습니다. | |
@@ -510,8 +511,8 @@
 | T.replay.self.blind | 너는 제 패를 몰랐다. 너는 ${f:이었다/였다}. | 당신은 자신의 카드를 알지 못했습니다. 최종 카드는 ${f}입니다. | |
 | T.replay.self.doppel | 네가 쥔 도플갱어 패는 ${r:을/를} 베낀 패였다. | 당신의 도플갱어 카드는 ${r:을/를} 복사했습니다. | |
 | T.replay.self.team | 그래서 ${team:이었다/였다}. | 최종 소속은 ${team}입니다. | |
-| T.replay.self.win | 이겼다. | 승리했습니다. | |
-| T.replay.self.lose | 졌다. | 패배했습니다. | |
+| T.replay.self.win | 이겼다. | ${team} 승리. | |
+| T.replay.self.lose | 졌다. | ${team} 패배. | |
 
 ### 3.21 T.replay.ui (리플레이 조작)
 
@@ -783,3 +784,26 @@
 | T.body.dockHint | 내 카드 |
 | T.body.voteRuleBtn | 투표 규칙 보기 (투표 '?' 버튼 aria-label) |
 | T.body.centerMore | 가운데 +${n} |
+
+## 부록. 2차 수정 (서버/문구)
+
+| 키 | 문구 | 비고 |
+|---|---|---|
+| T.body.yourCard, T.head.yourCard | 당신의 역할은 아직 가려져 있습니다. | 카드 뒷면이 늑대 얼굴이라 이전 문구가 오해를 줬습니다 |
+| T.body.otherTab | 다른 창에서 이 게임에 접속했습니다. | 서버의 replaced 이벤트 수신 시 |
+| T.btn.continueHere | 이 창에서 계속하기 | |
+| T.body.loadFail | 게임을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요. | |
+| T.btn.reload | 다시 불러오기 | |
+| T.body.daySwapHint | 밤사이 바뀌었을 수 있습니다. | |
+| T.body.seenLine | 밤에 본 것: ${t} | |
+| T.body.cardHint | 카드를 길게 눌러 역할을 확인하세요. | |
+| T.body.deckCenterOk | 가운데 카드 3장 포함 | |
+| T.body.youHappened | 당신에게 일어난 일 | |
+| T.btn.resend | 다시 보내기 | |
+| T.msg.slowDown | 잠시 후 다시 시도해 주세요. | 위 본문 표에도 추가 |
+| T.replay.uiR.hop.copy | ${t}의 카드를 복사함 | 변수 t: 복사한 대상 이름 |
+| T.replay.cause.end | 결국 마지막 카드는 ${r:이었/였}습니다. | r: 역할 칩, 칩과 서술어를 .nw로 묶습니다 |
+| T.body.pickExec | 처형할 사람을 고르고 투표하기를 길게 누르세요. | |
+| T.body.raised | 투표 준비 ${r}/${n} · 모두 준비하면 바로 투표합니다. | |
+| T.body.votedFor | ${n}에게 투표했습니다. 다시 고르면 바뀝니다. | |
+| T.btn.leave | 방 나가기 | |

@@ -227,14 +227,14 @@
       for (i = 1; i <= N; i++) { var st = seats[(me + i) % N], tk = st.querySelector('.seat-token'), c = st.querySelector(':scope>.card'), r = tk.getBoundingClientRect(), side = st.dataset.side || (r.left + r.width / 2 < d.documentElement.clientWidth / 2 ? 'l' : 'r'), w = c ? c.getBoundingClientRect().width : (innerWidth < 600 ? 26 : 40); tg.push({ x: r.left + r.width / 2 + (side === 'r' ? -1 : 1) * (r.width / 2 + 6 + w / 2), y: r.top + r.height / 2, w: w }); }
       [].slice.call(d.querySelectorAll('.altar .card')).forEach(function (c) { tg.push(rect(c)); });
       var f0 = rect(fan), ghosts = [], t0 = TT.deal - 120;
+      var tpl = d.createElement('div'); tpl.innerHTML = typeof ART !== 'undefined' ? ART.card(null, { size: 'xs', face: 0, cls: 'fx-ghost' }) : ''; tpl = tpl.firstChild; if (tpl) tpl.insertAdjacentHTML('beforeend', '<i class="fx-ink"></i>');
       dealEnd = function () { ghosts.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); }); ghosts = []; dealEnd = null; };
       var flights = tg.map(function (t, k) {
         return new Promise(function (res) {
           later(function () {
-            var g = d.createElement('div'); g.innerHTML = typeof ART !== 'undefined' ? ART.card(null, { size: 'xs', face: 0, cls: 'fx-ghost' }) : '';
-            g = g.firstChild; if (!g) return res();
+            var g = tpl && tpl.cloneNode(true); if (!g) return res();
             g.style.setProperty('--cw', t.w + 'px'); g.style.left = (f0.x - t.w / 2) + 'px'; g.style.top = (f0.y - t.w * .7) + 'px';
-            g.insertAdjacentHTML('beforeend', '<i class="fx-ink"></i>'); fl.appendChild(g); ghosts.push(g);
+            fl.appendChild(g); ghosts.push(g);
             var rot = (k % 2 ? 4 : -4);
             var kf = [{ transform: 'translate(0,0) rotate(' + rot + 'deg)' }, { transform: 'translate(' + (t.x - f0.x) + 'px,' + (t.y - f0.y) + 'px) rotate(0deg)' }],
               ink = function (ok) { if (ok) run(g.lastChild, [{ opacity: 0.5 }, { opacity: 0 }], { duration: 60 }, res); else res(); };
@@ -265,24 +265,23 @@
     wait: wait
   };
 
+  /* 눈꺼풀: 전체 화면 오버레이 한 장(CSS 마스크 가장자리). opacity만 바꾼다. 끝나면 열림은 opacity 0 으로 남는다 */
   function lids(closed, ms) {
     var ls = d.querySelectorAll('#fx .lid');
     if (!ls.length) return Promise.resolve();
-    var soft = calm() || lite() || !canAnim;
+    var t = calm() || lite() || !canAnim ? 160 : ms;
     return new Promise(function (res) {
       var i, e;
       for (i = 0; i < ls.length; i++) {
         e = ls[i];
-        e.style.willChange = soft ? 'opacity' : 'transform';
-        e.style.transition = (soft ? 'opacity ' : 'transform ') + (soft ? 160 : ms) + 'ms ' + (closed ? 'cubic-bezier(.7,0,.3,1)' : 'cubic-bezier(.2,.7,.1,1)');
-        // 닫힘은 완전한 암전이 아니라 가운데에 틈(20vh)을 남긴다: 차례 안내(.night-msg/.night-nar)가 틈으로 보인다
-        if (soft) { e.style.transform = closed ? 'scaleY(.8)' : 'scaleY(1)'; e.style.opacity = closed ? 1 : 0; }
-        else { e.style.opacity = ''; e.style.transform = closed ? 'scaleY(.8)' : 'scaleY(0)'; }
+        e.style.willChange = 'opacity';
+        e.style.transition = 'opacity ' + t + 'ms ' + (closed ? 'cubic-bezier(.7,0,.3,1)' : 'cubic-bezier(.2,.7,.1,1)');
+        e.style.opacity = closed ? 1 : 0;
       }
       later(function () {
         for (i = 0; i < ls.length; i++) { ls[i].style.willChange = ''; ls[i].style.transition = ''; }
         res();
-      }, soft ? 160 : ms);
+      }, t);
     });
   }
 

@@ -17,9 +17,9 @@
 @media(prefers-reduced-motion:reduce){.msg.is-hit::before{animation:none;opacity:.35}}
 html[data-perf=lite] .msg.is-hit::before{animation:none;opacity:.35}
 body[data-chat=off] .msg-act{display:none}
-.msg{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;align-items:baseline}
-.msg>.msg-n{grid-column:1}
-.msg>:not(.msg-n){grid-column:2}
-.msg>.msg-t:only-child{grid-column:1/-1}
+.msg{text-wrap:wrap}
+.msg[data-sys="0"]{display:grid;grid-template-columns:4.5em 1fr;column-gap:8px;align-items:baseline}
+.msg-n{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg[data-sys="0"]>:not(.msg-n){grid-column:2}
 .msg-t{overflow-wrap:anywhere}
 .msg-act{justify-self:start;margin-left:0}
