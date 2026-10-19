@@ -442,7 +442,8 @@
     set($('.hud-phase'), 'textContent', body.dataset.replay ? T.replay.ui.hudCenter : V.hudPhase);
   }
   function deadline(mode) {
-    return S.phase === 'day' ? S.dayEndsAt : S.phase === 'vote' ? S.voteEndsAt : mode === 'awake' ? S.stepEndsAt : 0;
+    // 밤: 차례 시간이 모두 같으므로 잠든 사람에게도 이번 차례가 끝나기까지 남은 시간을 보여 준다
+    return S.phase === 'day' ? S.dayEndsAt : S.phase === 'vote' ? S.voteEndsAt : S.phase === 'night' ? S.stepEndsAt : 0;
   }
   let tickT = 0;
   function tick() {

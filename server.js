@@ -14,12 +14,8 @@ const { ROLES, ROLE_ORDER, NIGHT_ORDER, MIN_PLAYERS, MAX_PLAYERS } = WW;
 const SCALE = Number(process.env.TIME_SCALE || 1);
 const TM = {
   CARD_CHECK: 13000,   // 처음 패 확인 시간 (spec 9.5)
-  ACT: 45000,          // 역할별 밤 행동 제한 시간 (카드를 보는 행동이 있어 30초에서 +50%)
-  DOPPEL: 68000,       // 도플갱어 (두 단계라 더 길게)
-  MIN_STEP: 8000,      // 행동이 빨리 끝나도 최소 이만큼은 기다림 (정보 노출 방지)
-  VIEW_HOLD: 10000,    // 카드를 본 행동 뒤, 단계가 끝나기까지 최소로 기다리는 시간 (펼친 카드를 읽을 시간)
-  IDLE_MIN: 8000,      // 아무도 없는 역할 차례에 기다리는 시간 (무작위)
-  IDLE_MAX: 16000,
+  ACT: 25000,          // 역할별 밤 차례 시간 (고정: 다 지나야 다음 차례로 넘어감)
+  DOPPEL: 35000,       // 도플갱어 차례 (두 단계라 더 길게)
   VOTE: 60000,
   VOTE_GRACE: 1500,    // 모두 투표한 뒤 결말까지
   DROP_GRACE: 15000,   // 낮·투표 중 연결이 잠깐 끊긴 사람을 집계에서 빼기 전 기다리는 시간
@@ -321,7 +317,7 @@ function view(room, pid) {
     const pr = g.prompts[pid];
     v.prompt = pr ? publicPrompt(pr) : null;
     // 남은 시간은 행동하는 사람과 패 확인 단계에만 알려줌 (누가 있는지 시간으로 짐작 못 하게)
-    v.stepEndsAt = (pr && !pr.done) || g.stepRole === '_check' ? g.stepEndsAt : null;
+    v.stepEndsAt = room.phase === 'night' ? g.stepEndsAt : null;   // 모든 차례가 같은 길이라 모두에게 보여도 정보가 새지 않는다
     v.dayEndsAt = g.dayEndsAt;
     v.voteEndsAt = g.voteEndsAt;
     v.myVote = g.votes[pid] ?? null;
@@ -499,9 +495,11 @@ function runStep(room, idx) {
   for (const pid of actors) makePrompt(room, pid, role, actors);
   recordStep(room, role, actors);
 
-  const dur = actors.length ? (role === 'doppelganger' ? TM.DOPPEL : TM.ACT) : rand(TM.IDLE_MIN, TM.IDLE_MAX);
+  // 차례마다 시간은 고정: 아무도 없는 차례도 같은 길이라 시간으로 정보가 새지 않는다.
+  // 일찍 고르더라도 시간이 다 지나야 넘어가고, 다 지나면 고르지 않은 사람은 무작위로 정해진다.
+  const dur = role === 'doppelganger' ? TM.DOPPEL : TM.ACT;
   g.stepEndsAt = now + dur;
-  setGameTimer(room, dur, () => holdEnd(room));
+  setGameTimer(room, dur, () => endStep(room));
   sendNow(room);
 }
 
@@ -595,10 +593,10 @@ function doAction(room, pid, data, auto = false) {
       }
       if (!validCenter(data.center)) return failAck(M('pickAltar'));
       const c = g.center[data.center];
-      const text = M('altarSeen', { pos: TX.altar[data.center], r: rn(c) });
+      const text = M('altarSeen', { pos: TX.altar[data.center], r: rn(c) }) + tag;
       const reveal = [{ at: 'c', idx: data.center, role: c }];
       log(room, pid, text, reveal);
-      recStep(g, { r: 'werewolf', k: 'peek', by: [s], tg: [n + data.center], see: [seeAt(n + data.center)] });
+      recStep(g, { r: 'werewolf', k: 'peek', by: [s], tg: [n + data.center], see: [seeAt(n + data.center)], ...(auto ? { auto: 1 } : {}) });
       return done(okAck(text, reveal));
     }
 
@@ -627,19 +625,19 @@ function doAction(room, pid, data, auto = false) {
         const t = data.player;
         if (!isPlayer(room, t) || t === pid) return failAck(M('pickOther'));
         const ts = slotOf(g, t);
-        const text = M('seerSaw', { t: pn(room, t), r: rn(g.cards[t]) });
+        const text = M('seerSaw', { t: pn(room, t), r: rn(g.cards[t]) }) + tag;
         const reveal = [{ at: 'p', id: t, role: g.cards[t] }];
         log(room, pid, text, reveal);
-        recStep(g, { r: 'seer', k: 'peek', by: [s], tg: [ts], see: [seeAt(ts)] });
+        recStep(g, { r: 'seer', k: 'peek', by: [s], tg: [ts], see: [seeAt(ts)], ...(auto ? { auto: 1 } : {}) });
         return done(okAck(text, reveal));
       }
       const cs = data.centers;
       if (!Array.isArray(cs) || cs.length !== 2 || !cs.every(validCenter) || cs[0] === cs[1]) return failAck(M('pickTwoAltar'));
       const list = cs.map((c) => M('altarTwo', { pos: TX.altar[c], r: rn(g.center[c]) })).join(', ');
-      const text = M('altarTwoHead', { list });
+      const text = M('altarTwoHead', { list }) + tag;
       const reveal = cs.map((c) => ({ at: 'c', idx: c, role: g.center[c] }));
       log(room, pid, text, reveal);
-      recStep(g, { r: 'seer', k: 'peek', by: [s], tg: cs.map((c) => n + c), see: cs.map((c) => seeAt(n + c)) });
+      recStep(g, { r: 'seer', k: 'peek', by: [s], tg: cs.map((c) => n + c), see: cs.map((c) => seeAt(n + c)), ...(auto ? { auto: 1 } : {}) });
       return done(okAck(text, reveal));
     }
 
@@ -654,11 +652,11 @@ function doAction(room, pid, data, auto = false) {
       if (!isPlayer(room, t) || t === pid) return failAck(M('pickOther'));
       const ts = slotOf(g, t);
       const mv = swapSlots(room, s, ts);
-      const text = M('stole', { t: pn(room, t), r: rn(g.cards[pid]) });
+      const text = M('stole', { t: pn(room, t), r: rn(g.cards[pid]) }) + tag;
       // 훔친 패는 이제 강도의 좌석에 놓여 있다
       const reveal = [{ at: 'p', id: pid, role: g.cards[pid], from: t }];
       log(room, pid, text, reveal);
-      recStep(g, { r: 'robber', k: 'swap', by: [s], tg: [ts], mv, see: [seeAt(s)] });
+      recStep(g, { r: 'robber', k: 'swap', by: [s], tg: [ts], mv, see: [seeAt(s)], ...(auto ? { auto: 1 } : {}) });
       return done(okAck(text, reveal));
     }
 
@@ -676,9 +674,9 @@ function doAction(room, pid, data, auto = false) {
       const [a, b] = ps;
       const as = slotOf(g, a), bs = slotOf(g, b);
       const mv = swapSlots(room, as, bs);
-      const text = M('swapped', { a: pn(room, a), b: pn(room, b) });
+      const text = M('swapped', { a: pn(room, a), b: pn(room, b) }) + tag;
       log(room, pid, text);
-      recStep(g, { r: 'troublemaker', k: 'swap', by: [s], tg: [as, bs], mv });
+      recStep(g, { r: 'troublemaker', k: 'swap', by: [s], tg: [as, bs], mv, ...(auto ? { auto: 1 } : {}) });
       return done(okAck(text));
     }
 
@@ -703,15 +701,17 @@ function finishPending(room) {
     for (let guard = 0; guard < 5; guard++) {
       const p = g.prompts[pid];
       if (!p || p.done) break;
-      if (p.type === 'doppelganger') {
-        doAction(room, pid, { player: pick(g.seats.filter((x) => x !== pid)) }, true);
-      } else if (p.type === 'drunk') {
-        doAction(room, pid, { center: rand(0, 2) }, true);
-      } else {
-        if (p.type !== 'info') {
-          log(room, pid, M('timedOut'));
-          recStep(g, { r: p.type === 'lonewolf' ? 'werewolf' : p.type, k: 'skip', by: [slotOf(g, pid)], auto: 1 });
-        }
+      // 시간이 다 됐는데 고르지 않았으면 무작위로 대신 고른다
+      const others = g.seats.filter((x) => x !== pid);
+      const two = (a) => { const s = a.slice(); const i = rand(0, s.length - 1); const x = s.splice(i, 1)[0]; return [x, pick(s)]; };
+      let auto = null;
+      if (p.type === 'doppelganger' || p.type === 'robber') auto = { player: pick(others) };
+      else if (p.type === 'drunk' || p.type === 'lonewolf') auto = { center: rand(0, 2) };
+      else if (p.type === 'seer') auto = rand(0, 1) ? { player: pick(others) } : { centers: two([0, 1, 2]) };
+      else if (p.type === 'troublemaker' && others.length >= 2) auto = { players: two(others) };
+      const r = auto ? doAction(room, pid, auto, true) : null;
+      if (!auto || !r || r.ok === false || (g.prompts[pid] === p && !p.done)) {
+        // 정보 확인(info) 차례이거나 무작위 선택이 안 되는 경우: 확인한 것으로 처리
         p.done = true;
         p.ack = okAck();
         (g.acks[pid] ||= new Map()).set(p.key, p.ack);
@@ -725,20 +725,8 @@ function endStep(room) {
   runStep(room, room.game.stepIdx + 1);
 }
 
-// 카드를 본 행동 뒤 VIEW_HOLD가 지나기 전에는 단계를 끝내지 않는다
-function holdEnd(room) {
-  const w = room.game.viewAt + TM.VIEW_HOLD - Date.now();
-  if (w > 0) setGameTimer(room, w, () => endStep(room));
-  else endStep(room);
-}
-
-function checkStepDone(room) {
-  const g = room.game;
-  const all = Object.values(g.prompts);
-  if (!all.length || all.some((p) => !p.done)) return;
-  const wait = Math.max(0, g.stepStartedAt + TM.MIN_STEP - Date.now(), g.viewAt + TM.VIEW_HOLD - Date.now());
-  setGameTimer(room, wait, () => endStep(room));
-}
+// 차례 시간은 고정이라 모두 골라도 일찍 넘어가지 않는다 (runStep의 타이머가 끝을 정한다)
+function checkStepDone() {}
 
 function startDay(room) {
   const g = room.game;

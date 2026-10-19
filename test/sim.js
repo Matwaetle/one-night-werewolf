@@ -295,7 +295,7 @@ const DG = 'doppelganger', WF = 'werewolf', MI = 'minion', MA = 'mason', SE = 's
 const SC = [];
 function sc(name, deal, acts, votes, extra = {}) { SC.push({ name, deal, acts, votes, ...extra }); }
 
-// F2: 불면증환자 프롬프트 reveal, 강도 reveal.from, 카드를 본 뒤 VIEW_HOLD(10초 x TIME_SCALE) 동안 단계가 끝나지 않음
+// F2: 불면증환자 프롬프트 reveal, 강도 reveal.from, 일찍 골라도 차례 시간이 다 지나야 다음 차례
 sc('f2-reveal', [SE, RO, IN, WF, VI, VI], { 0: { seer: { player: 1 } }, 1: { robber: { player: 2 } } }, [1, 0, 0], {
   expect: (r, bots) => {
     const ids = bots.map((b) => b.sid);
@@ -303,9 +303,10 @@ sc('f2-reveal', [SE, RO, IN, WF, VI, VI], { 0: { seer: { player: 1 } }, 1: { rob
     assert(rb && rb[1].reveal[0].from === ids[2] && rb[1].reveal[0].id === ids[1] && rb[1].reveal[0].role === IN, 'robber reveal.from');
     const ip = bots[2].insoPrompt;
     assert(ip && isDeepStrictEqual(ip.reveal, [{ at: 'p', id: ids[2], role: RO }]), 'insomniac prompt reveal');
-    const st = bots[0].state, si = st.steps.indexOf('seer'), nxt = bots[0].stepSeen[si + 1];
-    const hold = 10000 * Number(process.env.TIME_SCALE);
-    assert(nxt !== undefined && nxt - bots[0].ackAt >= hold * 0.9, 'VIEW_HOLD 보장: ' + (nxt - bots[0].ackAt) + 'ms < ' + hold);
+    // 차례 시간 고정: 예언자가 일찍 골라도 차례 시간(25초 x TIME_SCALE)이 다 지나야 다음 차례
+    const st = bots[0].state, si = st.steps.indexOf('seer'), cur = bots[0].stepSeen[si], nxt = bots[0].stepSeen[si + 1];
+    const turn = 25000 * Number(process.env.TIME_SCALE);
+    assert(cur !== undefined && nxt !== undefined && nxt - cur >= turn * 0.9, '차례 시간 고정: ' + (nxt - cur) + 'ms < ' + turn);
   },
 });
 sc('min-3', [WF, SE, RO, WF, TR, VI], { 0: { lonewolf: { center: 0 } }, 1: { seer: { player: 0 } }, 2: { robber: { player: 1 } } }, [1, 0, 0]);
@@ -389,7 +390,7 @@ sc('doppel-drunk-pulls-idle-role', [DG, DR, VI, VI, SE, WF, WF], { 0: { doppelga
   expect: (r) => { const k = r.night.ev.find((e) => e.st === 'seer'); assert(k.k === 'idle', 'seer idle'); assert(r.night.deal[r.night.end[0]] === 'seer', '도플갱어-주정뱅이가 예언자 패를 쥐었다'); },
 });
 sc('doppel-seer-timeout', [DG, SE, WF, VI, WF, VI, VI], { 0: { doppelganger: { player: 1 }, seer: 'timeout' }, 1: { seer: { player: 3 } }, 2: { lonewolf: { skip: true } } }, [2, 2, 0, 2], {
-  expect: (r) => assert(isDeepStrictEqual(r.night.ev[1], { st: 'doppelganger', r: 'seer', k: 'skip', by: [0], auto: 1, dop: [0] }), 'doppel-seer-timeout ' + JSON.stringify(r.night.ev[1])),
+  expect: (r) => { const e = r.night.ev[1]; assert(e.st === 'doppelganger' && e.r === 'seer' && e.k === 'peek' && e.auto === 1 && isDeepStrictEqual(e.dop, [0]), 'doppel-seer-timeout: 시간 초과면 무작위로 본다 ' + JSON.stringify(e)); },
 });
 sc('robber-steals-doppel', [DG, RO, WF, VI, WF, VI, VI], { 0: { doppelganger: { player: 2 } }, 1: { robber: { player: 0 } } }, [1, 0, 0, 0], {
   expect: (r) => assert(r.players[1].final === 'doppelganger' && r.players[1].effective === 'werewolf', 'robber-steals-doppel'),
@@ -408,7 +409,7 @@ sc('lone-wolf-skip', [WF, SE, VI, WF, VI, VI], { 0: { lonewolf: { skip: true } }
   expect: (r) => assert(isDeepStrictEqual(r.night.ev[0], { st: 'werewolf', k: 'skip', by: [0] }), 'lone-wolf-skip'),
 });
 sc('lone-wolf-timeout', [WF, SE, VI, WF, VI, VI], { 0: { lonewolf: 'timeout' }, 1: { seer: { player: 2 } } }, [1, 0, 0], {
-  expect: (r) => assert(isDeepStrictEqual(r.night.ev[0], { st: 'werewolf', k: 'skip', by: [0], auto: 1 }), 'lone-wolf-timeout ' + JSON.stringify(r.night.ev[0])),
+  expect: (r) => { const e = r.night.ev[0]; assert(e.st === 'werewolf' && e.k === 'peek' && e.auto === 1 && isDeepStrictEqual(e.by, [0]) && e.tg.length === 1, 'lone-wolf-timeout: 시간 초과면 가운데 1장을 무작위로 본다 ' + JSON.stringify(e)); },
 });
 const SK = [SE, RO, TR, WF, WF, VI, VI];
 sc('deliberate-skip-seer', SK, { 0: { seer: { skip: true } }, 1: { robber: { player: 3 } }, 2: { troublemaker: { players: [0, 3] } }, 3: { lonewolf: { center: 0 } } }, [3, 3, 3, 0], {
@@ -430,6 +431,7 @@ sc('all-timeout', [DG, WF, SE, RO, TR, DR, WF, IN, VI], {}, [1, 2, 3, 4, 5, 0], 
   expect: (r) => {
     assert(r.night.ev.every((e) => e.auto || e.k === 'idle' || e.k === 'know'), 'all-timeout: 모든 행동 이벤트는 auto');
     assert(r.night.ev.some((e) => e.k === 'copy' && e.auto) && r.night.ev.some((e) => e.st === 'drunk' && e.auto), 'all-timeout: 도플갱어·주정뱅이 auto');
+    for (const st of ['seer', 'robber', 'troublemaker']) assert(r.night.ev.some((e) => e.st === st && e.k !== 'skip' && e.auto), 'all-timeout: ' + st + ' 무작위 선택');
   },
 });
 sc('hunter-chain-2', [DG, HU, VI, VI, WF, SE, TR, VI], { 0: { doppelganger: { player: 1 } }, 4: { lonewolf: { center: 0 } } }, [1, 4, 0, 0, 0], {
