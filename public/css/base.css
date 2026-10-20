@@ -75,6 +75,7 @@ body[data-phase=day] .hud-timer,body[data-phase=vote] .hud-timer{font-size:1.5em
 .hud-skip{padding:0 12px;font-size:13px;font-weight:600}
 .hud-bar{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--bone-dim);transform-origin:0 50%}
 .hud-bar.is-low{background:var(--blood)}
+body[data-phase=night] .hud-bar{height:3px;background:var(--bone)}body[data-phase=night] .band-bar{height:4px;background:var(--bone);opacity:.85}
 body[data-conn=off] .hud-mid{opacity:.5}body[data-conn=off] [data-hold]{opacity:.55}.vignette[data-hb]::after{will-change:opacity}.hud-sign small{font-size:.7em;opacity:.7;margin-right:.5em;letter-spacing:0}.day-seen[hidden]{display:none}.day-seen .ds-h{display:block}.verdict-me{margin-top:10px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}.verdict-me .rec-stamp{margin:0}
 
 /* ---------- 지시문 띠 · 독 ---------- */

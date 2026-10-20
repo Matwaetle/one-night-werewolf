@@ -455,7 +455,8 @@
     else {
       const ch = dl !== ui.dl;
       if (ch) { ui.dl = dl; ui.tmax = Math.max(1000, dl - nowS()); }
-      if (ch || (bb.hidden && mode === 'awake')) {   // 마감이 바뀌면(또는 띠가 다시 보이면) 남은 시간만큼 CSS 애니메이션 하나를 다시 시작한다. 매초 쓰지 않는다
+      const bOn = mode === 'awake' || S.phase === 'night';   // 밤에는 잠든 사람에게도 차례 남은 시간 바를 보여 준다
+      if (ch || (bb.hidden && bOn)) {   // 마감이 바뀌면(또는 띠가 다시 보이면) 남은 시간만큼 CSS 애니메이션 하나를 다시 시작한다. 매초 쓰지 않는다
         const ms0 = Math.max(0, dl - nowS());
         [bar, bb].forEach((e) => { e.style.animation = 'none'; e.style.setProperty('--ms', ms0 + 'ms'); e.style.setProperty('--f0', Math.min(1, ms0 / ui.tmax).toFixed(3)); void e.offsetWidth; e.style.animation = ''; });
       }
@@ -470,7 +471,7 @@
       }
       tm.classList.toggle('is-urgent', secs <= 10);
       bar.classList.toggle('is-low', secs < 60 && S.phase !== 'night');
-      bb.hidden = mode !== 'awake';
+      bb.hidden = !bOn;
       if (S.phase === 'day') hb = secs <= 10 ? 2 : secs <= 30 ? 1 : 0;
     }
     if (hb !== ui.hb) { ui.hb = hb; fx('heartbeat', hb); }
